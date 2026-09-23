@@ -12,6 +12,6 @@ The following split is justified and intentionally small:
 | `myota-web` | universal programme UI and generated API client | `web/` |
 | `myota-deploy` | Helm charts, environments, migrations, observability | `deploy/`, `compose.yaml` |
 | `myota-docs` | architecture, ADRs, operator and migration docs | `docs/` |
+| `myota-platform` | runnable integration bootstrap, local vertical slice and cross-service smoke tests | current bootstrap repository |
 
 The bootstrap repository is a temporary integration workspace; it is not a reason to create many more repositories. Once the MyOTA organization is available, each row can be created from the corresponding paths and wired together by pinned contract versions.
-
