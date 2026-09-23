@@ -1,0 +1,168 @@
+openapi: 3.1.0
+info:
+  title: MyOTA Outdoor Activation Platform APIs
+  version: 0.1.0
+  description: Service contracts for a programme-agnostic amateur-radio outdoor activation platform.
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: Identity
+  - name: Programmes
+  - name: Geodata
+  - name: Activity
+paths:
+  /v1/identity/accounts:
+    post:
+      tags: [Identity]
+      summary: Create an operator or SWL account
+      operationId: createAccount
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateAccount' }
+      responses:
+        '201':
+          description: Created
+          content: { application/json: { schema: { $ref: '#/components/schemas/Account' } } }
+  /v1/identity/accounts/{accountId}/callsigns:
+    post:
+      tags: [Identity]
+      summary: Add and optionally verify a callsign
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AddCallsign' }
+      responses:
+        '201': { description: Created }
+  /v1/programmes:
+    get:
+      tags: [Programmes]
+      summary: List configured programmes
+      responses:
+        '200': { description: Programme list }
+    post:
+      tags: [Programmes]
+      summary: Create a programme configuration
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Programme' }
+      responses: { '201': { description: Created } }
+  /v1/geodata/entities:
+    get:
+      tags: [Geodata]
+      summary: List verified and candidate entities
+      parameters:
+        - in: query
+          name: programme
+          schema: { type: string }
+        - in: query
+          name: status
+          schema: { type: string, enum: [CANDIDATE, PROPOSED, APPROVED, REJECTED] }
+      responses: { '200': { description: Entity list } }
+  /v1/geodata/imports/manual:
+    post:
+      tags: [Geodata]
+      summary: Import GeoJSON features as candidates
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/GeoImport' } }
+      responses: { '202': { description: Import accepted } }
+  /v1/geodata/entities/{entityId}/review:
+    post:
+      tags: [Geodata]
+      summary: Review a proposed entity
+      parameters:
+        - $ref: '#/components/parameters/EntityId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision, reviewerId]
+              properties:
+                decision: { type: string, enum: [APPROVED, REJECTED] }
+                reviewerId: { type: string }
+                note: { type: string }
+      responses: { '200': { description: Review recorded } }
+  /v1/activations:
+    post:
+      tags: [Activity]
+      summary: Start an activation
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/Activation' } } }
+      responses: { '201': { description: Created } }
+components:
+  parameters:
+    IdempotencyKey:
+      in: header
+      name: Idempotency-Key
+      required: false
+      schema: { type: string, maxLength: 128 }
+    AccountId:
+      in: path
+      name: accountId
+      required: true
+      schema: { type: string, format: uuid }
+    EntityId:
+      in: path
+      name: entityId
+      required: true
+      schema: { type: string, format: uuid }
+  schemas:
+    CreateAccount:
+      type: object
+      required: [displayName, participationType]
+      properties:
+        displayName: { type: string, minLength: 1 }
+        email: { type: string, format: email }
+        participationType: { type: string, enum: [OPERATOR, SWL] }
+        callsign: { type: string, description: Optional initial callsign for an operator }
+    AddCallsign:
+      type: object
+      required: [callsign]
+      properties:
+        callsign: { type: string }
+        status: { type: string, enum: [UNVERIFIED, VERIFIED, RETIRED] }
+        source: { type: string }
+    Programme:
+      type: object
+      required: [slug, name, entityTypes, rules]
+      properties:
+        slug: { type: string }
+        name: { type: string }
+        entityTypes: { type: array, items: { type: object } }
+        rules: { type: object }
+        theme: { type: object }
+        oidc: { type: object, nullable: true }
+    GeoImport:
+      type: object
+      required: [programmeSlug, adapter, source, features]
+      properties:
+        programmeSlug: { type: string }
+        adapter: { type: string, enum: [PARKSERVE_US, OSM, GOVERNMENT_GIS, MANUAL] }
+        source: { type: object }
+        features: { type: array, items: { type: object } }
+    Activation:
+      type: object
+      required: [programmeSlug, entityId, operatorId, startedAt]
+      properties:
+        programmeSlug: { type: string }
+        entityId: { type: string, format: uuid }
+        operatorId: { type: string, format: uuid }
+        startedAt: { type: string, format: date-time }
+

@@ -1,0 +1,21 @@
+{{- range $name, $cfg := .Values.services }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "myota.fullname" (dict "name" $name) }}
+  labels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: {{ $name }}}
+spec:
+  selector: {app.kubernetes.io/name: myota, app.kubernetes.io/component: {{ $name }}}
+  ports: [{name: http, port: {{ $cfg.port }}, targetPort: http}]
+---
+{{- end }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: myota-gateway
+  labels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: gateway}
+spec:
+  type: {{ .Values.gateway.serviceType }}
+  selector: {app.kubernetes.io/name: myota, app.kubernetes.io/component: gateway}
+  ports: [{name: http, port: {{ .Values.gateway.port }}, targetPort: http}]
+

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>MyOTA · Outdoor Activation Platform</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div><span class="eyebrow">MYOTA PLATFORM</span><h1 id="programme-name">Outdoor Activation</h1></div>
+    <label>Programme <select id="programme-select"></select></label>
+  </header>
+  <main>
+    <section class="hero"><div><p class="eyebrow">UNIVERSAL PROGRAMME VIEW</p><h2 id="programme-description">Discover places where radio meets the outdoors.</h2><p>Verified entities are green. Imported candidates are amber until a community member proposes and an approver reviews them.</p></div><div class="stat"><strong id="entity-count">–</strong><span>entities on this programme</span></div></section>
+    <section class="layout">
+      <div class="panel map-panel"><div class="panel-head"><h3>Entity map</h3><div class="legend"><span class="dot verified"></span> Approved <span class="dot candidate"></span> Candidate</div></div><div id="map" class="map"><div class="map-grid"></div><div id="markers"></div><div class="map-note">OpenStreetMap-compatible map surface · geometry is served by the geodata API</div></div></div>
+      <aside class="panel"><div class="panel-head"><h3>Programme rules</h3></div><dl id="rules"></dl><button id="refresh">Refresh map</button></aside>
+    </section>
+    <section class="panel"><div class="panel-head"><h3>Entities</h3><span id="loading">Loading…</span></div><div class="table-wrap"><table><thead><tr><th>Name</th><th>Type</th><th>Status</th><th>Source</th><th>Action</th></tr></thead><tbody id="entities"></tbody></table></div></section>
+  </main>
+  <script src="/assets/app.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,7 @@
+apiVersion: v2
+name: myota
+description: MyOTA Outdoor Activation Platform services
+type: application
+version: 0.1.0
+appVersion: 0.1.0
+

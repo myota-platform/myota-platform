@@ -1,0 +1,4 @@
+1. Create secret {{ .Values.postgres.existingSecret }} with core-database-url and geo-database-url.
+2. Apply db/migrations/core to {{ .Values.postgres.coreDatabase }} and db/migrations/geo to {{ .Values.postgres.geoDatabase }}.
+3. Route /v1/identity, /v1/programmes, /v1/geodata and /v1/activations to the matching services if bypassing the gateway.
+

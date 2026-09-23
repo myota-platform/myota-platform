@@ -1,0 +1,54 @@
+{{- range $name, $cfg := .Values.services }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "myota.fullname" (dict "name" $name) }}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: {{ $name }}}}
+  template:
+    metadata: {labels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: {{ $name }}}}
+    spec:
+      containers:
+        - name: {{ $name }}
+          image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag }}"
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          env:
+            - name: SERVICE
+              value: {{ $name | quote }}
+            - name: CORE_DATABASE_URL
+              valueFrom: {secretKeyRef: {name: {{ $.Values.postgres.existingSecret }}, key: core-database-url}}
+            - name: GEO_DATABASE_URL
+              valueFrom: {secretKeyRef: {name: {{ $.Values.postgres.existingSecret }}, key: geo-database-url}}
+          ports: [{name: http, containerPort: {{ $cfg.port }} }]
+          readinessProbe: {httpGet: {path: /healthz, port: http}}
+          livenessProbe: {httpGet: {path: /healthz, port: http}}
+          resources: {{- toYaml $.Values.resources | nindent 12 }}
+---
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myota-gateway
+spec:
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: gateway}}
+  template:
+    metadata: {labels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: gateway}}
+    spec:
+      containers:
+        - name: gateway
+          image: "{{ .Values.gateway.imageRepository }}:{{ .Values.image.tag }}"
+          command: ["python3", "services/dev_server.py"]
+          env:
+            - name: MYOTA_IDENTITY_URL
+              value: http://myota-identity:8001
+            - name: MYOTA_PROGRAMMES_URL
+              value: http://myota-programmes:8002
+            - name: MYOTA_GEODATA_URL
+              value: http://myota-geodata:8003
+            - name: MYOTA_ACTIVITY_URL
+              value: http://myota-activity:8004
+          ports: [{name: http, containerPort: 8080}]
+          readinessProbe: {httpGet: {path: /, port: http}}
+          livenessProbe: {httpGet: {path: /, port: http}}

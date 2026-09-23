@@ -1,0 +1,51 @@
+services:
+  postgis:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: myota
+      POSTGRES_PASSWORD: myota-dev-only
+      POSTGRES_DB: myota_core
+    ports: ["5432:5432"]
+    volumes:
+      - postgis-data:/var/lib/postgresql/data
+      - ./db/migrations/core/001_core.sql:/docker-entrypoint-initdb.d/001_core.sql:ro
+      - ./db/bootstrap/00-create-geo.sh:/docker-entrypoint-initdb.d/00-create-geo.sh:ro
+      - ./db/migrations/geo/001_geodata.sql:/docker-entrypoint-initdb.d/geo.sql:ro
+      - ./db/migrations/geo/002_qgis_views.sql:/docker-entrypoint-initdb.d/geo-views.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myota -d myota_core"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  identity:
+    build: .
+    environment: ["SERVICE=identity"]
+    depends_on: {postgis: {condition: service_healthy}}
+    ports: ["8001:8001"]
+  programmes:
+    build: .
+    environment: ["SERVICE=programmes"]
+    depends_on: {postgis: {condition: service_healthy}}
+    ports: ["8002:8002"]
+  geodata:
+    build: .
+    environment: ["SERVICE=geodata"]
+    depends_on: {postgis: {condition: service_healthy}}
+    ports: ["8003:8003"]
+  activity:
+    build: .
+    environment: ["SERVICE=activity"]
+    depends_on: {postgis: {condition: service_healthy}}
+    ports: ["8004:8004"]
+  gateway:
+    build: .
+    command: ["python3", "services/dev_server.py"]
+    environment:
+      MYOTA_IDENTITY_URL: http://identity:8001
+      MYOTA_PROGRAMMES_URL: http://programmes:8002
+      MYOTA_GEODATA_URL: http://geodata:8003
+      MYOTA_ACTIVITY_URL: http://activity:8004
+    depends_on: [identity, programmes, geodata, activity]
+    ports: ["8080:8080"]
+volumes:
+  postgis-data:
