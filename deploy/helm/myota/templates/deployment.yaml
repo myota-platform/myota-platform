@@ -24,6 +24,12 @@ spec:
               value: {{ $.Values.auth.environment | quote }}
             - name: MYOTA_AUTH_SIGNING_KEY
               valueFrom: {secretKeyRef: {name: {{ $.Values.auth.existingSecret }}, key: signing-key}}
+            {{- if eq $name "geodata" }}
+            - name: BIGDATACLOUD_API_KEY
+              valueFrom: {secretKeyRef: {name: {{ $.Values.geodata.existingSecret }}, key: {{ $.Values.geodata.apiKey }}}}
+            - name: BIGDATACLOUD_LOCALITY_LANGUAGE
+              value: {{ $.Values.geodata.localityLanguage | quote }}
+            {{- end }}
           ports: [{name: http, containerPort: {{ $cfg.port }} }]
           readinessProbe: {httpGet: {path: /healthz, port: http}}
           livenessProbe: {httpGet: {path: /healthz, port: http}}

@@ -60,6 +60,7 @@ services:
     ports: ["8002:8002"]
   geodata:
     build: .
+    env_file: [../myota-geodata-service/.env]
     environment:
       SERVICE: geodata
       GEO_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_geo

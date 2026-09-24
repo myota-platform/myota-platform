@@ -11,6 +11,10 @@ services:
   programmes: {port: 8002}
   geodata: {port: 8003}
   activity: {port: 8004}
+geodata:
+  existingSecret: myota-geodata
+  apiKey: bigdatacloud-api-key
+  localityLanguage: en
 postgres:
   host: postgis
   coreDatabase: myota_core
