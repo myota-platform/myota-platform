@@ -10,7 +10,6 @@ CREATE TABLE IF NOT EXISTS entity_type (
   config jsonb NOT NULL DEFAULT '{}'::jsonb,
   UNIQUE (programme_id, code)
 );
-
 CREATE TABLE IF NOT EXISTS geodata_entity (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   programme_id uuid NOT NULL,
@@ -69,50 +68,4 @@ CREATE TABLE IF NOT EXISTS conflation_candidate (
   similarity numeric NOT NULL,
   reason jsonb NOT NULL DEFAULT '{}'::jsonb,
   resolution text NOT NULL DEFAULT 'OPEN' CHECK (resolution IN ('OPEN','MERGED','KEPT_SEPARATE','IGNORED'))
-);
-
-CREATE TABLE IF NOT EXISTS service_state (
-  service text PRIMARY KEY,
-  state jsonb NOT NULL,
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
-CREATE TABLE IF NOT EXISTS idempotency_record (
-  service text NOT NULL,
-  key text NOT NULL,
-  response jsonb NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  PRIMARY KEY (service, key)
-);
-CREATE TABLE IF NOT EXISTS outbox_event (
-  event_id uuid PRIMARY KEY,
-  event_type text NOT NULL,
-  producer text NOT NULL,
-  aggregate_type text NOT NULL,
-  aggregate_id text NOT NULL,
-  payload jsonb NOT NULL,
-  occurred_at timestamptz NOT NULL,
-  available_at timestamptz NOT NULL DEFAULT now(),
-  attempts integer NOT NULL DEFAULT 0,
-  published_at timestamptz,
-  last_error text
-);
-CREATE INDEX IF NOT EXISTS outbox_pending_idx ON outbox_event (available_at, occurred_at) WHERE published_at IS NULL;
-CREATE TABLE IF NOT EXISTS consumer_checkpoint (
-  consumer text PRIMARY KEY,
-  last_event_id uuid,
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
-CREATE TABLE IF NOT EXISTS consumer_processed_event (
-  consumer text NOT NULL,
-  event_id uuid NOT NULL,
-  processed_at timestamptz NOT NULL DEFAULT now(),
-  PRIMARY KEY (consumer, event_id)
-);
-CREATE TABLE IF NOT EXISTS dead_letter_event (
-  event_id uuid PRIMARY KEY,
-  event_type text NOT NULL,
-  payload jsonb NOT NULL,
-  attempts integer NOT NULL,
-  error text,
-  dead_lettered_at timestamptz NOT NULL DEFAULT now()
 );

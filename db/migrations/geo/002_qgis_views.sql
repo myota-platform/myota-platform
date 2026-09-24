@@ -1,3 +1,5 @@
+-- Recreate views so an upgrade can remove columns introduced by an older
+-- mirror without requiring an unsafe manual database operation.
 DROP VIEW IF EXISTS qgis_entity_review_queue;
 DROP VIEW IF EXISTS qgis_approved_entities;
 
