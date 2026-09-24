@@ -13,7 +13,7 @@ services:
       - ./db/migrations/geo/001_geodata.sql:/docker-entrypoint-initdb.d/geo.sql:ro
       - ./db/migrations/geo/002_qgis_views.sql:/docker-entrypoint-initdb.d/geo-views.sql:ro
   migrations:
-    image: ghcr.io/myota-platform/myota-migrations:latest
+    image: ghcr.io/myota-platform/myota-service:latest
     command: ["/migrations/run.sh"]
     environment:
       PGHOST: postgis
@@ -63,7 +63,7 @@ services:
     command: ["-js", "-sd", "/data"]
     volumes: ["nats-data:/data"]
   outbox-core:
-    image: ghcr.io/myota-platform/myota-migrations:latest
+    image: ghcr.io/myota-platform/myota-service:latest
     command: ["python3", "services/outbox_worker.py"]
     environment:
       OUTBOX_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_core
@@ -71,7 +71,7 @@ services:
       OUTBOX_WORKER: core-outbox
     depends_on: {migrations: {condition: service_completed_successfully}, nats: {condition: service_started}}
   outbox-geo:
-    image: ghcr.io/myota-platform/myota-migrations:latest
+    image: ghcr.io/myota-platform/myota-service:latest
     command: ["python3", "services/outbox_worker.py"]
     environment:
       OUTBOX_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_geo
