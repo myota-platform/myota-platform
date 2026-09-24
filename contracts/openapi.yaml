@@ -335,6 +335,7 @@ paths:
   /v1/geodata/imports/manual:
     post:
       tags: [Geodata]
+      security: [{ bearerAuth: [] }]
       summary: Import GeoJSON features as candidates
       parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
       requestBody:

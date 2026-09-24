@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).parents[1] / "services"))
 
 from activity import ActivityHandler
 from geodata import GeoHandler, seed as seed_geo
+from geodata_importer import features_from_document
 from identity import IdentityHandler, seed as seed_identity
 from import_adapters import normalize
 from programmes import ProgrammeHandler, seed as seed_programmes
@@ -164,6 +165,12 @@ class VerticalSliceTests(unittest.TestCase):
         self.assertGreaterEqual(bbox["count"], 1)
         tile = GeoHandler.tile(None, {"z": "12", "x": "2044", "y": "1600"})
         self.assertIn("features", tile)
+
+    def test_importer_normalizes_arcgis_feature_server_documents(self) -> None:
+        features = features_from_document({"features": [{"attributes": {"OBJECTID": 9, "name": "GIS park"},
+            "geometry": {"rings": [[[-5.9, 37.3], [-5.8, 37.3], [-5.8, 37.4], [-5.9, 37.4], [-5.9, 37.3]]]}}]}, "ARCGIS_FEATURESERVER")
+        self.assertEqual(features[0]["geometry"]["type"], "Polygon")
+        self.assertEqual(features[0]["properties"]["OBJECTID"], 9)
 
     def test_activation_and_qso_primitives(self) -> None:
         activation = ActivityHandler.create_activation(None, {"_body": {"programmeSlug": "mpota", "entityId": "entity-1", "operatorId": "operator-1", "startedAt": "2026-01-01T10:00:00Z"}, "Idempotency-Key": "activation-1"})
