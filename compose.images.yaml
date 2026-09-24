@@ -27,13 +27,25 @@ services:
     environment:
       SERVICE: identity
       CORE_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_core
+      MYOTA_ENV: development
+      MYOTA_AUTH_SIGNING_KEY: myota-local-development-signing-key
+      MYOTA_EXPOSE_DEV_TOKENS: "1"
     depends_on: {migrations: {condition: service_completed_successfully}}
     ports: ["8001:8001"]
+  identity-maintenance:
+    image: ghcr.io/myota-platform/myota-service:latest
+    command: ["python3", "services/identity_maintenance.py"]
+    environment:
+      CORE_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_core
+      MYOTA_AUTH_SIGNING_KEY: myota-local-development-signing-key
+      MYOTA_IDENTITY_MAINTENANCE_SECONDS: "3600"
+    depends_on: {migrations: {condition: service_completed_successfully}}
   programmes:
     image: ghcr.io/myota-platform/myota-programme-service:latest
     environment:
       SERVICE: programmes
       CORE_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_core
+      MYOTA_AUTH_SIGNING_KEY: myota-local-development-signing-key
     depends_on: {migrations: {condition: service_completed_successfully}}
     ports: ["8002:8002"]
   geodata:
@@ -41,6 +53,7 @@ services:
     environment:
       SERVICE: geodata
       GEO_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_geo
+      MYOTA_AUTH_SIGNING_KEY: myota-local-development-signing-key
     depends_on: {migrations: {condition: service_completed_successfully}}
     ports: ["8003:8003"]
   activity:
@@ -48,6 +61,7 @@ services:
     environment:
       SERVICE: activity
       CORE_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_core
+      MYOTA_AUTH_SIGNING_KEY: myota-local-development-signing-key
     depends_on: {migrations: {condition: service_completed_successfully}}
     ports: ["8004:8004"]
   gateway:

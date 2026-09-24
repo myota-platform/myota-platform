@@ -11,6 +11,60 @@ tags:
   - name: Geodata
   - name: Activity
 paths:
+  /v1/identity/auth/register:
+    post:
+      tags: [Identity]
+      summary: Register an operator or SWL and create a session
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/RegisterAccount' } } }
+      responses: { '201': { description: Registered and authenticated } }
+  /v1/identity/auth/login:
+    post:
+      tags: [Identity]
+      summary: Authenticate with email and password
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/Login' } } }
+      responses: { '200': { description: Authenticated } }
+  /v1/identity/auth/refresh:
+    post:
+      tags: [Identity]
+      summary: Rotate a refresh token
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/RefreshToken' } } }
+      responses: { '200': { description: Rotated session } }
+  /v1/identity/auth/logout:
+    post:
+      tags: [Identity]
+      summary: Revoke a session or access token
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content: { application/json: { schema: { $ref: '#/components/schemas/RefreshToken' } } }
+      responses: { '200': { description: Logged out } }
+  /v1/identity/auth/recovery/request:
+    post:
+      tags: [Identity]
+      summary: Request password recovery without disclosing account existence
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/RecoveryRequest' } } }
+      responses: { '200': { description: Recovery request accepted } }
+  /v1/identity/auth/recovery/reset:
+    post:
+      tags: [Identity]
+      summary: Set a new password using a single-use recovery token
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/RecoveryReset' } } }
+      responses: { '200': { description: Password reset } }
+  /v1/identity/me:
+    get:
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      summary: Get the authenticated account and scopes
+      responses: { '200': { description: Authenticated account } }
   /v1/identity/accounts:
     post:
       tags: [Identity]
@@ -41,6 +95,53 @@ paths:
             schema: { $ref: '#/components/schemas/AddCallsign' }
       responses:
         '201': { description: Created }
+  /v1/identity/accounts/{accountId}/callsigns/{callsignId}/evidence:
+    post:
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      summary: Submit callsign verification evidence
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+        - $ref: '#/components/parameters/CallsignId'
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/CallsignEvidence' } } }
+      responses: { '201': { description: Evidence submitted } }
+  /v1/identity/accounts/{accountId}/callsigns/{callsignId}/verify:
+    post:
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      summary: Verify callsign evidence using the callsign.verify scope
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+        - $ref: '#/components/parameters/CallsignId'
+      responses: { '200': { description: Callsign verified } }
+  /v1/identity/accounts/{accountId}/roles:
+    get:
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/AccountId' }]
+      responses: { '200': { description: Account roles } }
+    post:
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/AccountId' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/RoleAssignment' } } }
+      responses: { '201': { description: Role assigned } }
+  /v1/identity/accounts/{accountId}/export:
+    get:
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/AccountId' }]
+      responses: { '200': { description: Personal data export } }
+  /v1/identity/accounts/{accountId}/deactivate:
+    post:
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/AccountId' }]
+      responses: { '200': { description: Account deactivated and sessions revoked } }
   /v1/programmes:
     get:
       tags: [Programmes]
@@ -120,6 +221,11 @@ paths:
         content: { application/json: { schema: { $ref: '#/components/schemas/Activation' } } }
       responses: { '201': { description: Created } }
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   parameters:
     IdempotencyKey:
       in: header
@@ -136,6 +242,11 @@ components:
       name: entityId
       required: true
       schema: { type: string, format: uuid }
+    CallsignId:
+      in: path
+      name: callsignId
+      required: true
+      schema: { type: string, format: uuid }
     Page:
       in: query
       name: page
@@ -145,6 +256,60 @@ components:
       name: pageSize
       schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
   schemas:
+    Account:
+      type: object
+      required: [id, displayName, participationType, status]
+      properties:
+        id: { type: string, format: uuid }
+        displayName: { type: string }
+        email: { type: string, format: email, nullable: true }
+        participationType: { type: string, enum: [OPERATOR, SWL] }
+        status: { type: string, enum: [ACTIVE, DEACTIVATED] }
+        callsigns: { type: array, items: { type: object } }
+    RegisterAccount:
+      allOf:
+        - $ref: '#/components/schemas/CreateAccount'
+        - type: object
+          required: [email, password]
+          properties:
+            password: { type: string, minLength: 12, format: password }
+    Login:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, format: password }
+    RefreshToken:
+      type: object
+      required: [refreshToken]
+      properties: { refreshToken: { type: string } }
+    RecoveryRequest:
+      type: object
+      required: [email]
+      properties: { email: { type: string, format: email } }
+    RecoveryReset:
+      type: object
+      required: [token, newPassword]
+      properties:
+        token: { type: string }
+        newPassword: { type: string, minLength: 12, format: password }
+    CallsignEvidence:
+      type: object
+      required: [evidenceType, source]
+      properties:
+        evidenceType: { type: string }
+        source: { type: string }
+        checksum: { type: string }
+        metadata: { type: object }
+    RoleAssignment:
+      type: object
+      required: [role]
+      properties:
+        role: { type: string }
+        programmeSlug: { type: string }
+        jurisdiction: { type: string }
+        entityType: { type: string }
+        scopes: { type: array, items: { type: string } }
     CreateAccount:
       type: object
       required: [displayName, participationType]

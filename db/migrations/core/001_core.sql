@@ -182,3 +182,83 @@ CREATE TABLE IF NOT EXISTS programme_policy_version (
   retired_at timestamptz,
   PRIMARY KEY (programme_id, version)
 );
+
+CREATE TABLE IF NOT EXISTS account_credential (
+  account_id uuid PRIMARY KEY REFERENCES account(id),
+  password_hash text NOT NULL,
+  password_changed_at timestamptz NOT NULL DEFAULT now(),
+  failed_attempts integer NOT NULL DEFAULT 0,
+  locked_until timestamptz
+);
+
+CREATE TABLE IF NOT EXISTS auth_session (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  account_id uuid NOT NULL REFERENCES account(id),
+  refresh_token_hash text NOT NULL UNIQUE,
+  access_jti uuid NOT NULL UNIQUE,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  expires_at timestamptz NOT NULL,
+  revoked_at timestamptz,
+  user_agent text,
+  remote_addr inet
+);
+CREATE INDEX IF NOT EXISTS auth_session_account_idx ON auth_session (account_id, revoked_at);
+
+CREATE TABLE IF NOT EXISTS auth_revocation (
+  jti uuid PRIMARY KEY,
+  expires_at timestamptz NOT NULL,
+  revoked_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS account_recovery_token (
+  token_hash text PRIMARY KEY,
+  account_id uuid NOT NULL REFERENCES account(id),
+  expires_at timestamptz NOT NULL,
+  used_at timestamptz
+);
+
+CREATE TABLE IF NOT EXISTS callsign_evidence (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  callsign_id uuid NOT NULL REFERENCES callsign(id),
+  submitted_by uuid REFERENCES account(id),
+  evidence_type text NOT NULL,
+  source text NOT NULL,
+  checksum text,
+  metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+  status text NOT NULL DEFAULT 'PENDING',
+  submitted_at timestamptz NOT NULL DEFAULT now(),
+  reviewed_at timestamptz
+);
+
+CREATE TABLE IF NOT EXISTS account_role (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  account_id uuid NOT NULL REFERENCES account(id),
+  programme_id uuid REFERENCES programme(id),
+  role_code text NOT NULL,
+  jurisdiction_id uuid REFERENCES jurisdiction(id),
+  entity_type_code text,
+  scopes jsonb NOT NULL DEFAULT '[]'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  valid_to timestamptz
+);
+CREATE INDEX IF NOT EXISTS account_role_scope_idx ON account_role (account_id, programme_id, valid_to);
+
+CREATE TABLE IF NOT EXISTS oidc_provider_mapping (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  programme_id uuid NOT NULL REFERENCES programme(id),
+  issuer text NOT NULL,
+  client_id text NOT NULL,
+  configuration jsonb NOT NULL DEFAULT '{}'::jsonb,
+  enabled boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (programme_id, issuer, client_id)
+);
+
+CREATE TABLE IF NOT EXISTS security_event (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  account_id uuid REFERENCES account(id),
+  event_type text NOT NULL,
+  payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+  occurred_at timestamptz NOT NULL DEFAULT now()
+);

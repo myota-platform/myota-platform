@@ -20,6 +20,10 @@ spec:
               valueFrom: {secretKeyRef: {name: {{ $.Values.postgres.existingSecret }}, key: core-database-url}}
             - name: GEO_DATABASE_URL
               valueFrom: {secretKeyRef: {name: {{ $.Values.postgres.existingSecret }}, key: geo-database-url}}
+            - name: MYOTA_ENV
+              value: {{ $.Values.auth.environment | quote }}
+            - name: MYOTA_AUTH_SIGNING_KEY
+              valueFrom: {secretKeyRef: {name: {{ $.Values.auth.existingSecret }}, key: signing-key}}
           ports: [{name: http, containerPort: {{ $cfg.port }} }]
           readinessProbe: {httpGet: {path: /healthz, port: http}}
           livenessProbe: {httpGet: {path: /healthz, port: http}}

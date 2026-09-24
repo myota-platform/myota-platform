@@ -16,6 +16,10 @@ postgres:
   coreDatabase: myota_core
   geoDatabase: myota_geo
   existingSecret: myota-postgres
+auth:
+  environment: production
+  existingSecret: myota-auth
+  maintenanceEnabled: true
 nats:
   image: nats:2.10-alpine
   url: nats://myota-nats:4222

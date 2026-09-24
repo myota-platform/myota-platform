@@ -18,6 +18,7 @@ class VerticalSliceTests(unittest.TestCase):
         for handler in (IdentityHandler, ProgrammeHandler, GeoHandler, ActivityHandler):
             handler.store.items.clear()
             handler.store.events.clear()
+            handler.store.data.clear()
             handler.store.idempotency.clear()
         seed_identity(); seed_programmes(); seed_geo()
 

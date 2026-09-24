@@ -1,0 +1,23 @@
+{{- if .Values.auth.maintenanceEnabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myota-identity-maintenance
+spec:
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: identity-maintenance}}
+  template:
+    metadata: {labels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: identity-maintenance}}
+    spec:
+      containers:
+        - name: identity-maintenance
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          command: ["python3", "services/identity_maintenance.py"]
+          env:
+            - name: CORE_DATABASE_URL
+              valueFrom: {secretKeyRef: {name: {{ .Values.postgres.existingSecret }}, key: core-database-url}}
+            - name: MYOTA_ENV
+              value: {{ .Values.auth.environment | quote }}
+            - name: MYOTA_AUTH_SIGNING_KEY
+              valueFrom: {secretKeyRef: {name: {{ .Values.auth.existingSecret }}, key: signing-key}}
+{{- end }}

@@ -1,4 +1,4 @@
-1. Create secret {{ .Values.postgres.existingSecret }} with username, password, core-database-url, geo-database-url.
+1. Create secret {{ .Values.postgres.existingSecret }} with username, password, core-database-url, geo-database-url, and secret {{ .Values.auth.existingSecret }} with signing-key.
 2. The pre-install/pre-upgrade migration Job applies the core and geodata migrations.
 3. NATS JetStream and core/geodata outbox relays are enabled by default; use `outbox.enabled=false` only for a deliberate eventless environment.
 4. Route /v1/identity, /v1/programmes, /v1/geodata and /v1/activations to the matching services if bypassing the gateway.
