@@ -215,6 +215,104 @@ paths:
           schema: { type: string }
         - $ref: '#/components/parameters/IdempotencyKey'
       responses: { '200': { description: Archived programme } }
+  /v1/programmes/{slug}/content:
+    get:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: List programme-owned content versions
+      parameters:
+        - { in: path, name: slug, required: true, schema: { type: string } }
+        - { in: query, name: locale, schema: { type: string } }
+        - { in: query, name: status, schema: { type: string } }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses: { '200': { description: Content version page } }
+    post:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Create or update a draft content version
+      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/ContentDraft' } } }
+      responses: { '200': { description: Draft saved } }
+  /v1/programmes/{slug}/content/coverage:
+    get:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Report published locale coverage and fallback gaps
+      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }]
+      responses: { '200': { description: Locale coverage report } }
+  /v1/programmes/{slug}/content/{contentId}/submit:
+    post:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Submit content for review
+      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { in: path, name: contentId, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Submitted content } }
+  /v1/programmes/{slug}/content/{contentId}/review:
+    post:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Approve or request changes to content
+      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { in: path, name: contentId, required: true, schema: { type: string, format: uuid } }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/ReviewDecision' } } }
+      responses: { '200': { description: Review recorded } }
+  /v1/programmes/{slug}/content/{contentId}/publish:
+    post:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Publish approved content with an explicit effective date
+      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { in: path, name: contentId, required: true, schema: { type: string, format: uuid } }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/PublicationRequest' } } }
+      responses: { '200': { description: Published content } }
+  /v1/programmes/{slug}/policy-drafts:
+    get:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: List programme-owned rule and award drafts
+      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { in: query, name: type, schema: { type: string, enum: [RULES, AWARD] } }, { $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
+      responses: { '200': { description: Policy draft page } }
+    post:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Create or update a programme-owned policy draft
+      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/PolicyDraft' } } }
+      responses: { '200': { description: Draft saved } }
+  /v1/programmes/{slug}/policy-drafts/{draftId}/submit:
+    post:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Submit a rule or award draft for review
+      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { in: path, name: draftId, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Submitted policy draft } }
+  /v1/programmes/{slug}/policy-drafts/{draftId}/review:
+    post:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Approve or request changes to a rule or award draft
+      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { in: path, name: draftId, required: true, schema: { type: string, format: uuid } }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/ReviewDecision' } } }
+      responses: { '200': { description: Review recorded } }
+  /v1/programmes/{slug}/policy-drafts/{draftId}/publish:
+    post:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Publish an approved rule or award with an explicit effective date
+      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { in: path, name: draftId, required: true, schema: { type: string, format: uuid } }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/PublicationRequest' } } }
+      responses: { '200': { description: Published policy and effective programme snapshot } }
   /v1/geodata/entities:
     get:
       tags: [Geodata]
@@ -258,6 +356,23 @@ paths:
                 reviewerId: { type: string }
                 note: { type: string }
       responses: { '200': { description: Review recorded } }
+  /v1/geodata/entities/{entityId}/audit:
+    get:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Get review, geometry and event audit history
+      parameters: [{ $ref: '#/components/parameters/EntityId' }]
+      responses: { '200': { description: Entity audit history } }
+  /v1/geodata/entities/{entityId}/geometry:
+    post:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Save an edited geometry and preserve the previous version
+      parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/GeometryEdit' } } }
+      responses: { '200': { description: Geometry saved with audit history } }
   /v1/activations:
     get:
       tags: [Activity]
@@ -409,6 +524,49 @@ components:
         adapter: { type: string, enum: [PARKSERVE_US, OSM, GOVERNMENT_GIS, MANUAL] }
         source: { type: object }
         features: { type: array, items: { type: object } }
+    ContentDraft:
+      type: object
+      required: [key, locale, value]
+      properties:
+        contentId: { type: string, format: uuid }
+        key: { type: string }
+        locale: { type: string }
+        fallbackLocale: { type: string, nullable: true }
+        value: { type: string }
+    PolicyDraft:
+      type: object
+      required: [type, name, schema]
+      properties:
+        draftId: { type: string, format: uuid }
+        type: { type: string, enum: [RULES, AWARD] }
+        name: { type: string }
+        schema: { type: object, description: Programme-owned policy schema; MyOTA does not prescribe its fields. }
+        effectiveFrom: { type: string, format: date-time, nullable: true }
+    ReviewDecision:
+      type: object
+      required: [decision, reviewerId]
+      properties:
+        decision: { type: string, enum: [APPROVED, CHANGES_REQUESTED] }
+        reviewerId: { type: string }
+        note: { type: string }
+    PublicationRequest:
+      type: object
+      required: [effectiveFrom, publisherId]
+      properties:
+        effectiveFrom: { type: string, format: date-time }
+        publisherId: { type: string }
+    GeometryEdit:
+      type: object
+      required: [geometry, editorId]
+      properties:
+        geometry:
+          type: object
+          required: [type, coordinates]
+          properties:
+            type: { type: string, enum: [Point, Polygon, MultiPolygon] }
+            coordinates: { type: array }
+        editorId: { type: string }
+        note: { type: string }
     Activation:
       type: object
       required: [programmeSlug, entityId, operatorId, startedAt]

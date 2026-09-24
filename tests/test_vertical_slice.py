@@ -47,6 +47,40 @@ class VerticalSliceTests(unittest.TestCase):
         approved = GeoHandler.review(None, {"entityId": entity_id, "_body": {"decision": "APPROVED", "reviewerId": "approver-1"}})
         self.assertEqual(approved["status"], "APPROVED")
 
+    def test_geodata_geometry_edit_keeps_history_and_source_snapshot(self) -> None:
+        entity = GeoHandler.list_entities(None, {"_path": "/v1/geodata/entities?programme=mpota&status=CANDIDATE"})["items"][0]
+        original = entity["geometry"]
+        edited = GeoHandler.update_geometry(None, {"entityId": entity["id"], "_body": {
+            "geometry": {"type": "Point", "coordinates": [-3.68, 40.43]}, "editorId": "approver-1", "note": "Corrected after source comparison"}})
+        self.assertEqual(edited["geometry"]["coordinates"], [-3.68, 40.43])
+        self.assertEqual(edited["geometryHistory"][0]["geometry"], original)
+        audit = GeoHandler.audit_entity(None, {"entityId": entity["id"]})
+        self.assertEqual(len(audit["geometryHistory"]), 1)
+        self.assertTrue(any(event["eventType"] == "geodata.entity.geometry-updated.v1" for event in audit["events"]))
+
+    def test_content_and_policy_versions_require_review_and_effective_publication(self) -> None:
+        content = ProgrammeHandler.save_content(None, {"slug": "mpota", "_body": {
+            "key": "programme.about", "locale": "en", "value": "Programme-owned copy"}})
+        content = ProgrammeHandler.submit_content(None, {"slug": "mpota", "contentId": content["id"]})
+        content = ProgrammeHandler.review_content(None, {"slug": "mpota", "contentId": content["id"], "_body": {
+            "decision": "APPROVED", "reviewerId": "reviewer-1"}})
+        content = ProgrammeHandler.publish_content(None, {"slug": "mpota", "contentId": content["id"], "_body": {
+            "effectiveFrom": "2026-01-01T00:00:00Z", "publisherId": "publisher-1"}})
+        self.assertEqual(content["status"], "PUBLISHED")
+        coverage = ProgrammeHandler.content_coverage(None, {"slug": "mpota"})
+        self.assertTrue(any(locale["locale"] == "en" for locale in coverage["locales"]))
+
+        draft = ProgrammeHandler.save_policy_draft(None, {"slug": "mpota", "_body": {
+            "type": "AWARD", "name": "Local programme award", "schema": {
+                "code": "LOCAL-1", "requirements": {"minimumQsos": 25}}}})
+        draft = ProgrammeHandler.submit_policy_draft(None, {"slug": "mpota", "draftId": draft["id"]})
+        draft = ProgrammeHandler.review_policy_draft(None, {"slug": "mpota", "draftId": draft["id"], "_body": {
+            "decision": "APPROVED", "reviewerId": "reviewer-1"}})
+        published = ProgrammeHandler.publish_policy_draft(None, {"slug": "mpota", "draftId": draft["id"], "_body": {
+            "effectiveFrom": "2026-02-01T00:00:00Z", "publisherId": "publisher-1"}})
+        self.assertEqual(published["draft"]["status"], "PUBLISHED")
+        self.assertEqual(published["programme"]["awards"][-1]["code"], "LOCAL-1")
+
     def test_import_is_provenance_aware_and_idempotent(self) -> None:
         body = {"programmeSlug": "regional-ota", "adapter": "OSM", "source": {"name": "OSM", "license": "ODbL 1.0"},
                 "features": [{"type": "Feature", "properties": {"name": "A reserve", "sourceRef": "osm/1", "entityType": "NATURE_RESERVE"}, "geometry": {"type": "Point", "coordinates": [2, 41]}}]}
