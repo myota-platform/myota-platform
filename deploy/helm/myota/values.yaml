@@ -16,4 +16,10 @@ postgres:
   coreDatabase: myota_core
   geoDatabase: myota_geo
   existingSecret: myota-postgres
+nats:
+  image: nats:2.10-alpine
+  url: nats://myota-nats:4222
+outbox:
+  enabled: true
+  maxAttempts: 12
 resources: {}

@@ -17,25 +17,47 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+  migrations:
+    image: postgis/postgis:16-3.4
+    command: ["/bin/bash", "/migrations/run.sh"]
+    environment:
+      PGHOST: postgis
+      PGPORT: 5432
+      PGUSER: myota
+      PGPASSWORD: myota-dev-only
+      PGDATABASE: myota_core
+    volumes:
+      - ./db/migrations:/migrations/migrations:ro
+      - ./db/bootstrap:/migrations/bootstrap:ro
+      - ./db/migrations/run.sh:/migrations/run.sh:ro
+    depends_on: {postgis: {condition: service_healthy}}
   identity:
     build: .
-    environment: ["SERVICE=identity"]
-    depends_on: {postgis: {condition: service_healthy}}
+    environment:
+      SERVICE: identity
+      CORE_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_core
+    depends_on: {migrations: {condition: service_completed_successfully}}
     ports: ["8001:8001"]
   programmes:
     build: .
-    environment: ["SERVICE=programmes"]
-    depends_on: {postgis: {condition: service_healthy}}
+    environment:
+      SERVICE: programmes
+      CORE_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_core
+    depends_on: {migrations: {condition: service_completed_successfully}}
     ports: ["8002:8002"]
   geodata:
     build: .
-    environment: ["SERVICE=geodata"]
-    depends_on: {postgis: {condition: service_healthy}}
+    environment:
+      SERVICE: geodata
+      GEO_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_geo
+    depends_on: {migrations: {condition: service_completed_successfully}}
     ports: ["8003:8003"]
   activity:
     build: .
-    environment: ["SERVICE=activity"]
-    depends_on: {postgis: {condition: service_healthy}}
+    environment:
+      SERVICE: activity
+      CORE_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_core
+    depends_on: {migrations: {condition: service_completed_successfully}}
     ports: ["8004:8004"]
   gateway:
     build: .
@@ -47,5 +69,27 @@ services:
       MYOTA_ACTIVITY_URL: http://activity:8004
     depends_on: [identity, programmes, geodata, activity]
     ports: ["8080:8080"]
+  nats:
+    image: nats:2.10-alpine
+    command: ["-js", "-sd", "/data"]
+    volumes: ["nats-data:/data"]
+    ports: ["4222:4222"]
+  outbox-core:
+    build: .
+    command: ["python3", "services/outbox_worker.py"]
+    environment:
+      OUTBOX_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_core
+      NATS_URL: nats://nats:4222
+      OUTBOX_WORKER: core-outbox
+    depends_on: {migrations: {condition: service_completed_successfully}, nats: {condition: service_started}}
+  outbox-geo:
+    build: .
+    command: ["python3", "services/outbox_worker.py"]
+    environment:
+      OUTBOX_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_geo
+      NATS_URL: nats://nats:4222
+      OUTBOX_WORKER: geo-outbox
+    depends_on: {migrations: {condition: service_completed_successfully}, nats: {condition: service_started}}
 volumes:
   postgis-data:
+  nats-data:

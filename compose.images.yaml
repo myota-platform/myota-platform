@@ -12,21 +12,43 @@ services:
       - ./db/bootstrap/00-create-geo.sh:/docker-entrypoint-initdb.d/00-create-geo.sh:ro
       - ./db/migrations/geo/001_geodata.sql:/docker-entrypoint-initdb.d/geo.sql:ro
       - ./db/migrations/geo/002_qgis_views.sql:/docker-entrypoint-initdb.d/geo-views.sql:ro
+  migrations:
+    image: ghcr.io/myota-platform/myota-migrations:latest
+    command: ["/migrations/run.sh"]
+    environment:
+      PGHOST: postgis
+      PGPORT: 5432
+      PGUSER: myota
+      PGPASSWORD: myota-dev-only
+      PGDATABASE: myota_core
+    depends_on: {postgis: {condition: service_healthy}}
   identity:
     image: ghcr.io/myota-platform/myota-identity-service:latest
-    environment: ["SERVICE=identity"]
+    environment:
+      SERVICE: identity
+      CORE_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_core
+    depends_on: {migrations: {condition: service_completed_successfully}}
     ports: ["8001:8001"]
   programmes:
     image: ghcr.io/myota-platform/myota-programme-service:latest
-    environment: ["SERVICE=programmes"]
+    environment:
+      SERVICE: programmes
+      CORE_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_core
+    depends_on: {migrations: {condition: service_completed_successfully}}
     ports: ["8002:8002"]
   geodata:
     image: ghcr.io/myota-platform/myota-geodata-service:latest
-    environment: ["SERVICE=geodata"]
+    environment:
+      SERVICE: geodata
+      GEO_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_geo
+    depends_on: {migrations: {condition: service_completed_successfully}}
     ports: ["8003:8003"]
   activity:
     image: ghcr.io/myota-platform/myota-activity-service:latest
-    environment: ["SERVICE=activity"]
+    environment:
+      SERVICE: activity
+      CORE_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_core
+    depends_on: {migrations: {condition: service_completed_successfully}}
     ports: ["8004:8004"]
   gateway:
     image: ghcr.io/myota-platform/myota-gateway:latest
@@ -36,6 +58,26 @@ services:
       MYOTA_GEODATA_URL: http://geodata:8003
       MYOTA_ACTIVITY_URL: http://activity:8004
     ports: ["8080:8080"]
+  nats:
+    image: nats:2.10-alpine
+    command: ["-js", "-sd", "/data"]
+    volumes: ["nats-data:/data"]
+  outbox-core:
+    image: ghcr.io/myota-platform/myota-migrations:latest
+    command: ["python3", "services/outbox_worker.py"]
+    environment:
+      OUTBOX_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_core
+      NATS_URL: nats://nats:4222
+      OUTBOX_WORKER: core-outbox
+    depends_on: {migrations: {condition: service_completed_successfully}, nats: {condition: service_started}}
+  outbox-geo:
+    image: ghcr.io/myota-platform/myota-migrations:latest
+    command: ["python3", "services/outbox_worker.py"]
+    environment:
+      OUTBOX_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_geo
+      NATS_URL: nats://nats:4222
+      OUTBOX_WORKER: geo-outbox
+    depends_on: {migrations: {condition: service_completed_successfully}, nats: {condition: service_started}}
 volumes:
   postgis-data:
-
+  nats-data:

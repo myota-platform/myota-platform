@@ -1,0 +1,27 @@
+{{- if .Values.outbox.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myota-nats
+spec:
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: nats}}
+  template:
+    metadata: {labels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: nats}}
+    spec:
+      containers:
+        - name: nats
+          image: {{ .Values.nats.image | quote }}
+          args: ["-js", "-sd", "/data"]
+          ports: [{name: client, containerPort: 4222}]
+          volumeMounts: [{name: data, mountPath: /data}]
+      volumes: [{name: data, emptyDir: {}}]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myota-nats
+spec:
+  selector: {app.kubernetes.io/name: myota, app.kubernetes.io/component: nats}
+  ports: [{name: client, port: 4222, targetPort: client}]
+{{- end }}

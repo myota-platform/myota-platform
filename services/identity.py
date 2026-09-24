@@ -8,7 +8,7 @@ from common import JsonHandler, Store, new_id, now, require
 
 class IdentityHandler(JsonHandler):
     service = "identity-service"
-    store = Store()
+    store = Store("identity", "CORE_DATABASE_URL")
 
     @staticmethod
     def create_account(_: JsonHandler, p: dict[str, str]) -> dict[str, Any]:
@@ -91,6 +91,9 @@ IdentityHandler.routes = {
 
 
 def seed() -> None:
+    IdentityHandler.store.hydrate()
+    if IdentityHandler.store.items:
+        return
     account = {"id": "00000000-0000-4000-8000-000000000001", "displayName": "Demo Operator", "email": "demo@example.test",
               "participationType": "OPERATOR", "status": "ACTIVE", "callsigns": [], "primaryCallsignId": None,
               "createdAt": now(), "updatedAt": now()}
@@ -102,4 +105,3 @@ def seed() -> None:
 if __name__ == "__main__":
     seed()
     ThreadingHTTPServer(("0.0.0.0", 8001), IdentityHandler).serve_forever()
-

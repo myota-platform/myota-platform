@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: MyOTA Outdoor Activation Platform APIs
-  version: 0.1.0
+  version: 1.0.0
   description: Service contracts for a programme-agnostic amateur-radio outdoor activation platform.
 servers:
   - url: http://localhost:8080
@@ -57,6 +57,17 @@ paths:
           application/json:
             schema: { $ref: '#/components/schemas/Programme' }
       responses: { '201': { description: Created } }
+  /v1/programmes/{slug}/policy:
+    get:
+      tags: [Programmes]
+      summary: Get the effective programme policy version
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Effective programme policy }
   /v1/geodata/entities:
     get:
       tags: [Geodata]
@@ -68,6 +79,8 @@ paths:
         - in: query
           name: status
           schema: { type: string, enum: [CANDIDATE, PROPOSED, APPROVED, REJECTED] }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
       responses: { '200': { description: Entity list } }
   /v1/geodata/imports/manual:
     post:
@@ -123,6 +136,14 @@ components:
       name: entityId
       required: true
       schema: { type: string, format: uuid }
+    Page:
+      in: query
+      name: page
+      schema: { type: integer, minimum: 1, default: 1 }
+    PageSize:
+      in: query
+      name: pageSize
+      schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
   schemas:
     CreateAccount:
       type: object
@@ -165,4 +186,3 @@ components:
         entityId: { type: string, format: uuid }
         operatorId: { type: string, format: uuid }
         startedAt: { type: string, format: date-time }
-
