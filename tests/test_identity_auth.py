@@ -85,6 +85,22 @@ class IdentityAuthTests(unittest.TestCase):
             else:
                 environ["MYOTA_BOOTSTRAP_ADMIN_PASSWORD"] = previous_password
 
+    def test_admin_can_define_roles_edit_users_and_assign_multiple_roles(self) -> None:
+        admin_token = IdentityHandler._mint_tokens(IdentityHandler.store.items["00000000-0000-4000-8000-000000000001"], {})["accessToken"]
+        auth = {"Authorization": "Bearer " + admin_token, "_http": "1"}
+        custom = self.call(IdentityHandler.create_admin_role, {
+            "code": "SEVILLE_REVIEWER", "name": "Seville reviewer", "description": "Review one regional queue",
+            "scopes": ["geodata.review"]}, **auth)
+        self.assertFalse(custom["system"])
+        self.call(IdentityHandler.update_admin_role, {"name": "Seville GIS reviewer", "scopes": ["geodata.review", "geodata.geometry.manage"]}, roleCode=custom["code"], **auth)
+        account = self.call(IdentityHandler.register, {"displayName": "New administrator", "email": "new-admin@example.test",
+            "password": "A secure admin password!", "participationType": "OPERATOR"})["account"]
+        updated = self.call(IdentityHandler.update_admin_account, {"displayName": "GIS and identity administrator", "roles": [{"code": "IDENTITY_ADMIN"}, {"code": "GIS_ADMIN"}]}, accountId=account["id"], **auth)
+        self.assertEqual({role["role"] for role in updated["roles"]}, {"IDENTITY_ADMIN", "GIS_ADMIN"})
+        listed = self.call(IdentityHandler.list_admin_accounts, {}, **auth)
+        listed_account = next(item for item in listed["items"] if item["id"] == account["id"])
+        self.assertEqual(len(listed_account["roles"]), 2)
+
 
 if __name__ == "__main__":
     unittest.main()

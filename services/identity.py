@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 import secrets
 import time
 from datetime import datetime, timedelta, timezone
@@ -19,6 +20,36 @@ RECOVERY_SECONDS = int(os.environ.get("MYOTA_RECOVERY_TOKEN_SECONDS", "1800"))
 MAX_LOGIN_ATTEMPTS = int(os.environ.get("MYOTA_MAX_LOGIN_ATTEMPTS", "8"))
 LOGIN_WINDOW_SECONDS = int(os.environ.get("MYOTA_LOGIN_WINDOW_SECONDS", "900"))
 SECURITY_EVENT_RETENTION_SECONDS = int(os.environ.get("MYOTA_SECURITY_EVENT_RETENTION_SECONDS", "31536000"))
+
+ADMIN_PERMISSION_CATALOG = [
+    {"code": "identity.admin", "label": "View and edit user accounts", "group": "Identity"},
+    {"code": "identity.roles.assign", "label": "Assign roles to users", "group": "Identity"},
+    {"code": "identity.roles.manage", "label": "Create and edit role definitions", "group": "Identity"},
+    {"code": "identity.audit.read", "label": "View identity audit events", "group": "Identity"},
+    {"code": "callsign.verify", "label": "Verify callsigns", "group": "Identity"},
+    {"code": "programme.admin", "label": "Administer programmes", "group": "Programmes"},
+    {"code": "programme.policy.manage", "label": "Manage programme rules and awards", "group": "Programmes"},
+    {"code": "programme.content.manage", "label": "Manage programme content and translations", "group": "Programmes"},
+    {"code": "geodata.review", "label": "Review geodata", "group": "Geodata"},
+    {"code": "geodata.import", "label": "Import geodata", "group": "Geodata"},
+    {"code": "geodata.geometry.manage", "label": "Change entity geometry types", "group": "Geodata"},
+    {"code": "geodata.delete", "label": "Delete rejected geodata", "group": "Geodata"},
+    {"code": "activity.read", "label": "Read activity and results", "group": "Activity"},
+    {"code": "activity.admin", "label": "Administer activity and awards", "group": "Activity"},
+    {"code": "audit.read", "label": "View platform audit records", "group": "Operations"},
+    {"code": "identity.service.issue", "label": "Issue service credentials", "group": "Operations"},
+    {"code": "identity.oidc.configure", "label": "Configure programme OIDC", "group": "Operations"},
+]
+ADMIN_PERMISSION_CODES = {item["code"] for item in ADMIN_PERMISSION_CATALOG}
+DEFAULT_ROLE_DEFINITIONS = [
+    {"code": "GLOBAL_OPERATOR", "name": "Global administrator", "description": "Full platform administration, including role management.", "scopes": ["*"], "system": True},
+    {"code": "IDENTITY_ADMIN", "name": "Identity administrator", "description": "Manage users, callsigns and role assignments.", "scopes": ["identity.admin", "identity.roles.assign", "identity.audit.read", "callsign.verify"], "system": True},
+    {"code": "GIS_ADMIN", "name": "GIS administrator", "description": "Review, import, edit and remove rejected geodata.", "scopes": ["geodata.review", "geodata.import", "geodata.geometry.manage", "geodata.delete"], "system": True},
+    {"code": "GEO_APPROVER", "name": "Geodata approver", "description": "Review scoped geodata proposals.", "scopes": ["geodata.review"], "system": True},
+    {"code": "PROGRAMME_ADMIN", "name": "Programme administrator", "description": "Manage programme configuration and published content.", "scopes": ["programme.admin", "programme.policy.manage", "programme.content.manage"], "system": True},
+    {"code": "ACTIVITY_ADMIN", "name": "Activity administrator", "description": "Manage activations, QSOs, awards and execution operations.", "scopes": ["activity.read", "activity.admin"], "system": True},
+    {"code": "AUDITOR", "name": "Auditor", "description": "Read platform audit and security records.", "scopes": ["audit.read", "identity.audit.read"], "system": True},
+]
 
 
 def epoch() -> int:
@@ -52,12 +83,42 @@ class IdentityHandler(JsonHandler):
         return [r for r in IdentityHandler._bucket("roles").values() if r["accountId"] == account_id and not r.get("validTo")]
 
     @staticmethod
+    def _role_definitions() -> dict[str, dict[str, Any]]:
+        definitions = IdentityHandler._bucket("roleDefinitions")
+        for template in DEFAULT_ROLE_DEFINITIONS:
+            definitions.setdefault(template["code"], {**template, "createdAt": now(), "updatedAt": now()})
+        return definitions
+
+    @staticmethod
+    def _role_definition(code: str) -> dict[str, Any] | None:
+        return IdentityHandler._role_definitions().get(str(code).upper())
+
+    @staticmethod
+    def _admin_authorize(p: dict[str, str], permission: str) -> dict[str, Any]:
+        claims = IdentityHandler._auth(p)
+        if not claims:
+            return {}
+        granted = set(claims.get("scp", []))
+        if "*" not in granted and permission not in granted:
+            raise PermissionError(f"{permission} scope is required")
+        return claims
+
+    @staticmethod
+    def _admin_authorize_any(p: dict[str, str], permissions: tuple[str, ...]) -> dict[str, Any]:
+        claims = IdentityHandler._auth(p)
+        if not claims:
+            return {}
+        granted = set(claims.get("scp", []))
+        if "*" not in granted and not granted.intersection(permissions):
+            raise PermissionError("one of the required administrative scopes is missing")
+        return claims
+
+    @staticmethod
     def _scopes(account_id: str) -> list[str]:
         scopes = {"identity.me"}
         for role in IdentityHandler._roles(account_id):
-            scopes.update(role.get("scopes", []))
-            if role.get("role") == "GLOBAL_OPERATOR":
-                scopes.add("*")
+            definition = IdentityHandler._role_definition(role.get("role", ""))
+            scopes.update(definition.get("scopes", []) if definition else role.get("scopes", []))
             if role.get("programmeSlug"):
                 scopes.add(f"programme:{role['programmeSlug']}:{role['role'].lower()}")
         return sorted(scopes)
@@ -285,17 +346,125 @@ class IdentityHandler(JsonHandler):
 
     @staticmethod
     def list_admin_accounts(_: JsonHandler, p: dict[str, str]) -> dict[str, Any]:
-        IdentityHandler._auth(p, scopes=("identity.admin",))
+        IdentityHandler._admin_authorize(p, "identity.admin")
         from urllib.parse import parse_qs, urlparse
         query = parse_qs(urlparse(p.get("_path", "")).query)
         status = query.get("status", [None])[0]
         search = query.get("q", [""])[0].casefold()
-        accounts = list(IdentityHandler.store.items.values())
+        accounts = [{**account, "roles": IdentityHandler._roles(account["id"])} for account in IdentityHandler.store.items.values()]
         if status:
             accounts = [a for a in accounts if a.get("status") == status]
         if search:
             accounts = [a for a in accounts if search in a.get("displayName", "").casefold() or search in (a.get("email") or "").casefold()]
         return page_result(accounts, query)
+
+    @staticmethod
+    def list_admin_roles(_: JsonHandler, p: dict[str, str]) -> dict[str, Any]:
+        IdentityHandler._admin_authorize_any(p, ("identity.admin", "identity.roles.manage"))
+        definitions = sorted(IdentityHandler._role_definitions().values(), key=lambda item: item["code"])
+        return {"items": definitions, "permissions": ADMIN_PERMISSION_CATALOG}
+
+    @staticmethod
+    def create_admin_role(_: JsonHandler, p: dict[str, str]) -> dict[str, Any]:
+        IdentityHandler._admin_authorize(p, "identity.roles.manage")
+        body = p["_body"]
+        require(body, "code", "name")
+        code = re.sub(r"[^A-Z0-9_]+", "_", str(body["code"]).strip().upper()).strip("_")
+        if not code or code in IdentityHandler._role_definitions():
+            raise ValueError("role code is empty or already exists")
+        scopes = sorted(set(body.get("scopes", [])))
+        if any(scope not in ADMIN_PERMISSION_CODES for scope in scopes):
+            raise ValueError("role contains an unknown administrative permission")
+        role = {"code": code, "name": str(body["name"]).strip(), "description": body.get("description", ""),
+                "scopes": scopes, "system": False, "createdAt": now(), "updatedAt": now()}
+        IdentityHandler._role_definitions()[code] = role
+        IdentityHandler._audit("identity.role-definition.created.v1", role)
+        return {**role, "_status": 201}
+
+    @staticmethod
+    def update_admin_role(_: JsonHandler, p: dict[str, str]) -> dict[str, Any]:
+        IdentityHandler._admin_authorize(p, "identity.roles.manage")
+        code = str(p["roleCode"]).upper()
+        role = IdentityHandler._role_definition(code)
+        if not role:
+            raise KeyError(code)
+        if role.get("system"):
+            raise ValueError("built-in role definitions cannot be edited")
+        body = p["_body"]
+        if "name" in body:
+            require(body, "name")
+            role["name"] = str(body["name"]).strip()
+        if "description" in body:
+            role["description"] = body["description"]
+        if "scopes" in body:
+            scopes = sorted(set(body["scopes"]))
+            if any(scope not in ADMIN_PERMISSION_CODES for scope in scopes):
+                raise ValueError("role contains an unknown administrative permission")
+            role["scopes"] = scopes
+        role["updatedAt"] = now()
+        IdentityHandler._audit("identity.role-definition.updated.v1", role)
+        return role
+
+    @staticmethod
+    def update_admin_account(_: JsonHandler, p: dict[str, str]) -> dict[str, Any]:
+        IdentityHandler._admin_authorize(p, "identity.admin")
+        account = IdentityHandler._account(p["accountId"])
+        body = p["_body"]
+        if "email" in body:
+            email = body.get("email") or None
+            if email and (existing := IdentityHandler._account_for_email(email)) and existing["id"] != account["id"]:
+                raise ValueError("email already exists")
+            account["email"] = email
+        for field in ("displayName", "participationType", "status"):
+            if field in body:
+                if field == "participationType" and body[field] not in ("OPERATOR", "SWL"):
+                    raise ValueError("participationType must be OPERATOR or SWL")
+                if field == "status" and body[field] not in ("ACTIVE", "DEACTIVATED"):
+                    raise ValueError("status must be ACTIVE or DEACTIVATED")
+                account[field] = body[field]
+        if body.get("password"):
+            IdentityHandler._set_password(account["id"], body["password"])
+            for session in IdentityHandler._bucket("sessions").values():
+                if session["accountId"] == account["id"]:
+                    session["revokedAt"] = now()
+        account["updatedAt"] = now()
+        IdentityHandler._audit("identity.account.admin-updated.v1", {"accountId": account["id"], "fields": sorted(body.keys())}, account["id"])
+        if "roles" in body or "roleCodes" in body:
+            IdentityHandler._replace_roles(account["id"], body.get("roles") or [{"code": code} for code in body.get("roleCodes", [])], p)
+        return {**account, "roles": IdentityHandler._roles(account["id"])}
+
+    @staticmethod
+    def _replace_roles(account_id: str, assignments: list[dict[str, Any]], p: dict[str, str]) -> list[dict[str, Any]]:
+        claims = IdentityHandler._admin_authorize(p, "identity.roles.assign")
+        normalized: list[dict[str, Any]] = []
+        for assignment in assignments:
+            code = str(assignment.get("code") or assignment.get("role") or "").upper()
+            definition = IdentityHandler._role_definition(code)
+            if not definition:
+                raise ValueError(f"unknown role: {code}")
+            if code == "GLOBAL_OPERATOR" and claims and "*" not in set(claims.get("scp", [])):
+                raise PermissionError("only a global administrator can assign the global administrator role")
+            normalized.append({"code": code, "programmeSlug": assignment.get("programmeSlug"),
+                               "jurisdiction": assignment.get("jurisdiction"), "entityType": assignment.get("entityType")})
+        current = IdentityHandler._roles(account_id)
+        current_global = any(item.get("role") == "GLOBAL_OPERATOR" for item in current)
+        next_global = any(item["code"] == "GLOBAL_OPERATOR" for item in normalized)
+        global_count = sum(1 for account in IdentityHandler.store.items.values() if any(item.get("role") == "GLOBAL_OPERATOR" for item in IdentityHandler._roles(account["id"])) )
+        if current_global and not next_global and global_count <= 1:
+            raise ValueError("the last global administrator cannot lose the global administrator role")
+        changed_at = now()
+        for role in current:
+            role["validTo"] = changed_at
+        result = []
+        for assignment in normalized:
+            role = {"id": new_id(), "accountId": account_id, "role": assignment["code"],
+                    "programmeSlug": assignment.get("programmeSlug"), "jurisdiction": assignment.get("jurisdiction"),
+                    "entityType": assignment.get("entityType"), "scopes": IdentityHandler._role_definition(assignment["code"])["scopes"],
+                    "createdAt": changed_at, "validTo": None}
+            IdentityHandler._bucket("roles")[role["id"]] = role
+            result.append(role)
+        IdentityHandler._audit("identity.roles.replaced.v1", {"accountId": account_id, "roles": result}, account_id)
+        return result
 
     @staticmethod
     def list_security_events(_: JsonHandler, p: dict[str, str]) -> dict[str, Any]:
@@ -399,11 +568,15 @@ class IdentityHandler(JsonHandler):
         body = p["_body"]
         require(body, "role")
         claims = IdentityHandler._auth(p, scopes=("identity.roles.assign",))
-        if body["role"] == "GLOBAL_OPERATOR" and claims and "*" not in set(claims.get("scp", [])):
+        code = str(body["role"]).upper()
+        definition = IdentityHandler._role_definition(code)
+        if not definition:
+            raise ValueError(f"unknown role: {code}")
+        if code == "GLOBAL_OPERATOR" and claims and "*" not in set(claims.get("scp", [])):
             raise PermissionError("only a global operator can assign global operator role")
-        role = {"id": new_id(), "accountId": p["accountId"], "role": body["role"],
+        role = {"id": new_id(), "accountId": p["accountId"], "role": code,
                 "programmeSlug": body.get("programmeSlug"), "jurisdiction": body.get("jurisdiction"),
-                "entityType": body.get("entityType"), "scopes": body.get("scopes", []),
+                "entityType": body.get("entityType"), "scopes": definition["scopes"],
                 "createdAt": now(), "validTo": None}
         IdentityHandler._bucket("roles")[role["id"]] = role
         IdentityHandler._audit("identity.role.assigned.v1", role, p["accountId"])
@@ -485,7 +658,7 @@ def bootstrap_admin() -> None:
     if not any(role.get("role") == "GLOBAL_OPERATOR" and role.get("accountId") == account["id"] for role in IdentityHandler._roles(account["id"])):
         role = {"id": new_id(), "accountId": account["id"], "role": "GLOBAL_OPERATOR", "programmeSlug": None,
                 "jurisdiction": None, "entityType": None,
-                "scopes": ["identity.admin", "identity.roles.assign", "identity.oidc.configure", "identity.service.issue",
+                "scopes": ["identity.admin", "identity.roles.assign", "identity.roles.manage", "identity.oidc.configure", "identity.service.issue",
                            "callsign.verify", "geodata.review", "geodata.import", "activity.admin", "activity.read", "*"],
                 "createdAt": now(), "validTo": None}
         IdentityHandler._bucket("roles")[role["id"]] = role
@@ -504,6 +677,10 @@ IdentityHandler.routes = {
     ("GET", "/v1/identity/me"): IdentityHandler.current_account,
     ("GET", "/v1/identity/accounts/{accountId}"): IdentityHandler.get_account,
     ("GET", "/v1/identity/admin/accounts"): IdentityHandler.list_admin_accounts,
+    ("POST", "/v1/identity/admin/accounts/{accountId}/update"): IdentityHandler.update_admin_account,
+    ("GET", "/v1/identity/admin/roles"): IdentityHandler.list_admin_roles,
+    ("POST", "/v1/identity/admin/roles"): IdentityHandler.create_admin_role,
+    ("POST", "/v1/identity/admin/roles/{roleCode}/update"): IdentityHandler.update_admin_role,
     ("GET", "/v1/identity/admin/security-events"): IdentityHandler.list_security_events,
     ("GET", "/v1/identity/accounts/{accountId}/export"): IdentityHandler.export_account,
     ("POST", "/v1/identity/accounts/{accountId}/deactivate"): IdentityHandler.deactivate_account,
@@ -520,6 +697,7 @@ IdentityHandler.routes = {
 
 def seed() -> None:
     IdentityHandler.store.hydrate()
+    IdentityHandler._role_definitions()
     if IdentityHandler.store.items:
         return
     account = {"id": "00000000-0000-4000-8000-000000000001", "displayName": "Demo Operator", "email": "demo@example.test",
