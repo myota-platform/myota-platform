@@ -38,6 +38,13 @@ class VerticalSliceTests(unittest.TestCase):
         self.assertNotEqual(programmes[0]["theme"], programmes[1]["theme"])
         self.assertNotEqual(programmes[0]["rules"], programmes[1]["rules"])
 
+    def test_seed_uses_three_sevilla_osm_parks(self) -> None:
+        entities = GeoHandler.list_entities(None, {"_path": "/v1/geodata/entities?programme=mpota"})["items"]
+        self.assertEqual({entity["name"] for entity in entities}, {
+            "Parque de María Luisa", "Parque del Alamillo", "Parque de los Príncipes"})
+        self.assertTrue(all(entity["provenance"]["adapter"] == "OSM" for entity in entities))
+        self.assertTrue(all(entity["geometry"]["type"] == "Polygon" for entity in entities))
+
     def test_candidate_propose_review_lifecycle(self) -> None:
         candidates = GeoHandler.list_entities(None, {"_path": "/v1/geodata/entities?programme=mpota&status=CANDIDATE"})["items"]
         self.assertEqual(len(candidates), 1)
