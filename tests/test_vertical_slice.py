@@ -78,6 +78,24 @@ class VerticalSliceTests(unittest.TestCase):
         self.assertEqual(len(audit["geometryHistory"]), 1)
         self.assertTrue(any(event["eventType"] == "geodata.entity.geometry-updated.v1" for event in audit["events"]))
 
+    def test_geodata_map_bounds_type_conversion_and_rejected_deletion(self) -> None:
+        outside = GeoHandler.list_entities(None, {"_path": "/v1/geodata/entities?programme=mpota&minLon=2&minLat=41&maxLon=3&maxLat=42"})
+        self.assertEqual(outside["total"], 0)
+        entity = GeoHandler.get_entity(None, {"entityId": "00000000-0000-4000-8000-000000000203"})
+        token = IdentityHandler._mint_tokens(IdentityHandler.store.items["00000000-0000-4000-8000-000000000001"], {})["accessToken"]
+        auth = {"Authorization": "Bearer " + token, "_http": "1"}
+        converted = GeoHandler.change_geometry_type(None, {"entityId": entity["id"], "_body": {"geometryType": "POINT", "editorId": "gis-admin", "note": "Use a point reference"}, **auth})
+        self.assertEqual(converted["geometry"]["type"], "Point")
+        converted = GeoHandler.change_geometry_type(None, {"entityId": entity["id"], "_body": {"geometryType": "POLYGON", "editorId": "gis-admin", "note": "Restore an area"}, **auth})
+        self.assertEqual(converted["geometry"]["type"], "Polygon")
+        rejected = GeoHandler.set_status(None, {"entityId": entity["id"], "_body": {"status": "REJECTED", "reviewerId": "reviewer"}})
+        self.assertEqual(rejected["status"], "REJECTED")
+        GeoHandler.store.event("geodata.entity.test-audit.v1", "entity", entity["id"], {"entityId": entity["id"]})
+        deleted = GeoHandler.delete_rejected_entity(None, {"entityId": entity["id"], "_body": {"deletedBy": "gis-admin"}, **auth})
+        self.assertEqual(deleted["deleted"], True)
+        self.assertNotIn(entity["id"], GeoHandler.store.items)
+        self.assertFalse(any(event.get("aggregate", {}).get("id") == entity["id"] for event in GeoHandler.store.events))
+
     def test_content_and_policy_versions_require_review_and_effective_publication(self) -> None:
         content = ProgrammeHandler.save_content(None, {"slug": "mpota", "_body": {
             "key": "programme.about", "locale": "en", "value": "Programme-owned copy"}})
