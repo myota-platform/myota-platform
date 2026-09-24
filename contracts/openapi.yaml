@@ -65,6 +65,26 @@ paths:
       security: [{ bearerAuth: [] }]
       summary: Get the authenticated account and scopes
       responses: { '200': { description: Authenticated account } }
+  /v1/identity/admin/accounts:
+    get:
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      summary: List accounts for global identity administrators
+      parameters:
+        - { in: query, name: q, schema: { type: string } }
+        - { in: query, name: status, schema: { type: string } }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses: { '200': { description: Account page } }
+  /v1/identity/admin/security-events:
+    get:
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      summary: List security events for global identity administrators
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses: { '200': { description: Security-event page } }
   /v1/identity/accounts:
     post:
       tags: [Identity]
@@ -169,6 +189,32 @@ paths:
           schema: { type: string }
       responses:
         '200': { description: Effective programme policy }
+  /v1/programmes/{slug}/update:
+    post:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Update programme-owned configuration
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        content: { application/json: { schema: { $ref: '#/components/schemas/ProgrammeUpdate' } } }
+      responses: { '200': { description: Updated programme } }
+  /v1/programmes/{slug}/archive:
+    post:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Archive a programme
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses: { '200': { description: Archived programme } }
   /v1/geodata/entities:
     get:
       tags: [Geodata]
@@ -213,6 +259,17 @@ paths:
                 note: { type: string }
       responses: { '200': { description: Review recorded } }
   /v1/activations:
+    get:
+      tags: [Activity]
+      security: [{ bearerAuth: [] }]
+      summary: List activations for authorised operators and administrators
+      parameters:
+        - in: query
+          name: programme
+          schema: { type: string }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses: { '200': { description: Activation page } }
     post:
       tags: [Activity]
       summary: Start an activation
@@ -331,6 +388,15 @@ components:
       properties:
         slug: { type: string }
         name: { type: string }
+        entityTypes: { type: array, items: { type: object } }
+        rules: { type: object }
+        theme: { type: object }
+        oidc: { type: object, nullable: true }
+    ProgrammeUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        description: { type: string }
         entityTypes: { type: array, items: { type: object } }
         rules: { type: object }
         theme: { type: object }

@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from activity import ActivityHandler
 from geodata import GeoHandler
-from identity import IdentityHandler, seed as seed_identity
+from identity import IdentityHandler, bootstrap_admin, seed as seed_identity
 from programmes import ProgrammeHandler, seed as seed_programmes
 from geodata import seed as seed_geodata
 
@@ -34,10 +34,14 @@ class GatewayHandler(BaseHTTPRequestHandler):
     def do_OPTIONS(self) -> None:
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, Idempotency-Key")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, Idempotency-Key, X-Request-ID, X-Correlation-ID")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.end_headers()
 
     def do_GET(self) -> None:
+        if self.path == "/healthz":
+            self._json(200, b'{"status":"ok","service":"gateway"}')
+            return
         if self.path == "/" or self.path.startswith("/assets/"):
             self._static()
             return
@@ -69,7 +73,10 @@ class GatewayHandler(BaseHTTPRequestHandler):
         body = self.rfile.read(int(self.headers.get("Content-Length", "0"))) if self.command == "POST" else None
         request = urllib.request.Request(f"{base_url}{self.path}", data=body, method=self.command,
                                          headers={"Content-Type": self.headers.get("Content-Type", "application/json"),
-                                                  "Idempotency-Key": self.headers.get("Idempotency-Key", "")})
+                                                  "Authorization": self.headers.get("Authorization", ""),
+                                                  "Idempotency-Key": self.headers.get("Idempotency-Key", ""),
+                                                  "X-Request-ID": self.headers.get("X-Request-ID", ""),
+                                                  "X-Correlation-ID": self.headers.get("X-Correlation-ID", "")})
         try:
             with urllib.request.urlopen(request, timeout=3) as response:
                 self._json(response.status, response.read())
@@ -83,6 +90,7 @@ class GatewayHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, Idempotency-Key, X-Request-ID, X-Correlation-ID")
         self.end_headers()
         self.wfile.write(data)
 
@@ -93,6 +101,7 @@ def start(port: int, handler: type[BaseHTTPRequestHandler]) -> None:
 
 def main() -> None:
     seed_identity()
+    bootstrap_admin()
     seed_programmes()
     seed_geodata()
     for port, handler in ((8001, IdentityHandler), (8002, ProgrammeHandler), (8003, GeoHandler), (8004, ActivityHandler)):

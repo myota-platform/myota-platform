@@ -33,6 +33,7 @@ services:
     depends_on: {postgis: {condition: service_healthy}}
   identity:
     build: .
+    env_file: [.env]
     environment:
       SERVICE: identity
       CORE_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_core
@@ -83,6 +84,10 @@ services:
       MYOTA_ACTIVITY_URL: http://activity:8004
     depends_on: [identity, programmes, geodata, activity]
     ports: ["8080:8080"]
+  admin-web:
+    build: ../myota-admin-web
+    depends_on: [gateway]
+    ports: ["8090:8080"]
   nats:
     image: nats:2.10-alpine
     command: ["-js", "-sd", "/data"]

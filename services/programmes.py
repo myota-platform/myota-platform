@@ -3,12 +3,27 @@ from __future__ import annotations
 from http.server import ThreadingHTTPServer
 from typing import Any
 
-from common import JsonHandler, Store, new_id, now, page_result, require
+from common import JsonHandler, Store, new_id, now, page_result, require, verify_token
 
 
 class ProgrammeHandler(JsonHandler):
     service = "programme-service"
     store = Store("programmes", "CORE_DATABASE_URL")
+
+    @staticmethod
+    def _authorize_admin(p: dict[str, str], slug: str | None = None) -> None:
+        if not p.get("_http"):
+            return
+        authorization = p.get("Authorization", "")
+        if not authorization.startswith("Bearer "):
+            raise PermissionError("Bearer authentication is required")
+        claims = verify_token(authorization[7:])
+        scopes = set(claims.get("scp", []))
+        if "*" in scopes or "programme.admin" in scopes:
+            return
+        if slug and f"programme:{slug}:programme_admin" in scopes:
+            return
+        raise PermissionError("programme administration scope is required")
 
     @staticmethod
     def list_programmes(_: JsonHandler, __: dict[str, str]) -> dict[str, Any]:
@@ -25,6 +40,7 @@ class ProgrammeHandler(JsonHandler):
         body = p["_body"]
         require(body, "slug", "name", "entityTypes", "rules")
         slug = body["slug"].lower()
+        ProgrammeHandler._authorize_admin(p, slug)
         if slug in ProgrammeHandler.store.items:
             raise ValueError("programme slug already exists")
         programme = {"id": new_id(), "slug": slug, "name": body["name"], "description": body.get("description", ""),
@@ -37,6 +53,28 @@ class ProgrammeHandler(JsonHandler):
         return {**programme, "_status": 201}
 
     @staticmethod
+    def update_programme(_: JsonHandler, p: dict[str, str]) -> dict[str, Any]:
+        ProgrammeHandler._authorize_admin(p, p["slug"])
+        programme = ProgrammeHandler.store.items[p["slug"]]
+        body = p["_body"]
+        for field in ("name", "description", "entityTypes", "rules", "theme", "oidc"):
+            if field in body:
+                programme[field] = body[field]
+        if any(field in body for field in ("entityTypes", "rules")):
+            programme["policyVersion"] = programme.get("policyVersion", 1) + 1
+        programme["updatedAt"] = now()
+        ProgrammeHandler.store.event("programme.updated.v1", "programme", programme["id"], programme)
+        return programme
+
+    @staticmethod
+    def archive_programme(_: JsonHandler, p: dict[str, str]) -> dict[str, Any]:
+        ProgrammeHandler._authorize_admin(p, p["slug"])
+        programme = ProgrammeHandler.store.items[p["slug"]]
+        programme["status"], programme["updatedAt"] = "ARCHIVED", now()
+        ProgrammeHandler.store.event("programme.archived.v1", "programme", programme["id"], {"slug": p["slug"]})
+        return programme
+
+    @staticmethod
     def get_policy(_: JsonHandler, p: dict[str, str]) -> dict[str, Any]:
         programme = ProgrammeHandler.store.items[p["slug"]]
         return {"programmeSlug": programme["slug"], "version": programme.get("policyVersion", 1),
@@ -47,6 +85,8 @@ ProgrammeHandler.routes = {
     ("GET", "/v1/programmes"): ProgrammeHandler.list_programmes,
     ("GET", "/v1/programmes/{slug}"): ProgrammeHandler.get_programme,
     ("POST", "/v1/programmes"): ProgrammeHandler.create_programme,
+    ("POST", "/v1/programmes/{slug}/update"): ProgrammeHandler.update_programme,
+    ("POST", "/v1/programmes/{slug}/archive"): ProgrammeHandler.archive_programme,
     ("GET", "/v1/programmes/{slug}/policy"): ProgrammeHandler.get_policy,
 }
 

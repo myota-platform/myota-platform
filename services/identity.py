@@ -9,8 +9,8 @@ from datetime import datetime, timedelta, timezone
 from http.server import ThreadingHTTPServer
 from typing import Any
 
-from common import (JsonHandler, Store, hash_secret, new_id, now, require, sign_token,
-                    verify_secret, verify_token)
+from common import (JsonHandler, Store, hash_secret, new_id, now, page_result, require,
+                    sign_token, verify_secret, verify_token)
 
 
 ACCESS_SECONDS = int(os.environ.get("MYOTA_ACCESS_TOKEN_SECONDS", "600"))
@@ -94,8 +94,8 @@ class IdentityHandler(JsonHandler):
         return IdentityHandler._bucket("credentials").setdefault(account_id, {"failedAttempts": 0, "lockedUntil": None})
 
     @staticmethod
-    def _set_password(account_id: str, password: str) -> None:
-        if len(password) < 12:
+    def _set_password(account_id: str, password: str, enforce_length: bool = True) -> None:
+        if enforce_length and len(password) < 12:
             raise ValueError("password must contain at least 12 characters")
         credential = IdentityHandler._credentials(account_id)
         credential.update({"passwordHash": hash_secret(password), "passwordChangedAt": now(), "failedAttempts": 0, "lockedUntil": None})
@@ -284,6 +284,28 @@ class IdentityHandler(JsonHandler):
         return IdentityHandler._account(p["accountId"])
 
     @staticmethod
+    def list_admin_accounts(_: JsonHandler, p: dict[str, str]) -> dict[str, Any]:
+        IdentityHandler._auth(p, scopes=("identity.admin",))
+        from urllib.parse import parse_qs, urlparse
+        query = parse_qs(urlparse(p.get("_path", "")).query)
+        status = query.get("status", [None])[0]
+        search = query.get("q", [""])[0].casefold()
+        accounts = list(IdentityHandler.store.items.values())
+        if status:
+            accounts = [a for a in accounts if a.get("status") == status]
+        if search:
+            accounts = [a for a in accounts if search in a.get("displayName", "").casefold() or search in (a.get("email") or "").casefold()]
+        return page_result(accounts, query)
+
+    @staticmethod
+    def list_security_events(_: JsonHandler, p: dict[str, str]) -> dict[str, Any]:
+        IdentityHandler._auth(p, scopes=("identity.admin",))
+        from urllib.parse import parse_qs, urlparse
+        query = parse_qs(urlparse(p.get("_path", "")).query)
+        events = sorted(IdentityHandler._bucket("securityEvents").values(), key=lambda e: e.get("occurredAt", ""), reverse=True)
+        return page_result(events, query)
+
+    @staticmethod
     def add_callsign(_: JsonHandler, p: dict[str, str]) -> dict[str, Any]:
         body = p["_body"]
         require(body, "callsign")
@@ -438,6 +460,38 @@ class IdentityHandler(JsonHandler):
         return account
 
 
+def bootstrap_admin() -> None:
+    """Create one operator-owned global admin from deployment-provided secrets.
+
+    The password is read only from the process environment and is never written
+    to source, logs, events or the account export. Existing accounts are not
+    reset; the bootstrap is safe to run on every startup.
+    """
+    email = os.environ.get("MYOTA_BOOTSTRAP_ADMIN_EMAIL", "").strip().casefold()
+    password = os.environ.get("MYOTA_BOOTSTRAP_ADMIN_PASSWORD", "")
+    if not email or not password:
+        return
+    account = IdentityHandler._account_for_email(email)
+    if not account:
+        account_id = new_id()
+        account = {"id": account_id, "displayName": "Global Administrator", "email": email,
+                   "participationType": "OPERATOR", "status": "ACTIVE", "callsigns": [],
+                   "primaryCallsignId": None, "createdAt": now(), "updatedAt": now()}
+        IdentityHandler.store.items[account_id] = account
+        IdentityHandler._set_password(account_id, password, enforce_length=False)
+        IdentityHandler.store.event("identity.account.created.v1", "account", account_id, {"account": account, "source": "bootstrap"})
+    elif not IdentityHandler._credentials(account["id"]).get("passwordHash"):
+        IdentityHandler._set_password(account["id"], password, enforce_length=False)
+    if not any(role.get("role") == "GLOBAL_OPERATOR" and role.get("accountId") == account["id"] for role in IdentityHandler._roles(account["id"])):
+        role = {"id": new_id(), "accountId": account["id"], "role": "GLOBAL_OPERATOR", "programmeSlug": None,
+                "jurisdiction": None, "entityType": None,
+                "scopes": ["identity.admin", "identity.roles.assign", "identity.oidc.configure", "identity.service.issue",
+                           "callsign.verify", "geodata.review", "geodata.import", "activity.admin", "activity.read", "*"],
+                "createdAt": now(), "validTo": None}
+        IdentityHandler._bucket("roles")[role["id"]] = role
+        IdentityHandler._audit("identity.bootstrap-admin.created.v1", {"accountId": account["id"], "email": email}, account["id"])
+
+
 IdentityHandler.routes = {
     ("POST", "/v1/identity/accounts"): IdentityHandler.create_account,
     ("POST", "/v1/identity/auth/register"): IdentityHandler.register,
@@ -449,6 +503,8 @@ IdentityHandler.routes = {
     ("POST", "/v1/identity/auth/service-token"): IdentityHandler.issue_service_token,
     ("GET", "/v1/identity/me"): IdentityHandler.current_account,
     ("GET", "/v1/identity/accounts/{accountId}"): IdentityHandler.get_account,
+    ("GET", "/v1/identity/admin/accounts"): IdentityHandler.list_admin_accounts,
+    ("GET", "/v1/identity/admin/security-events"): IdentityHandler.list_security_events,
     ("GET", "/v1/identity/accounts/{accountId}/export"): IdentityHandler.export_account,
     ("POST", "/v1/identity/accounts/{accountId}/deactivate"): IdentityHandler.deactivate_account,
     ("POST", "/v1/identity/accounts/{accountId}/callsigns"): IdentityHandler.add_callsign,
@@ -482,6 +538,7 @@ def seed() -> None:
 
 if __name__ == "__main__":
     seed()
+    bootstrap_admin()
     server = ThreadingHTTPServer(("0.0.0.0", 8001), IdentityHandler)
     try:
         server.serve_forever()

@@ -6,7 +6,7 @@ from http.server import ThreadingHTTPServer
 
 from activity import ActivityHandler
 from geodata import GeoHandler, seed as seed_geodata
-from identity import IdentityHandler, seed as seed_identity
+from identity import IdentityHandler, bootstrap_admin, seed as seed_identity
 from programmes import ProgrammeHandler, seed as seed_programmes
 
 CONFIG = {
@@ -22,6 +22,8 @@ if service not in CONFIG:
     raise SystemExit(2)
 port, handler, seed = CONFIG[service]
 seed()
+if service == "identity":
+    bootstrap_admin()
 handler.store.persist()
 print(f"{service}-service listening on :{port}")
 server = ThreadingHTTPServer(("0.0.0.0", port), handler)

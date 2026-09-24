@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import sys
 import unittest
+from os import environ
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "services"))
 
-from identity import IdentityHandler, seed
+from identity import IdentityHandler, bootstrap_admin, seed
 from common import verify_token
 
 
@@ -58,6 +59,31 @@ class IdentityAuthTests(unittest.TestCase):
         self.assertEqual(export["account"]["id"], account["id"])
         self.call(IdentityHandler.deactivate_account, {"anonymize": True}, accountId=account["id"], Authorization="Bearer " + IdentityHandler._mint_tokens(account, {})["accessToken"], _http="1")
         self.assertEqual(IdentityHandler.store.items[account["id"]]["status"], "DEACTIVATED")
+
+    def test_bootstrap_admin_uses_deployment_credentials_and_global_scope(self) -> None:
+        previous_email = environ.get("MYOTA_BOOTSTRAP_ADMIN_EMAIL")
+        previous_password = environ.get("MYOTA_BOOTSTRAP_ADMIN_PASSWORD")
+        environ["MYOTA_BOOTSTRAP_ADMIN_EMAIL"] = "bootstrap@example.test"
+        environ["MYOTA_BOOTSTRAP_ADMIN_PASSWORD"] = "ShortInit!"
+        try:
+            bootstrap_admin()
+            account = IdentityHandler._account_for_email("bootstrap@example.test")
+            self.assertIsNotNone(account)
+            self.assertEqual(account["participationType"], "OPERATOR")
+            role = IdentityHandler._roles(account["id"])[0]
+            self.assertEqual(role["role"], "GLOBAL_OPERATOR")
+            self.assertIn("*", role["scopes"])
+            bootstrap_admin()
+            self.assertEqual(len(IdentityHandler._roles(account["id"])), 1)
+        finally:
+            if previous_email is None:
+                environ.pop("MYOTA_BOOTSTRAP_ADMIN_EMAIL", None)
+            else:
+                environ["MYOTA_BOOTSTRAP_ADMIN_EMAIL"] = previous_email
+            if previous_password is None:
+                environ.pop("MYOTA_BOOTSTRAP_ADMIN_PASSWORD", None)
+            else:
+                environ["MYOTA_BOOTSTRAP_ADMIN_PASSWORD"] = previous_password
 
 
 if __name__ == "__main__":
