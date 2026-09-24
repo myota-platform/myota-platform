@@ -38,7 +38,7 @@ flowchart TD
   A --> M[Public map + activation eligibility]
 ```
 
-The UI distinguishes `APPROVED` from `CANDIDATE` and never exposes a candidate as a programme reference until approval. Import refreshes update source provenance and geometry while preserving review state; an explicit policy can retire records that disappear from an authoritative source.
+The UI distinguishes `APPROVED` from `CANDIDATE` and never exposes a candidate as a programme reference until approval. Import refreshes update source provenance and geometry while preserving review state; an explicit policy can leave a record unchanged, mark it stale, require review, or retire it when it disappears from an authoritative source. Approved entities remain historical references even when retired.
 
 ## Import adapters
 
@@ -52,7 +52,7 @@ conflate(feature, existing) -> match candidates + score
 apply(feature, policy) -> candidate/update/retire
 ```
 
-Required adapters are represented in the contract and storage model: `PARKSERVE_US`, `OSM`, `GOVERNMENT_GIS`, and `MANUAL`. ParkServe and government feeds remain source-specific integrations; OSM imports preserve ODbL attribution and retrieval metadata. Manual proposals use the same entity/review path and do not bypass approval.
+Required adapters are represented in the contract and storage model: `PARKSERVE_US`, `OSM`, `GOVERNMENT_GIS`, and `MANUAL`. Government GIS source formats include WFS, GeoJSON, Shapefile and ArcGIS FeatureServer. ParkServe and government feeds remain source-specific integrations; OSM imports preserve ODbL attribution and retrieval metadata and filter to the programme-independent required outdoor-place tags. Manual proposals use the same entity/review path and do not bypass approval. Conflation decisions are append-only and can be reopened.
 
 ## Security and operations
 

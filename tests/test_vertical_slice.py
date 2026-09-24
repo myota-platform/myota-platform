@@ -102,7 +102,7 @@ class VerticalSliceTests(unittest.TestCase):
 
     def test_import_is_provenance_aware_and_idempotent(self) -> None:
         body = {"programmeSlug": "regional-ota", "adapter": "OSM", "source": {"name": "OSM", "license": "ODbL 1.0"},
-                "features": [{"type": "Feature", "properties": {"name": "A reserve", "sourceRef": "osm/1", "entityType": "NATURE_RESERVE"}, "geometry": {"type": "Point", "coordinates": [2, 41]}}]}
+                "features": [{"type": "Feature", "properties": {"name": "A reserve", "sourceRef": "osm/1", "entityType": "NATURE_RESERVE", "leisure": "nature_reserve"}, "geometry": {"type": "Point", "coordinates": [2, 41]}}]}
         p = {"_body": body, "Idempotency-Key": "import-1"}
         first = GeoHandler.import_manual(None, p)
         second = GeoHandler.import_manual(None, p)
@@ -115,6 +115,55 @@ class VerticalSliceTests(unittest.TestCase):
         osm = normalize("OSM", {"properties": {"osm_id": "way/7", "leisure": "park"}, "geometry": {"type": "Point", "coordinates": [1, 2]}})
         self.assertEqual(osm["properties"]["sourceRef"], "way/7")
         self.assertEqual(normalize("PARKSERVE_US", {"properties": {"sourceRef": "park/1"}})["properties"]["sourceRef"], "park/1")
+        arcgis = normalize("GOVERNMENT_GIS", {"properties": {"objectId": 7, "sourceFormat": "ARCGIS_FEATURESERVER"}, "geometry": {"x": 1, "y": 2}})
+        self.assertEqual(arcgis["geometry"], {"type": "Point", "coordinates": [1, 2]})
+        web_mercator = normalize("GOVERNMENT_GIS", {"properties": {"sourceFormat": "WFS", "crs": "EPSG:3857"}, "geometry": {"type": "Point", "coordinates": [0, 0]}})
+        self.assertEqual(web_mercator["geometry"]["coordinates"], [0.0, 0.0])
+
+    def test_geodata_pipeline_manifest_filter_and_disappearance_policy(self) -> None:
+        body = {"programmeSlug": "regional-ota", "adapter": "OSM", "source": {"name": "OSM Sevilla", "license": "ODbL 1.0"},
+                "features": [
+                    {"type": "Feature", "properties": {"name": "Included park", "sourceRef": "osm/included", "leisure": "park"},
+                     "geometry": {"type": "Point", "coordinates": [-5.99, 37.39]}},
+                    {"type": "Feature", "properties": {"name": "Filtered building", "sourceRef": "osm/filtered", "building": "yes"},
+                     "geometry": {"type": "Point", "coordinates": [-5.99, 37.39]}}
+                ]}
+        imported = GeoHandler.import_manual(None, {"_body": body, "Idempotency-Key": "pipeline-import"})
+        self.assertEqual(len(imported["created"]), 1)
+        self.assertEqual(imported["skipped"][0]["reason"], "FILTERED_TAG")
+        self.assertTrue(imported["manifest"]["sourceChanged"])
+        schedule = GeoHandler.create_schedule(None, {"_body": {"programmeSlug": "regional-ota", "adapter": "OSM", "source": body["source"], "intervalSeconds": 3600}})
+        refreshed = GeoHandler.refresh_import(None, {"scheduleId": schedule["id"], "_body": {"features": [], "completeSnapshot": True}})
+        self.assertEqual(len(refreshed["disappeared"]), 1)
+        entity = GeoHandler.get_entity(None, {"entityId": imported["created"][0]})
+        self.assertEqual(entity["sourceState"], "REVIEW_REQUIRED")
+
+    def test_geodata_conflation_is_reviewable_and_reversible(self) -> None:
+        geometry = {"type": "Polygon", "coordinates": [[[-5.99, 37.39], [-5.98, 37.39], [-5.98, 37.40], [-5.99, 37.40], [-5.99, 37.39]]]}
+        first = GeoHandler.import_manual(None, {"_body": {"programmeSlug": "regional-ota", "adapter": "GOVERNMENT_GIS",
+            "source": {"name": "Seville GIS", "license": "CC-BY", "attribution": "Seville open data"},
+            "features": [{"properties": {"name": "Alameda Park", "objectId": 1, "sourceFormat": "GEOJSON", "jurisdiction": "SEVILLA"}, "geometry": geometry}]}})
+        second = GeoHandler.import_manual(None, {"_body": {"programmeSlug": "regional-ota", "adapter": "GOVERNMENT_GIS",
+            "source": {"name": "Seville GIS", "license": "CC-BY", "attribution": "Seville open data"},
+            "features": [{"properties": {"name": "Alameda Park", "objectId": 2, "sourceFormat": "GEOJSON", "jurisdiction": "SEVILLA"}, "geometry": geometry}]}})
+        candidates = GeoHandler.list_conflation(None, {"_path": "/v1/geodata/conflation?programme=regional-ota"})["items"]
+        self.assertTrue(candidates)
+        resolved = GeoHandler.resolve_conflation(None, {"candidateId": candidates[0]["id"], "_body": {"decision": "KEPT_SEPARATE", "reviewerId": "reviewer-1"}})
+        self.assertEqual(resolved["resolution"], "KEPT_SEPARATE")
+        reopened = GeoHandler.resolve_conflation(None, {"candidateId": resolved["id"], "_body": {"decision": "OPEN", "reviewerId": "reviewer-1", "note": "Re-review after source update"}})
+        self.assertEqual(reopened["resolution"], "OPEN")
+        self.assertEqual(len(reopened["resolutionHistory"]), 2)
+
+    def test_bbox_tile_and_manual_attachment_metadata(self) -> None:
+        proposal = GeoHandler.draw_proposal(None, {"_body": {"programmeSlug": "regional-ota", "source": {"name": "Community proposal"},
+            "feature": {"properties": {"name": "Community garden"}, "geometry": {"type": "Point", "coordinates": [-5.99, 37.39]},
+                         "attachments": [{"name": "site-photo.jpg", "mediaType": "image/jpeg", "sizeBytes": 100, "uri": "https://example.test/photo.jpg"}]}}})
+        entity = GeoHandler.get_entity(None, {"entityId": proposal["created"][0]})
+        self.assertEqual(entity["attachments"][0]["name"], "site-photo.jpg")
+        bbox = GeoHandler.bbox(None, {"_path": "/v1/geodata/bbox?minLon=-6.1&minLat=37.3&maxLon=-5.8&maxLat=37.5&programme=regional-ota"})
+        self.assertGreaterEqual(bbox["count"], 1)
+        tile = GeoHandler.tile(None, {"z": "12", "x": "2044", "y": "1600"})
+        self.assertIn("features", tile)
 
     def test_activation_and_qso_primitives(self) -> None:
         activation = ActivityHandler.create_activation(None, {"_body": {"programmeSlug": "mpota", "entityId": "entity-1", "operatorId": "operator-1", "startedAt": "2026-01-01T10:00:00Z"}, "Idempotency-Key": "activation-1"})

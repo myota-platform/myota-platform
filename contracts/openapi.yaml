@@ -327,6 +327,11 @@ paths:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PageSize'
       responses: { '200': { description: Entity list } }
+  /v1/geodata/adapters:
+    get:
+      tags: [Geodata]
+      summary: Describe supported source adapters and formats
+      responses: { '200': { description: Adapter catalogue } }
   /v1/geodata/imports/manual:
     post:
       tags: [Geodata]
@@ -337,6 +342,108 @@ paths:
         content:
           application/json: { schema: { $ref: '#/components/schemas/GeoImport' } }
       responses: { '202': { description: Import accepted } }
+  /v1/geodata/imports:
+    get:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: List geodata import runs and source manifests
+      parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
+      responses: { '200': { description: Import runs } }
+    post:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Run a provenance-aware geodata adapter import
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/GeoImport' } } }
+      responses: { '202': { description: Import accepted } }
+  /v1/geodata/imports/{runId}:
+    get:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Get an import run and its source manifest
+      parameters: [{ in: path, name: runId, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Import run } }
+  /v1/geodata/refresh-schedules:
+    get:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: List configured source refresh schedules
+      parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
+      responses: { '200': { description: Refresh schedules } }
+    post:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Create a source refresh schedule
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/RefreshSchedule' } } }
+      responses: { '201': { description: Schedule created } }
+  /v1/geodata/refresh-schedules/{scheduleId}/run:
+    post:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Run a complete source snapshot refresh
+      parameters:
+        - { in: path, name: scheduleId, required: true, schema: { type: string, format: uuid } }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [features], properties: { features: { type: array, items: { type: object } } } } } }
+      responses: { '202': { description: Refresh accepted } }
+  /v1/geodata/bbox:
+    get:
+      tags: [Geodata]
+      summary: Return bounded GeoJSON features for a map viewport
+      parameters:
+        - { in: query, name: minLon, required: true, schema: { type: number } }
+        - { in: query, name: minLat, required: true, schema: { type: number } }
+        - { in: query, name: maxLon, required: true, schema: { type: number } }
+        - { in: query, name: maxLat, required: true, schema: { type: number } }
+        - { in: query, name: programme, schema: { type: string } }
+        - { in: query, name: status, schema: { type: string } }
+        - { in: query, name: limit, schema: { type: integer, maximum: 1000, default: 500 } }
+      responses: { '200': { description: Bounded GeoJSON feature collection } }
+  /v1/geodata/tiles/{z}/{x}/{y}:
+    get:
+      tags: [Geodata]
+      summary: Return a bounded vector-tile-compatible GeoJSON response
+      parameters:
+        - { in: path, name: z, required: true, schema: { type: integer, minimum: 0, maximum: 22 } }
+        - { in: path, name: x, required: true, schema: { type: integer } }
+        - { in: path, name: y, required: true, schema: { type: integer } }
+      responses: { '200': { description: Vector-tile-compatible GeoJSON tile } }
+  /v1/geodata/proposals/draw:
+    post:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Submit a manually drawn candidate geometry with attachments
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/ManualProposal' } } }
+      responses: { '202': { description: Proposal accepted as a candidate } }
+  /v1/geodata/conflation:
+    get:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: List spatial conflation candidates
+      parameters:
+        - { in: query, name: resolution, schema: { type: string, enum: [OPEN, MERGED, KEPT_SEPARATE, IGNORED] } }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses: { '200': { description: Conflation candidates } }
+  /v1/geodata/conflation/{candidateId}/resolve:
+    post:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Resolve or reopen a conflation candidate
+      parameters: [{ in: path, name: candidateId, required: true, schema: { type: string } }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/ConflationDecision' } } }
+      responses: { '200': { description: Conflation decision recorded } }
   /v1/geodata/entities/{entityId}/review:
     post:
       tags: [Geodata]
@@ -535,8 +642,57 @@ components:
       properties:
         programmeSlug: { type: string }
         adapter: { type: string, enum: [PARKSERVE_US, OSM, GOVERNMENT_GIS, MANUAL] }
-        source: { type: object }
+        source:
+          type: object
+          required: [name, license]
+          properties:
+            name: { type: string }
+            url: { type: string, format: uri }
+            sourceKey: { type: string }
+            license: { type: string }
+            attribution: { type: string }
+            retrievedAt: { type: string, format: date-time }
+            format: { type: string, enum: [GEOJSON, WFS, SHAPEFILE, ARCGIS_FEATURESERVER, OSM_PBF, PARKSERVE_US] }
+        completeSnapshot: { type: boolean, default: false }
+        disappearancePolicy: { type: string, enum: [UNCHANGED, STALE, RETIRED, REVIEW_REQUIRED], default: REVIEW_REQUIRED }
         features: { type: array, items: { type: object } }
+    RefreshSchedule:
+      type: object
+      required: [programmeSlug, adapter, source, intervalSeconds]
+      properties:
+        programmeSlug: { type: string }
+        adapter: { type: string, enum: [PARKSERVE_US, OSM, GOVERNMENT_GIS, MANUAL] }
+        source: { type: object }
+        intervalSeconds: { type: integer, minimum: 300 }
+        disappearancePolicy: { type: string, enum: [UNCHANGED, STALE, RETIRED, REVIEW_REQUIRED] }
+        enabled: { type: boolean, default: true }
+    ManualProposal:
+      type: object
+      required: [programmeSlug, feature]
+      properties:
+        programmeSlug: { type: string }
+        source: { type: object }
+        feature: { type: object }
+        attachments: { type: array, items: { $ref: '#/components/schemas/AttachmentMetadata' } }
+    AttachmentMetadata:
+      type: object
+      required: [name, mediaType]
+      properties:
+        name: { type: string }
+        mediaType: { type: string }
+        sizeBytes: { type: integer, minimum: 0, maximum: 26214400 }
+        uri: { type: string, format: uri }
+        sha256: { type: string }
+        license: { type: string }
+        caption: { type: string }
+    ConflationDecision:
+      type: object
+      required: [decision, reviewerId]
+      properties:
+        decision: { type: string, enum: [MERGED, KEPT_SEPARATE, IGNORED, OPEN] }
+        reviewerId: { type: string }
+        survivorEntityId: { type: string, format: uuid }
+        note: { type: string }
     ContentDraft:
       type: object
       required: [key, locale, value]
