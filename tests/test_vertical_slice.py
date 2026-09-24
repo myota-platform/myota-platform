@@ -54,6 +54,18 @@ class VerticalSliceTests(unittest.TestCase):
         approved = GeoHandler.review(None, {"entityId": entity_id, "_body": {"decision": "APPROVED", "reviewerId": "approver-1"}})
         self.assertEqual(approved["status"], "APPROVED")
 
+    def test_approved_entity_can_only_be_retired(self) -> None:
+        approved = GeoHandler.get_entity(None, {"entityId": "00000000-0000-4000-8000-000000000201"})
+        with self.assertRaises(ValueError):
+            GeoHandler.set_status(None, {"entityId": approved["id"], "_body": {
+                "status": "REJECTED", "reviewerId": "approver-1", "note": "Must not invalidate QSOs"}})
+        retired = GeoHandler.set_status(None, {"entityId": approved["id"], "_body": {
+            "status": "RETIRED", "reviewerId": "approver-1", "note": "Reference superseded"}})
+        self.assertEqual(retired["status"], "RETIRED")
+        with self.assertRaises(ValueError):
+            GeoHandler.set_status(None, {"entityId": approved["id"], "_body": {
+                "status": "CANDIDATE", "reviewerId": "approver-1"}})
+
     def test_geodata_geometry_edit_keeps_history_and_source_snapshot(self) -> None:
         entity = GeoHandler.list_entities(None, {"_path": "/v1/geodata/entities?programme=mpota&status=CANDIDATE"})["items"][0]
         original = entity["geometry"]

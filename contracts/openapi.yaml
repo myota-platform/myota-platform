@@ -323,7 +323,7 @@ paths:
           schema: { type: string }
         - in: query
           name: status
-          schema: { type: string, enum: [CANDIDATE, PROPOSED, APPROVED, REJECTED] }
+          schema: { type: string, enum: [CANDIDATE, PROPOSED, APPROVED, RETIRED, REJECTED] }
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PageSize'
       responses: { '200': { description: Entity list } }
@@ -356,6 +356,19 @@ paths:
                 reviewerId: { type: string }
                 note: { type: string }
       responses: { '200': { description: Review recorded } }
+  /v1/geodata/entities/{entityId}/status:
+    post:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Set an entity status with approved-to-retired protection
+      parameters:
+        - $ref: '#/components/parameters/EntityId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/EntityStatusChange' } }
+      responses: { '200': { description: Status changed and audit history recorded } }
   /v1/geodata/entities/{entityId}/audit:
     get:
       tags: [Geodata]
@@ -566,6 +579,13 @@ components:
             type: { type: string, enum: [Point, Polygon, MultiPolygon] }
             coordinates: { type: array }
         editorId: { type: string }
+        note: { type: string }
+    EntityStatusChange:
+      type: object
+      required: [status, reviewerId]
+      properties:
+        status: { type: string, enum: [APPROVED, CANDIDATE, PROPOSED, RETIRED, REJECTED] }
+        reviewerId: { type: string }
         note: { type: string }
     Activation:
       type: object
