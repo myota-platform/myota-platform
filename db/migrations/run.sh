@@ -9,3 +9,4 @@ PGDATABASE=myota_geo psql -v ON_ERROR_STOP=1 -d myota_geo -f /migrations/migrati
 PGDATABASE=myota_geo psql -v ON_ERROR_STOP=1 -d myota_geo -f /migrations/migrations/geo/002_qgis_views.sql
 PGDATABASE=myota_geo psql -v ON_ERROR_STOP=1 -d myota_geo -f /migrations/migrations/geo/003_production_pipeline.sql
 PGDATABASE=myota_geo psql -v ON_ERROR_STOP=1 -d myota_geo -f /migrations/migrations/geo/004_location_enrichment.sql
+PGDATABASE=myota_geo psql -v ON_ERROR_STOP=1 -d myota_geo -f /migrations/migrations/geo/005_location_manual_precedence.sql
