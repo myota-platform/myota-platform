@@ -14,7 +14,11 @@ This repository is a runnable vertical-slice bootstrap for the service repositor
 - Universal themed frontend with verified/candidate map distinction.
 - OpenAPI and event contracts, ADRs, migration notes, health endpoints and local deployment manifests.
 
-The default test/runtime adapter is in-memory so the slice can be exercised without third-party Python packages. PostgreSQL/PostGIS is the production storage target and is defined in `db/migrations/`.
+Unit tests may use an in-memory adapter when they explicitly omit a database
+URL. Local Compose enables `MYOTA_REQUIRE_DURABILITY=1` for every
+database-backed service, so a missing PostgreSQL/PostGIS URL stops startup
+instead of silently losing writes in process memory. Named database volumes
+preserve local data between restarts.
 
 ## Run the vertical slice
 
@@ -23,7 +27,10 @@ python3 -m unittest discover -s tests -v
 python3 services/dev_server.py
 ```
 
-Open <http://127.0.0.1:8080>. The dev server starts the four services on ports 8001–8004 and proxies the browser API calls. It is intentionally dependency-free.
+Open <http://127.0.0.1:8080>. The Compose stack starts the four services on
+ports 8001–8004 and proxies the browser API calls. Use the dependency-free
+`dev_server.py` process only for tests; it is not a durable runtime unless
+database URLs and `MYOTA_REQUIRE_DURABILITY=1` are supplied explicitly.
 
 For a containerized PostGIS environment, use `docker compose up --build` after starting Colima. The image uses the same service code with `SERVICE=identity|programmes|geodata|activity`.
 

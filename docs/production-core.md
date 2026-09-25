@@ -8,7 +8,10 @@ each service grows. No service talks directly to another service's tables.
 ## Durability and events
 
 The runtime selects PostgreSQL whenever `CORE_DATABASE_URL` or
-`GEO_DATABASE_URL` is set. Psycopg's bounded connection pool provides one
+`GEO_DATABASE_URL` is set. Local Compose and production-like deployments set
+`MYOTA_REQUIRE_DURABILITY=1`; a missing service-owned database URL then fails
+startup instead of silently falling back to process memory. Psycopg's bounded
+connection pool provides one
 transaction boundary per request, startup retries five times with exponential
 backoff, and shutdown closes the pool. State, idempotency responses and events
 are committed together. `outbox_event` is relayed by the core and geodata

@@ -20,6 +20,8 @@ spec:
               valueFrom: {secretKeyRef: {name: {{ $.Values.postgres.existingSecret }}, key: core-database-url}}
             - name: GEO_DATABASE_URL
               valueFrom: {secretKeyRef: {name: {{ $.Values.postgres.existingSecret }}, key: geo-database-url}}
+            - name: MYOTA_REQUIRE_DURABILITY
+              value: "1"
             - name: MYOTA_ENV
               value: {{ $.Values.auth.environment | quote }}
             - name: MYOTA_AUTH_SIGNING_KEY
@@ -82,6 +84,8 @@ spec:
           env:
             - name: OUTBOX_DATABASE_URL
               valueFrom: {secretKeyRef: {name: {{ $.Values.postgres.existingSecret }}, key: {{ $db }}-database-url}}
+            - name: MYOTA_REQUIRE_DURABILITY
+              value: "1"
             - name: NATS_URL
               value: {{ $.Values.nats.url | quote }}
             - name: OUTBOX_WORKER
