@@ -78,7 +78,7 @@ class GatewayHandler(BaseHTTPRequestHandler):
                                                   "X-Request-ID": self.headers.get("X-Request-ID", ""),
                                                   "X-Correlation-ID": self.headers.get("X-Correlation-ID", "")})
         try:
-            with urllib.request.urlopen(request, timeout=3) as response:
+            with urllib.request.urlopen(request, timeout=float(os.environ.get("MYOTA_PROXY_TIMEOUT_SECONDS", "60"))) as response:
                 self._json(response.status, response.read())
         except urllib.error.HTTPError as exc:
             self._json(exc.code, exc.read())

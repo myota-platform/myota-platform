@@ -62,13 +62,14 @@ services:
     depends_on: {migrations: {condition: service_completed_successfully}}
     ports: ["8002:8002"]
   geodata:
-    build: .
+    build: ../myota-geodata-service
     env_file: [../myota-geodata-service/.env]
     environment:
       SERVICE: geodata
       GEO_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_geo
       MYOTA_REQUIRE_DURABILITY: "1"
       MYOTA_AUTH_SIGNING_KEY: myota-local-development-signing-key
+      MYOTA_MAX_BODY_BYTES: "33554432"
     depends_on: {migrations: {condition: service_completed_successfully}}
     ports: ["8003:8003"]
   activity:
