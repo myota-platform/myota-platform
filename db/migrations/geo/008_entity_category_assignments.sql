@@ -1,6 +1,5 @@
--- Synchronized from myota-geodata-service/migrations/008_entity_category_assignments.sql.
--- The primary entity_type_code remains for compatibility; this relation stores
--- every shared category assigned to an entity.
+-- An entity may belong to several shared master-data categories.
+-- entity_type_code on geodata_entity remains the primary compatibility value.
 CREATE TABLE IF NOT EXISTS geodata_entity_category (
     entity_id uuid NOT NULL REFERENCES geodata_entity(id) ON DELETE CASCADE,
     category_id uuid NOT NULL REFERENCES entity_type(id) ON DELETE RESTRICT,
