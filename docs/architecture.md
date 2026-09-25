@@ -58,7 +58,7 @@ Required adapters are represented in the contract and storage model: `PARKSERVE_
 
 - Short-lived access tokens are verified at the gateway; the identity service issues radio-native claims (`account_id`, participation type, verified callsigns, scopes).
 - OAuth/OIDC is optional per programme configuration and is never the identity source of truth. External subject mappings point to an internal account.
-- Approver authorization is scope-based: programme + jurisdiction + entity type. Review mutations require an approver scope and are audit events.
+- Approver authorization is scope-based: optional programme + jurisdiction + shared entity category. Platform-wide candidates can be reviewed before programme assignment; review mutations require an applicable approver scope and are audit events.
 - Every mutation accepts `Idempotency-Key`; service outboxes make event publication retry-safe.
 - Rate limits apply at gateway, with stricter limits for import and proposal endpoints.
 - JSON logs carry request, correlation, actor and programme IDs. Health/readiness endpoints are available per service.

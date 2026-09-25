@@ -639,10 +639,21 @@ components:
         oidc: { type: object, nullable: true }
     GeoImport:
       type: object
-      required: [programmeSlug, adapter, source, features]
+      required: [adapter, source, entityTypes]
       properties:
         programmeSlug: { type: string }
         adapter: { type: string, enum: [PARKSERVE_US, OSM, GOVERNMENT_GIS, MANUAL] }
+        entityTypes:
+          type: array
+          minItems: 1
+          description: Shared category codes. The first code is the primary compatibility entityType.
+          items: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,63}$' }
+        entityTypeCodes:
+          type: array
+          minItems: 1
+          description: Compatibility alias for entityTypes.
+          items: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,63}$' }
+        entityType: { type: string, description: Deprecated single-category compatibility input; use entityTypes. }
         source:
           type: object
           required: [name, license]
@@ -657,23 +668,53 @@ components:
         completeSnapshot: { type: boolean, default: false }
         disappearancePolicy: { type: string, enum: [UNCHANGED, STALE, RETIRED, REVIEW_REQUIRED], default: REVIEW_REQUIRED }
         features: { type: array, items: { type: object } }
+        content: { type: string, description: Pasted text for the selected format. }
+        format: { type: string, enum: [GEOJSON, KML, GPX, WFS, ARCGIS_FEATURESERVER, SHAPEFILE, SHP, OSM_PBF, PARKSERVE_US] }
     RefreshSchedule:
       type: object
-      required: [programmeSlug, adapter, source, intervalSeconds]
+      required: [adapter, source, entityTypes, intervalSeconds]
       properties:
         programmeSlug: { type: string }
         adapter: { type: string, enum: [PARKSERVE_US, OSM, GOVERNMENT_GIS, MANUAL] }
+        entityTypes:
+          type: array
+          minItems: 1
+          items: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,63}$' }
+        entityType: { type: string, description: Deprecated single-category compatibility input; use entityTypes. }
         source: { type: object }
         intervalSeconds: { type: integer, minimum: 300 }
         disappearancePolicy: { type: string, enum: [UNCHANGED, STALE, RETIRED, REVIEW_REQUIRED] }
         enabled: { type: boolean, default: true }
     ManualProposal:
       type: object
-      required: [programmeSlug, feature]
+      required: [feature]
       properties:
         programmeSlug: { type: string }
         source: { type: object }
-        feature: { type: object }
+        feature:
+          type: object
+          required: [geometry, properties]
+          properties:
+            geometry:
+              type: object
+              required: [type, coordinates]
+              properties:
+                type: { type: string, enum: [Point, LineString, MultiLineString, Polygon, MultiPolygon, way] }
+                coordinates: { type: array }
+            properties:
+              type: object
+              required: [name, entityTypes]
+              properties:
+                name: { type: string }
+                entityTypes:
+                  type: array
+                  minItems: 1
+                  items: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,63}$' }
+                entityType: { type: string, description: Deprecated single-category compatibility input; use entityTypes. }
+                entityTypeCodes:
+                  type: array
+                  items: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,63}$' }
+                jurisdiction: { type: string }
         attachments: { type: array, items: { $ref: '#/components/schemas/AttachmentMetadata' } }
     AttachmentMetadata:
       type: object
@@ -733,7 +774,7 @@ components:
           type: object
           required: [type, coordinates]
           properties:
-            type: { type: string, enum: [Point, Polygon, MultiPolygon] }
+            type: { type: string, enum: [Point, LineString, MultiLineString, Polygon, MultiPolygon] }
             coordinates: { type: array }
         editorId: { type: string }
         note: { type: string }

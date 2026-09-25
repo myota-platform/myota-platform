@@ -5,7 +5,7 @@ The existing project is retained as the product/charter source and is not modifi
 | Existing concept | MyOTA target |
 |---|---|
 | MPOTA programme | `programme.slug = mpota` sample fixture |
-| municipal park | programme entity type `MUNICIPAL_PARK` |
+| municipal park | shared category `MUNICIPAL_PARK`, assigned to the sample `mpota` programme |
 | park reference | `geodata_entity` plus external `source_reference` |
 | proposal | candidate → proposed entity review |
 | approver country/continent scope | identity/authorization policy scoped by programme + jurisdiction |
@@ -13,4 +13,3 @@ The existing project is retained as the product/charter source and is not modifi
 | translation catalog | programme theme/content configuration and frontend locale bundles |
 
 Recommended migration order is export/normalize source records, load them into `myota_geo` as candidates with provenance, reconcile duplicates against authoritative imports, then run a review campaign. No source record should be silently promoted to `APPROVED` solely because it existed in the old application.
-

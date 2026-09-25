@@ -7,7 +7,7 @@ This repository is a runnable vertical-slice bootstrap for the service repositor
 ## What works now
 
 - Amateur-radio-aware identity: operator/SWL participation, multiple callsigns, one primary callsign, lifecycle and verification fields.
-- Programme configuration: programme-owned entity types, rules, minimum QSOs, awards, theme and optional OIDC settings.
+- Shared entity-category catalogue used by imports and review, with programme assignment and programme-owned rules handled separately.
 - Geodata lifecycle: imported candidate → community proposal → approver review → approved entity.
 - Production geodata pipeline with ParkServe/OSM/government/manual adapters, immutable manifests, refresh schedules, geometry validation, conflation review, disappearance policy, QGIS staging, and bounded spatial/tile APIs.
 - Activation and QSO primitives with idempotency keys and audit events.

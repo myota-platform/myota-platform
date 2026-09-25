@@ -15,7 +15,7 @@ Every import carries a source key, retrieval time, license, attribution, URL/for
 - `PARKSERVE_US`: ParkServe identifiers and licensed-source metadata are preserved without copying eligibility rules into the platform.
 - `OSM`: only `leisure=park`, `leisure=nature_reserve`, `boundary=protected_area`, and `landuse=recreation_ground` records are admitted. OSM attribution and source references are retained.
 - `GOVERNMENT_GIS`: the same adapter accepts normalized GeoJSON/WFS records, ArcGIS FeatureServer `rings`/`x,y` geometry, and records marked as Shapefile input. The source format remains in provenance so a dedicated fetch/decoder worker can be selected per authority.
-- `MANUAL`: a drawn GeoJSON point/polygon/multipolygon enters as `CANDIDATE`; attachment metadata is validated and stored separately from source geometry.
+- `MANUAL`: a drawn GeoJSON point/way/polygon enters as `CANDIDATE`; attachment metadata is validated and stored separately from source geometry. A proposal may select multiple shared entity categories, with the first category retained as the compatibility primary value.
 
 All geometries are normalized to WGS84 (`EPSG:4326`). Web Mercator (`EPSG:3857`) is converted at the ingestion boundary. Geometry type, ring closure, coordinate bounds, coordinate count, feature count, and attachment size are bounded before persistence.
 
@@ -40,4 +40,10 @@ Potential duplicates are scored using source identifiers, normalized name simila
 
 QGIS uses the read-only review/approved views and the editor role can write only to `geodata_edit_staging`. It cannot delete entities or approve lifecycle transitions. Geometry repairs are submitted back through the API, where approver scope, status invariants, audit history, and events remain authoritative.
 
-The scheduler/control-plane endpoints are intentionally separate from network fetching. A deployment-specific importer worker fetches an authority’s WFS, GeoJSON, Shapefile, ArcGIS FeatureServer, ParkServe, or OSM extract, validates its license/allowlist, then submits the normalized snapshot to the service.
+The scheduler/control-plane endpoints are intentionally separate from network fetching. A deployment-specific importer worker fetches an authority’s WFS, GeoJSON, Shapefile, ArcGIS FeatureServer, ParkServe, or OSM extract, validates its license/allowlist, then submits the normalized snapshot to the service. Imports are programme-independent; programme assignment is a later eligibility decision.
+
+The relational assignment table `geodata_entity_category` is introduced by
+`008_entity_category_assignments.sql`. `geodata_entity.entity_type_code`
+remains the primary compatibility column, while the relation stores every
+shared category assigned to the entity. The geodata service migration is
+canonical; platform and deployment copies are synchronized mirrors.
