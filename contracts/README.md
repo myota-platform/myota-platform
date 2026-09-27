@@ -17,3 +17,9 @@ Compatibility rules:
 
 CI should run an OpenAPI linter, server/client generation, and a breaking-change
 diff against the last released contract before publishing a service image.
+
+This contract copy is an integration mirror. The canonical contract and the
+proposed route consolidation are maintained in
+[myota-contracts](https://github.com/myota-platform/myota-contracts) and the
+[REST API consolidation plan](https://github.com/myota-platform/myota-docs/blob/main/docs/api-rest-consolidation-plan.md).
+Do not introduce route changes in this mirror independently.
