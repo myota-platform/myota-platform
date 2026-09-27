@@ -957,7 +957,7 @@ components:
           type: array
           minItems: 1
           uniqueItems: true
-          description: Shared Master data category codes; every imported entity is written as CANDIDATE. The first code is the primary compatibility entityType.
+          description: Shared Master data category codes; imports are pre-processed first and require administrator promotion to CANDIDATE or APPROVED. The first code is the primary compatibility entityType.
           items: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,63}$' }
         entityTypeCodes:
           type: array
@@ -981,7 +981,7 @@ components:
           type: array
           minItems: 1
           uniqueItems: true
-          description: Shared Master data category codes; imports are programme-independent and always create candidates.
+          description: Shared Master data category codes; imports are programme-independent and enter the durable pre-processing queue before promotion.
           items: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,63}$' }
         entityTypeCodes:
           type: array
