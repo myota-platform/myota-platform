@@ -1028,6 +1028,8 @@ components:
         centroid: { type: object, additionalProperties: true }
         sourceRef: { type: string, nullable: true }
         candidateSource: { type: object, additionalProperties: true }
+        dedupeWarning: { type: string, enum: [POSSIBLE_DUPLICATE], nullable: true, description: Present when an existing entity has identical geometry or is within 50 metres. }
+        possibleDuplicates: { type: array, items: { $ref: '#/components/schemas/GeoImportDuplicate' } }
         validationStatus: { type: string, enum: [PENDING, CONFIRMED, REJECTED, PROCESSED] }
         validationNote: { type: string, nullable: true }
         validatedBy: { type: string, nullable: true }
@@ -1036,6 +1038,18 @@ components:
         processedEntityId: { type: string, format: uuid, nullable: true }
         processedAt: { type: string, format: date-time, nullable: true }
         location: { type: object, additionalProperties: true }
+    GeoImportDuplicate:
+      type: object
+      required: [entityId, name, geometry, distanceMeters, matchType]
+      properties:
+        entityId: { type: string, format: uuid }
+        name: { type: string }
+        status: { type: string, nullable: true }
+        entityTypes: { type: array, items: { type: string } }
+        geometry: { type: object, additionalProperties: true }
+        centroid: { type: object, additionalProperties: true }
+        distanceMeters: { type: number, format: double, minimum: 0, maximum: 50 }
+        matchType: { type: string, enum: [IDENTICAL_GEOMETRY, WITHIN_50_METERS] }
     GeoImportCandidatePage:
       type: object
       required: [items, page, pageSize, total]

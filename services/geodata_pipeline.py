@@ -19,6 +19,7 @@ MAX_ATTACHMENTS = 20
 MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024
 MAX_COORDINATES = int(os.environ.get("GEODATA_MAX_COORDINATES", "50000"))
 SUPPORTED_CRS = {"EPSG:4326", "CRS84", "urn:ogc:def:crs:OGC:1.3:CRS84"}
+GEOMETRY_TYPE_ALIASES = {"way": "LineString", "linestring": "LineString", "multilinestring": "MultiLineString"}
 
 
 def canonical_json(value: Any) -> str:
@@ -48,16 +49,33 @@ def _valid_ring(ring: Any) -> bool:
     return ring[0] == ring[-1] and all(isinstance(point, list) and len(point) >= 2 for point in ring)
 
 
+def _valid_line(coordinates: Any) -> bool:
+    return isinstance(coordinates, list) and len(coordinates) >= 2 and all(
+        isinstance(point, list) and len(point) >= 2 for point in coordinates
+    )
+
+
+def _valid_multiline(coordinates: Any) -> bool:
+    return isinstance(coordinates, list) and len(coordinates) >= 1 and all(_valid_line(line) for line in coordinates)
+
+
 def validate_geometry(geometry: dict[str, Any] | None, *, max_coordinates: int = MAX_COORDINATES) -> dict[str, Any]:
-    if not isinstance(geometry, dict) or geometry.get("type") not in ("Point", "Polygon", "MultiPolygon"):
-        raise ValueError("geometry must be a GeoJSON Point, Polygon, or MultiPolygon")
-    geometry_type = geometry["type"]
+    if not isinstance(geometry, dict):
+        raise ValueError("geometry must be a GeoJSON Point, LineString, MultiLineString, Polygon, or MultiPolygon")
+    raw_type = str(geometry.get("type") or "")
+    geometry_type = GEOMETRY_TYPE_ALIASES.get(raw_type.casefold(), raw_type)
+    if geometry_type not in ("Point", "LineString", "MultiLineString", "Polygon", "MultiPolygon"):
+        raise ValueError("geometry must be a GeoJSON Point, LineString, MultiLineString, Polygon, or MultiPolygon")
     coordinates = geometry.get("coordinates")
     count = coordinate_count(geometry)
     if count == 0 or count > max_coordinates:
         raise ValueError(f"geometry must contain between 1 and {max_coordinates} coordinates")
     if geometry_type == "Point" and (not isinstance(coordinates, list) or len(coordinates) < 2):
         raise ValueError("Point geometry must contain longitude and latitude")
+    if geometry_type == "LineString" and not _valid_line(coordinates):
+        raise ValueError("LineString (way) geometry must contain at least two coordinates")
+    if geometry_type == "MultiLineString" and not _valid_multiline(coordinates):
+        raise ValueError("MultiLineString geometry must contain one or more lines with at least two coordinates")
     if geometry_type == "Polygon" and (not isinstance(coordinates, list) or not all(_valid_ring(ring) for ring in coordinates)):
         raise ValueError("Polygon geometry must contain closed rings with at least four points")
     if geometry_type == "MultiPolygon" and (not isinstance(coordinates, list) or not all(all(_valid_ring(ring) for ring in polygon) for polygon in coordinates)):
@@ -130,6 +148,17 @@ def _haversine_km(left: dict[str, float], right: dict[str, float]) -> float:
     d_lon = math.radians(right["lon"] - left["lon"])
     a = math.sin(d_lat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(d_lon / 2) ** 2
     return radius * 2 * math.atan2(math.sqrt(a), math.sqrt(max(0.0, 1 - a)))
+
+
+def geometry_distance_meters(left_geometry: dict[str, Any], right_geometry: dict[str, Any]) -> float:
+    """Return the distance between two geometry centroids in metres.
+
+    This is deliberately a conservative, explainable pre-processing signal. It
+    is not a conflation decision: administrators still decide whether a record
+    should be promoted. Exact geometry is reported as zero metres and all other
+    geometries use their WGS84 bounding-box centroids.
+    """
+    return _haversine_km(geometry_centroid(left_geometry), geometry_centroid(right_geometry)) * 1000
 
 
 def conflation_score(candidate: dict[str, Any], existing: dict[str, Any]) -> dict[str, Any]:
