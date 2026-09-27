@@ -10,6 +10,7 @@ tags:
   - name: Programmes
   - name: Geodata
   - name: Activity
+  - name: Awards
 paths:
   /v1/identity/auth/register:
     post:
@@ -76,6 +77,56 @@ paths:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PageSize'
       responses: { '200': { description: Account page } }
+  /v1/identity/admin/accounts/{accountId}/update:
+    post:
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      summary: Edit an account and replace its active administrative roles
+      parameters: [{ $ref: '#/components/parameters/AccountId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                displayName: { type: string }
+                email: { type: string, format: email, nullable: true }
+                participationType: { type: string, enum: [OPERATOR, SWL] }
+                status: { type: string, enum: [ACTIVE, DEACTIVATED] }
+                password: { type: string, minLength: 12, writeOnly: true }
+                roles:
+                  type: array
+                  items: { $ref: '#/components/schemas/RoleAssignment' }
+      responses: { '200': { description: Updated account and active roles } }
+  /v1/identity/admin/roles:
+    get:
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      summary: List built-in and custom administrative roles and permissions
+      responses: { '200': { description: Role catalogue } }
+    post:
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      summary: Create a custom administrative role
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AdminRoleDefinition' } } }
+      responses: { '201': { description: Created role definition } }
+  /v1/identity/admin/roles/{roleCode}/update:
+    post:
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      summary: Edit a custom administrative role
+      parameters:
+        - in: path
+          name: roleCode
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AdminRoleDefinition' } } }
+      responses: { '200': { description: Updated role definition } }
   /v1/identity/admin/security-events:
     get:
       tags: [Identity]
@@ -203,6 +254,57 @@ paths:
       requestBody:
         content: { application/json: { schema: { $ref: '#/components/schemas/ProgrammeUpdate' } } }
       responses: { '200': { description: Updated programme } }
+  /v1/entity-types:
+    get:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: List shared entity category master data
+      responses: { '200': { description: Shared entity category catalogue } }
+    post:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Create or update a shared entity category definition
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/EntityType' } } }
+      responses: { '200': { description: Updated category }, '201': { description: Created category } }
+  /v1/programmes/{slug}/entity-types:
+    get:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: List entity categories assigned to the programme
+      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }]
+      responses: { '200': { description: Entity category catalogue } }
+    post:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Legacy category upsert and assignment compatibility endpoint
+      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/EntityType' } } }
+      responses: { '200': { description: Updated category }, '201': { description: Created category } }
+  /v1/programmes/{slug}/entity-types/assign:
+    post:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Assign a shared entity category to a programme
+      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/EntityTypeAssignment' } } }
+      responses: { '200': { description: Updated programme assignments } }
+  /v1/programmes/{slug}/entity-types/unassign:
+    post:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Remove a shared entity category from a programme
+      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/EntityTypeAssignment' } } }
+      responses: { '200': { description: Updated programme assignments } }
   /v1/programmes/{slug}/archive:
     post:
       tags: [Programmes]
@@ -215,104 +317,6 @@ paths:
           schema: { type: string }
         - $ref: '#/components/parameters/IdempotencyKey'
       responses: { '200': { description: Archived programme } }
-  /v1/programmes/{slug}/content:
-    get:
-      tags: [Programmes]
-      security: [{ bearerAuth: [] }]
-      summary: List programme-owned content versions
-      parameters:
-        - { in: path, name: slug, required: true, schema: { type: string } }
-        - { in: query, name: locale, schema: { type: string } }
-        - { in: query, name: status, schema: { type: string } }
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/PageSize'
-      responses: { '200': { description: Content version page } }
-    post:
-      tags: [Programmes]
-      security: [{ bearerAuth: [] }]
-      summary: Create or update a draft content version
-      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }]
-      requestBody:
-        required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/ContentDraft' } } }
-      responses: { '200': { description: Draft saved } }
-  /v1/programmes/{slug}/content/coverage:
-    get:
-      tags: [Programmes]
-      security: [{ bearerAuth: [] }]
-      summary: Report published locale coverage and fallback gaps
-      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }]
-      responses: { '200': { description: Locale coverage report } }
-  /v1/programmes/{slug}/content/{contentId}/submit:
-    post:
-      tags: [Programmes]
-      security: [{ bearerAuth: [] }]
-      summary: Submit content for review
-      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { in: path, name: contentId, required: true, schema: { type: string, format: uuid } }]
-      responses: { '200': { description: Submitted content } }
-  /v1/programmes/{slug}/content/{contentId}/review:
-    post:
-      tags: [Programmes]
-      security: [{ bearerAuth: [] }]
-      summary: Approve or request changes to content
-      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { in: path, name: contentId, required: true, schema: { type: string, format: uuid } }]
-      requestBody:
-        required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/ReviewDecision' } } }
-      responses: { '200': { description: Review recorded } }
-  /v1/programmes/{slug}/content/{contentId}/publish:
-    post:
-      tags: [Programmes]
-      security: [{ bearerAuth: [] }]
-      summary: Publish approved content with an explicit effective date
-      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { in: path, name: contentId, required: true, schema: { type: string, format: uuid } }]
-      requestBody:
-        required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/PublicationRequest' } } }
-      responses: { '200': { description: Published content } }
-  /v1/programmes/{slug}/policy-drafts:
-    get:
-      tags: [Programmes]
-      security: [{ bearerAuth: [] }]
-      summary: List programme-owned rule and award drafts
-      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { in: query, name: type, schema: { type: string, enum: [RULES, AWARD] } }, { $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
-      responses: { '200': { description: Policy draft page } }
-    post:
-      tags: [Programmes]
-      security: [{ bearerAuth: [] }]
-      summary: Create or update a programme-owned policy draft
-      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }]
-      requestBody:
-        required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/PolicyDraft' } } }
-      responses: { '200': { description: Draft saved } }
-  /v1/programmes/{slug}/policy-drafts/{draftId}/submit:
-    post:
-      tags: [Programmes]
-      security: [{ bearerAuth: [] }]
-      summary: Submit a rule or award draft for review
-      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { in: path, name: draftId, required: true, schema: { type: string, format: uuid } }]
-      responses: { '200': { description: Submitted policy draft } }
-  /v1/programmes/{slug}/policy-drafts/{draftId}/review:
-    post:
-      tags: [Programmes]
-      security: [{ bearerAuth: [] }]
-      summary: Approve or request changes to a rule or award draft
-      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { in: path, name: draftId, required: true, schema: { type: string, format: uuid } }]
-      requestBody:
-        required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/ReviewDecision' } } }
-      responses: { '200': { description: Review recorded } }
-  /v1/programmes/{slug}/policy-drafts/{draftId}/publish:
-    post:
-      tags: [Programmes]
-      security: [{ bearerAuth: [] }]
-      summary: Publish an approved rule or award with an explicit effective date
-      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { in: path, name: draftId, required: true, schema: { type: string, format: uuid } }]
-      requestBody:
-        required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/PublicationRequest' } } }
-      responses: { '200': { description: Published policy and effective programme snapshot } }
   /v1/geodata/entities:
     get:
       tags: [Geodata]
@@ -323,19 +327,40 @@ paths:
           schema: { type: string }
         - in: query
           name: status
-          schema: { type: string, enum: [CANDIDATE, APPROVED, RETIRED, REJECTED] }
+          description: Repeat or comma-separate values for a multi-status filter; omit for all statuses.
+          style: form
+          explode: true
+          schema: { type: array, items: { type: string, enum: [CANDIDATE, APPROVED, RETIRED, REJECTED] } }
+        - { in: query, name: entityType, schema: { type: string } }
+        - { in: query, name: continent, schema: { type: string } }
+        - { in: query, name: country, schema: { type: string } }
+        - { in: query, name: region, description: Provider-derived first subdivision / region name., schema: { type: string } }
+        - { in: query, name: province, schema: { type: string } }
+        - { in: query, name: city, description: Matches either city or municipality., schema: { type: string } }
+        - { in: query, name: minLon, schema: { type: number, format: double } }
+        - { in: query, name: minLat, schema: { type: number, format: double } }
+        - { in: query, name: maxLon, schema: { type: number, format: double } }
+        - { in: query, name: maxLat, schema: { type: number, format: double } }
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PageSize'
-      responses: { '200': { description: Entity list } }
-  /v1/geodata/adapters:
-    get:
-      tags: [Geodata]
-      summary: Describe supported source adapters and formats
-      responses: { '200': { description: Adapter catalogue } }
+      responses:
+        '200':
+          description: Entity list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/GeoEntity' }
+                  total: { type: integer }
+                  page: { type: integer }
+                  pageSize: { type: integer }
+                  nextPage: { type: integer, nullable: true }
   /v1/geodata/imports/manual:
     post:
       tags: [Geodata]
-      security: [{ bearerAuth: [] }]
       summary: Import GeoJSON features as candidates
       parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
       requestBody:
@@ -347,13 +372,12 @@ paths:
     get:
       tags: [Geodata]
       security: [{ bearerAuth: [] }]
-      summary: List geodata import runs and source manifests
-      parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
+      summary: List geodata import runs
       responses: { '200': { description: Import runs } }
     post:
       tags: [Geodata]
       security: [{ bearerAuth: [] }]
-      summary: Run a provenance-aware geodata adapter import
+      summary: Paste a text source document and queue candidate import
       parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
       requestBody:
         required: true
@@ -363,88 +387,76 @@ paths:
     get:
       tags: [Geodata]
       security: [{ bearerAuth: [] }]
-      summary: Get an import run and its source manifest
-      parameters: [{ in: path, name: runId, required: true, schema: { type: string, format: uuid } }]
-      responses: { '200': { description: Import run } }
-  /v1/geodata/refresh-schedules:
+      summary: Get geodata import status and summary
+      parameters:
+        - { in: path, name: runId, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Import status, processing counts, source manifest, and errors
+          content: { application/json: { schema: { $ref: '#/components/schemas/GeoImportRun' } } }
+        '404': { description: Import run not found }
+  /v1/geodata/imports/{runId}/candidates:
     get:
       tags: [Geodata]
       security: [{ bearerAuth: [] }]
-      summary: List configured source refresh schedules
-      parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
-      responses: { '200': { description: Refresh schedules } }
-    post:
-      tags: [Geodata]
-      security: [{ bearerAuth: [] }]
-      summary: Create a source refresh schedule
-      requestBody:
-        required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/RefreshSchedule' } } }
-      responses: { '201': { description: Schedule created } }
-  /v1/geodata/refresh-schedules/{scheduleId}/run:
-    post:
-      tags: [Geodata]
-      security: [{ bearerAuth: [] }]
-      summary: Run a complete source snapshot refresh
+      summary: List the paged pre-processed records for an import run
+      description: Pre-processed records are not entities yet. They remain invisible to the entity catalogue until confirmed and promoted.
       parameters:
-        - { in: path, name: scheduleId, required: true, schema: { type: string, format: uuid } }
+        - { in: path, name: runId, required: true, schema: { type: string, format: uuid } }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Paged pre-processed import records
+          content: { application/json: { schema: { $ref: '#/components/schemas/GeoImportCandidatePage' } } }
+  /v1/geodata/imports/{runId}/candidates/validate:
+    post:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Confirm selected pre-processed records for promotion
+      parameters:
+        - { in: path, name: runId, required: true, schema: { type: string, format: uuid } }
         - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
-        content: { application/json: { schema: { type: object, required: [features], properties: { features: { type: array, items: { type: object } } } } } }
-      responses: { '202': { description: Refresh accepted } }
-  /v1/geodata/bbox:
-    get:
-      tags: [Geodata]
-      summary: Return bounded GeoJSON features for a map viewport
-      parameters:
-        - { in: query, name: minLon, required: true, schema: { type: number } }
-        - { in: query, name: minLat, required: true, schema: { type: number } }
-        - { in: query, name: maxLon, required: true, schema: { type: number } }
-        - { in: query, name: maxLat, required: true, schema: { type: number } }
-        - { in: query, name: programme, schema: { type: string } }
-        - { in: query, name: status, schema: { type: string } }
-        - { in: query, name: limit, schema: { type: integer, maximum: 1000, default: 500 } }
-      responses: { '200': { description: Bounded GeoJSON feature collection } }
-  /v1/geodata/tiles/{z}/{x}/{y}:
-    get:
-      tags: [Geodata]
-      summary: Return a bounded vector-tile-compatible GeoJSON response
-      parameters:
-        - { in: path, name: z, required: true, schema: { type: integer, minimum: 0, maximum: 22 } }
-        - { in: path, name: x, required: true, schema: { type: integer } }
-        - { in: path, name: y, required: true, schema: { type: integer } }
-      responses: { '200': { description: Vector-tile-compatible GeoJSON tile } }
-  /v1/geodata/proposals/draw:
+        content: { application/json: { schema: { $ref: '#/components/schemas/GeoImportCandidateValidation' } } }
+      responses: { '200': { description: Selected records confirmed } }
+  /v1/geodata/imports/{runId}/process:
     post:
       tags: [Geodata]
       security: [{ bearerAuth: [] }]
-      summary: Submit a manually drawn candidate geometry with attachments
+      summary: Queue confirmed records for entity promotion
+      description: The request is published to the geodata import processing subject. The target is explicitly CANDIDATE or APPROVED.
+      parameters:
+        - { in: path, name: runId, required: true, schema: { type: string, format: uuid } }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/GeoImportProcessingRequest' } } }
+      responses:
+        '202':
+          description: Promotion queue accepted
+          content: { application/json: { schema: { $ref: '#/components/schemas/GeoImportProcessingQueue' } } }
+  /v1/geodata/imports/upload:
+    post:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Upload a binary or text source document and queue candidate import
       parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
       requestBody:
         required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/ManualProposal' } } }
-      responses: { '202': { description: Proposal accepted as a candidate } }
-  /v1/geodata/conflation:
+        content: { application/json: { schema: { $ref: '#/components/schemas/GeoImportUpload' } } }
+      responses: { '202': { description: Upload stored and import queued } }
+  /v1/geodata/location-options:
     get:
       tags: [Geodata]
       security: [{ bearerAuth: [] }]
-      summary: List spatial conflation candidates
-      parameters:
-        - { in: query, name: resolution, schema: { type: string, enum: [OPEN, MERGED, KEPT_SEPARATE, IGNORED] } }
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/PageSize'
-      responses: { '200': { description: Conflation candidates } }
-  /v1/geodata/conflation/{candidateId}/resolve:
-    post:
-      tags: [Geodata]
-      security: [{ bearerAuth: [] }]
-      summary: Resolve or reopen a conflation candidate
-      parameters: [{ in: path, name: candidateId, required: true, schema: { type: string } }]
-      requestBody:
-        required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/ConflationDecision' } } }
-      responses: { '200': { description: Conflation decision recorded } }
+      summary: List provider-derived location hierarchy options
+      description: Values are aggregated from stored BigDataCloud reverse-geocoding responses; this endpoint does not issue remote lookups.
+      responses:
+        '200':
+          description: Searchable continent, country, subdivision, and province hierarchy
+          content: { application/json: { schema: { $ref: '#/components/schemas/LocationOptions' } } }
   /v1/geodata/entities/{entityId}/review:
     post:
       tags: [Geodata]
@@ -464,36 +476,85 @@ paths:
                 reviewerId: { type: string }
                 note: { type: string }
       responses: { '200': { description: Review recorded } }
-  /v1/geodata/entities/{entityId}/status:
+  /v1/geodata/entities/{entityId}/geometry-type:
     post:
       tags: [Geodata]
       security: [{ bearerAuth: [] }]
-      summary: Set an entity status with approved-to-retired protection
+      summary: Convert a geodata entity between point, way, and polygon geometry
       parameters:
         - $ref: '#/components/parameters/EntityId'
         - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
-          application/json: { schema: { $ref: '#/components/schemas/EntityStatusChange' } }
-      responses: { '200': { description: Status changed and audit history recorded } }
-  /v1/geodata/entities/{entityId}/audit:
-    get:
-      tags: [Geodata]
-      security: [{ bearerAuth: [] }]
-      summary: Get review, geometry and event audit history
-      parameters: [{ $ref: '#/components/parameters/EntityId' }]
-      responses: { '200': { description: Entity audit history } }
-  /v1/geodata/entities/{entityId}/geometry:
+          application/json:
+            schema:
+              type: object
+              required: [geometryType, editorId]
+              properties:
+                geometryType: { type: string, enum: [POINT, LINESTRING, MULTILINESTRING, POLYGON, MULTIPOLYGON, WAY] }
+                editorId: { type: string }
+                note: { type: string }
+      responses: { '200': { description: Geometry type changed and audited } }
+  /v1/geodata/entities/{entityId}/location:
     post:
       tags: [Geodata]
       security: [{ bearerAuth: [] }]
-      summary: Save an edited geometry and preserve the previous version
+      summary: Save manual location metadata and its provider precedence
+      parameters:
+        - $ref: '#/components/parameters/EntityId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/LocationMetadataEdit' } }
+      responses: { '200': { description: Location metadata saved and audited } }
+  /v1/geodata/entities/{entityId}/entity-type:
+    post:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Change an entity category and record an audit entry
       parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
       requestBody:
         required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/GeometryEdit' } } }
-      responses: { '200': { description: Geometry saved with audit history } }
+        content: { application/json: { schema: { $ref: '#/components/schemas/EntityTypeChange' } } }
+      responses: { '200': { description: Category changed and audited } }
+  /v1/geodata/entities/{entityId}/name:
+    post:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Change an entity display name and record an audit entry
+      parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/EntityNameChange' } } }
+      responses: { '200': { description: Name changed and audited } }
+  /v1/geodata/entities/{entityId}/delete:
+    post:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Permanently delete an entity and its audit record; global deletion also requires activity cascade first
+      parameters:
+        - $ref: '#/components/parameters/EntityId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [deletedBy], properties: { deletedBy: { type: string } } } } }
+      responses: { '204': { description: Entity and audit record deleted } }
+  /v1/activations/admin/entities/{entityId}/deletion-impact:
+    get:
+      tags: [Activity]
+      security: [{ bearerAuth: [] }]
+      summary: Calculate the QSO and award impact of deleting an entity
+      parameters: [{ $ref: '#/components/parameters/EntityId' }]
+      responses: { '200': { description: Deletion impact } }
+  /v1/activations/admin/entities/{entityId}/cascade-delete:
+    post:
+      tags: [Activity]
+      security: [{ bearerAuth: [] }]
+      summary: Delete linked valid QSOs and queue award recalculation
+      parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      responses: { '200': { description: QSO cascade and award recalculation result } }
   /v1/activations:
     get:
       tags: [Activity]
@@ -513,6 +574,180 @@ paths:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/Activation' } } }
       responses: { '201': { description: Created } }
+  /v1/activations/{activationId}:
+    get:
+      tags: [Activity]
+      security: [{ bearerAuth: [] }]
+      summary: Get an activation and its normalized QSOs
+      parameters: [{ $ref: '#/components/parameters/ActivationId' }]
+      responses: { '200': { description: Activation } }
+  /v1/activations/{activationId}/qsos:
+    post:
+      tags: [Activity]
+      security: [{ bearerAuth: [] }]
+      summary: Record a normalized QSO for an open activation
+      parameters: [{ $ref: '#/components/parameters/ActivationId' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/Qso' } } }
+      responses: { '201': { description: QSO recorded } }
+  /v1/activations/{activationId}/close:
+    post:
+      tags: [Activity]
+      security: [{ bearerAuth: [] }]
+      summary: Close an activation
+      parameters: [{ $ref: '#/components/parameters/ActivationId' }]
+      responses: { '200': { description: Activation closed } }
+  /v1/awards:
+    get:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: List programme-owned award definitions
+      parameters:
+        - { in: query, name: programme, schema: { type: string } }
+        - { in: query, name: category, schema: { type: string, enum: [HUNTER, ACTIVATOR] } }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses: { '200': { description: Award definition page } }
+    post:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: Save a draft programme-owned award definition
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AwardDefinition' } } }
+      responses: { '201': { description: Draft award created } }
+  /v1/awards/{awardId}:
+    get:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: Get an award definition
+      parameters: [{ $ref: '#/components/parameters/AwardId' }]
+      responses: { '200': { description: Award definition } }
+  /v1/awards/{awardId}/submit:
+    post:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: Submit an award definition for review
+      parameters: [{ $ref: '#/components/parameters/AwardId' }]
+      responses: { '200': { description: Award submitted } }
+  /v1/awards/{awardId}/review:
+    post:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: Approve or return an award definition for changes
+      parameters: [{ $ref: '#/components/parameters/AwardId' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AwardReview' } } }
+      responses: { '200': { description: Review recorded } }
+  /v1/awards/{awardId}/publish:
+    post:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: Publish an approved award with an effective date
+      parameters: [{ $ref: '#/components/parameters/AwardId' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AwardPublication' } } }
+      responses: { '200': { description: Award published } }
+  /v1/awards/assets:
+    get:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: List registered background and signature assets
+      responses: { '200': { description: Asset page } }
+    post:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: Register an image asset stored in S3-compatible object storage
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AwardAsset' } } }
+      responses: { '201': { description: Asset registered } }
+  /v1/awards/assets/{assetId}/upload-url:
+    post:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: Create a short-lived direct upload URL for an image asset
+      parameters: [{ $ref: '#/components/parameters/AssetId' }]
+      responses: { '200': { description: Presigned object upload URL } }
+  /v1/awards/assets/{assetId}/content:
+    post:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: Upload small image content through the API
+      parameters: [{ $ref: '#/components/parameters/AssetId' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AssetContent' } } }
+      responses: { '200': { description: Stored asset metadata } }
+  /v1/awards/evaluate:
+    post:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: Evaluate award conditions and eligible levels for a subject
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AwardEvaluationRequest' } } }
+      responses: { '200': { description: Evaluation result } }
+  /v1/awards/progress:
+    post:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: Calculate server-side award progress for the authenticated participant
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AwardProgressRequest' } } }
+      responses: { '200': { description: Progress and eligible levels } }
+  /v1/awards/requests:
+    get:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: List award requests
+      parameters:
+        - { in: query, name: subjectId, schema: { type: string, format: uuid } }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses: { '200': { description: Award request page } }
+    post:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: Request an eligible award level
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AwardRequest' } } }
+      responses: { '201': { description: Award request created } }
+  /v1/awards/requests/{requestId}/issue:
+    post:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: Issue and permanently record a certificate request
+      parameters: [{ $ref: '#/components/parameters/RequestId' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AwardIssuanceRequest' } } }
+      responses: { '201': { description: Award issuance created } }
+  /v1/awards/issuances:
+    get:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: List permanent award issuance records
+      responses: { '200': { description: Award issuance page } }
+  /v1/awards/issuances/{issuanceId}/render:
+    post:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: Retry rendering an issued certificate after its assets are available
+      parameters: [{ $ref: '#/components/parameters/IssuanceId' }]
+      responses: { '200': { description: Certificate rendered } }
+  /v1/awards/issuances/{issuanceId}/download:
+    get:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: Get a short-lived certificate download URL
+      parameters: [{ $ref: '#/components/parameters/IssuanceId' }]
+      responses: { '200': { description: Presigned certificate download URL } }
 components:
   securitySchemes:
     bearerAuth:
@@ -535,9 +770,34 @@ components:
       name: entityId
       required: true
       schema: { type: string, format: uuid }
+    ActivationId:
+      in: path
+      name: activationId
+      required: true
+      schema: { type: string, format: uuid }
     CallsignId:
       in: path
       name: callsignId
+      required: true
+      schema: { type: string, format: uuid }
+    AwardId:
+      in: path
+      name: awardId
+      required: true
+      schema: { type: string, format: uuid }
+    RequestId:
+      in: path
+      name: requestId
+      required: true
+      schema: { type: string, format: uuid }
+    AssetId:
+      in: path
+      name: assetId
+      required: true
+      schema: { type: string, format: uuid }
+    IssuanceId:
+      in: path
+      name: issuanceId
       required: true
       schema: { type: string, format: uuid }
     Page:
@@ -599,10 +859,19 @@ components:
       required: [role]
       properties:
         role: { type: string }
+        code: { type: string, description: Role-definition code accepted by administrative role replacement }
         programmeSlug: { type: string }
         jurisdiction: { type: string }
         entityType: { type: string }
         scopes: { type: array, items: { type: string } }
+    AdminRoleDefinition:
+      type: object
+      required: [code, name]
+      properties:
+        code: { type: string, pattern: '^[A-Z][A-Z0-9_]*$' }
+        name: { type: string }
+        description: { type: string }
+        scopes: { type: array, uniqueItems: true, items: { type: string } }
     CreateAccount:
       type: object
       required: [displayName, participationType]
@@ -628,6 +897,46 @@ components:
         rules: { type: object }
         theme: { type: object }
         oidc: { type: object, nullable: true }
+    EntityType:
+      type: object
+      required: [code, label, geometryTypes]
+      properties:
+        code: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,63}$', description: Stable shared category code; it cannot be renamed. }
+        originalCode: { type: string }
+        label: { type: string }
+        geometry: { type: string, enum: [POINT, LINESTRING, MULTILINESTRING, POLYGON, MULTIPOLYGON], deprecated: true, description: Legacy single geometry value; use geometryTypes. }
+        geometryTypes: { type: array, minItems: 1, uniqueItems: true, items: { type: string, enum: [POINT, LINESTRING, MULTILINESTRING, POLYGON, MULTIPOLYGON] }, description: GeoJSON geometry types accepted by this category. }
+        description: { type: string }
+        active: { type: boolean, default: true }
+    EntityTypeAssignment:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,63}$', description: Shared category code to assign or unassign. }
+    EntityTypeChange:
+      type: object
+      required: [entityTypes, editorId]
+      properties:
+        entityTypes:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,63}$' }
+        entityTypeCodes:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,63}$' }
+        entityType: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,63}$' }
+        editorId: { type: string }
+        note: { type: string }
+    EntityNameChange:
+      type: object
+      required: [name, editorId]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 240 }
+        editorId: { type: string }
+        note: { type: string }
     ProgrammeUpdate:
       type: object
       properties:
@@ -641,149 +950,250 @@ components:
       type: object
       required: [adapter, source, entityTypes]
       properties:
-        programmeSlug: { type: string }
+        programmeSlug: { type: string, nullable: true, description: Legacy optional scope; omit for a platform-wide import. }
         adapter: { type: string, enum: [PARKSERVE_US, OSM, GOVERNMENT_GIS, MANUAL] }
+        format: { type: string, enum: [GEOJSON, KML, GPX, WFS, SHAPEFILE, SHP, ARCGIS_FEATURESERVER, OSM_PBF, PARKSERVE_US] }
         entityTypes:
           type: array
           minItems: 1
-          description: Shared category codes. The first code is the primary compatibility entityType.
+          uniqueItems: true
+          description: Shared Master data category codes; every imported entity is written as CANDIDATE. The first code is the primary compatibility entityType.
           items: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,63}$' }
         entityTypeCodes:
           type: array
           minItems: 1
+          uniqueItems: true
           description: Compatibility alias for entityTypes.
           items: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,63}$' }
-        entityType: { type: string, description: Deprecated single-category compatibility input; use entityTypes. }
-        source:
-          type: object
-          required: [name, license]
-          properties:
-            name: { type: string }
-            url: { type: string, format: uri }
-            sourceKey: { type: string }
-            license: { type: string }
-            attribution: { type: string }
-            retrievedAt: { type: string, format: date-time }
-            format: { type: string, enum: [GEOJSON, WFS, SHAPEFILE, ARCGIS_FEATURESERVER, OSM_PBF, PARKSERVE_US] }
-        completeSnapshot: { type: boolean, default: false }
-        disappearancePolicy: { type: string, enum: [UNCHANGED, STALE, RETIRED, REVIEW_REQUIRED], default: REVIEW_REQUIRED }
+        entityType: { type: string, deprecated: true, description: Deprecated single-category compatibility input; use entityTypes. }
+        source: { type: object }
         features: { type: array, items: { type: object } }
-        content: { type: string, description: Pasted text for the selected format. }
-        format: { type: string, enum: [GEOJSON, KML, GPX, WFS, ARCGIS_FEATURESERVER, SHAPEFILE, SHP, OSM_PBF, PARKSERVE_US] }
-    RefreshSchedule:
+        content: { type: string }
+        filename: { type: string }
+    GeoImportUpload:
       type: object
-      required: [adapter, source, entityTypes, intervalSeconds]
+      required: [adapter, source, entityTypes, filename, contentBase64]
       properties:
-        programmeSlug: { type: string }
+        programmeSlug: { type: string, nullable: true, description: Legacy optional scope; omit for a platform-wide import. }
         adapter: { type: string, enum: [PARKSERVE_US, OSM, GOVERNMENT_GIS, MANUAL] }
+        format: { type: string, enum: [GEOJSON, KML, GPX, WFS, SHAPEFILE, SHP, ARCGIS_FEATURESERVER, OSM_PBF, PARKSERVE_US] }
         entityTypes:
           type: array
           minItems: 1
+          uniqueItems: true
+          description: Shared Master data category codes; imports are programme-independent and always create candidates.
           items: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,63}$' }
-        entityType: { type: string, description: Deprecated single-category compatibility input; use entityTypes. }
+        entityTypeCodes:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          description: Compatibility alias for entityTypes.
+          items: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,63}$' }
+        entityType: { type: string, deprecated: true, description: Deprecated single-category compatibility input; use entityTypes. }
         source: { type: object }
-        intervalSeconds: { type: integer, minimum: 300 }
-        disappearancePolicy: { type: string, enum: [UNCHANGED, STALE, RETIRED, REVIEW_REQUIRED] }
-        enabled: { type: boolean, default: true }
-    ManualProposal:
+        filename: { type: string }
+        contentBase64: { type: string, format: byte }
+    GeoImportRun:
       type: object
-      required: [feature]
+      required: [id, status, adapter, format, entityTypes]
       properties:
-        programmeSlug: { type: string }
-        source: { type: object }
-        feature:
+        id: { type: string, format: uuid }
+        programmeSlug: { type: string, nullable: true }
+        adapter: { type: string }
+        format: { type: string }
+        filename: { type: string, nullable: true }
+        entityType: { type: string, description: Primary compatibility category code }
+        entityTypes: { type: array, items: { type: string } }
+        source: { type: object, additionalProperties: true }
+        status: { type: string, enum: [QUEUED, PROCESSING, PREPROCESSED, PREPROCESSED_WITH_ERRORS, COMPLETED, COMPLETED_WITH_ERRORS, FAILED] }
+        queuedAt: { type: string, format: date-time }
+        startedAt: { type: string, format: date-time, nullable: true }
+        completedAt: { type: string, format: date-time, nullable: true }
+        featureCount: { type: integer, nullable: true }
+        stats: { type: object, additionalProperties: { type: integer } }
+        manifest: { type: object, nullable: true, additionalProperties: true }
+        errors: { type: array, items: { type: object, additionalProperties: true } }
+        candidateCounts: { type: object, additionalProperties: { type: integer } }
+    GeoImportCandidate:
+      type: object
+      required: [id, importRunId, ordinal, name, geometry, validationStatus]
+      properties:
+        id: { type: string, format: uuid }
+        importRunId: { type: string, format: uuid }
+        ordinal: { type: integer, minimum: 0 }
+        existingEntityId: { type: string, format: uuid, nullable: true }
+        name: { type: string }
+        entityTypes: { type: array, items: { type: string } }
+        geometry: { type: object, additionalProperties: true }
+        centroid: { type: object, additionalProperties: true }
+        sourceRef: { type: string, nullable: true }
+        candidateSource: { type: object, additionalProperties: true }
+        validationStatus: { type: string, enum: [PENDING, CONFIRMED, REJECTED, PROCESSED] }
+        validationNote: { type: string, nullable: true }
+        validatedBy: { type: string, nullable: true }
+        validatedAt: { type: string, format: date-time, nullable: true }
+        targetStatus: { type: string, enum: [CANDIDATE, APPROVED], nullable: true }
+        processedEntityId: { type: string, format: uuid, nullable: true }
+        processedAt: { type: string, format: date-time, nullable: true }
+        location: { type: object, additionalProperties: true }
+    GeoImportCandidatePage:
+      type: object
+      required: [items, page, pageSize, total]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/GeoImportCandidate' } }
+        page: { type: integer }
+        pageSize: { type: integer }
+        total: { type: integer }
+        nextPage: { type: integer, nullable: true }
+    GeoImportCandidateValidation:
+      type: object
+      required: [candidateIds, reviewerId]
+      properties:
+        candidateIds: { type: array, minItems: 1, items: { type: string, format: uuid } }
+        reviewerId: { type: string }
+        note: { type: string }
+    GeoImportProcessingRequest:
+      type: object
+      required: [candidateIds, targetStatus, processorId]
+      properties:
+        candidateIds: { type: array, minItems: 1, items: { type: string, format: uuid } }
+        targetStatus: { type: string, enum: [CANDIDATE, APPROVED] }
+        processorId: { type: string }
+        note: { type: string }
+    GeoImportProcessingQueue:
+      type: object
+      required: [id, importRunId, candidateIds, targetStatus, status]
+      properties:
+        id: { type: string, format: uuid }
+        importRunId: { type: string, format: uuid }
+        candidateIds: { type: array, items: { type: string, format: uuid } }
+        targetStatus: { type: string, enum: [CANDIDATE, APPROVED] }
+        requestedBy: { type: string }
+        status: { type: string, enum: [QUEUED, PROCESSING, COMPLETED, FAILED] }
+        result: { type: object, additionalProperties: true }
+        error: { type: string, nullable: true }
+    GeoEntity:
+      type: object
+      required: [id, name, status, geometry]
+      properties:
+        id: { type: string, format: uuid }
+        programmeSlug: { type: string, nullable: true, description: Optional programme eligibility assignment. }
+        entityType: { type: string }
+        entityTypes:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,63}$' }
+        entityTypeCodes:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,63}$' }
+        name: { type: string }
+        status: { type: string, enum: [CANDIDATE, APPROVED, REJECTED, RETIRED] }
+        candidateSource:
           type: object
-          required: [geometry, properties]
+          required: [type]
           properties:
-            geometry:
-              type: object
-              required: [type, coordinates]
-              properties:
-                type: { type: string, enum: [Point, LineString, MultiLineString, Polygon, MultiPolygon, way] }
-                coordinates: { type: array }
+            type: { type: string, enum: [ADAPTER_IMPORT, COMMUNITY_PROPOSAL] }
+            adapter: { type: string, nullable: true }
+            importRunId: { type: string, format: uuid, nullable: true }
+            proposalId: { type: string, format: uuid, nullable: true }
+            proposerId: { type: string, nullable: true }
+            sourceKey: { type: string, nullable: true }
+            sourceRef: { type: string, nullable: true }
+        geometry: { type: object, additionalProperties: true, description: GeoJSON geometry. Ways use type LineString; the import API also accepts the non-standard geometry type alias way and normalizes it to LineString. }
+        centroid: { type: object, additionalProperties: true }
+        continent: { type: string, nullable: true }
+        continentCode: { type: string, nullable: true, description: ISO-style continent code from the geocoder }
+        country: { type: string, nullable: true }
+        countryCode: { type: string, nullable: true, description: ISO 3166-1 country code }
+        region: { type: string, nullable: true, description: First administrative subdivision after the country }
+        regionCode: { type: string, nullable: true, description: ISO 3166-2 code for the first subdivision after the country }
+        subdivision: { type: string, nullable: true }
+        subdivisionCode: { type: string, nullable: true }
+        province: { type: string, nullable: true }
+        provinceCode: { type: string, nullable: true }
+        county: { type: string, nullable: true }
+        countyCode: { type: string, nullable: true }
+        city: { type: string, nullable: true, description: City or municipality }
+        municipality: { type: string, nullable: true }
+        locality: { type: string, nullable: true }
+        manualLocationFields: { type: array, items: { type: string }, description: Fields explicitly maintained by an administrator }
+        geocodeProvider: { type: string, nullable: true }
+        geocodeStatus: { type: string, enum: [ENRICHED, FAILED, NOT_CONFIGURED, SKIPPED_NO_CENTROID], nullable: true }
+        geocodedAt: { type: string, format: date-time, nullable: true }
+        provenance: { type: object, additionalProperties: true }
+    LocationMetadata:
+      type: object
+      additionalProperties: false
+      properties:
+        continent: { type: string, nullable: true }
+        continentCode: { type: string, nullable: true }
+        country: { type: string, nullable: true }
+        countryCode: { type: string, nullable: true }
+        region: { type: string, nullable: true }
+        regionCode: { type: string, nullable: true }
+        subdivision: { type: string, nullable: true }
+        subdivisionCode: { type: string, nullable: true }
+        province: { type: string, nullable: true }
+        provinceCode: { type: string, nullable: true }
+        county: { type: string, nullable: true }
+        countyCode: { type: string, nullable: true }
+        city: { type: string, nullable: true }
+        municipality: { type: string, nullable: true }
+        locality: { type: string, nullable: true }
+    LocationOptions:
+      type: object
+      required: [provider, continents]
+      properties:
+        provider: { type: string, example: BIGDATACLOUD }
+        codeStandards: { type: object, additionalProperties: { type: string } }
+        continents:
+          type: array
+          items:
+            type: object
+            required: [name, countries]
             properties:
-              type: object
-              required: [name, entityTypes]
-              properties:
-                name: { type: string }
-                entityTypes:
-                  type: array
-                  minItems: 1
-                  items: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,63}$' }
-                entityType: { type: string, description: Deprecated single-category compatibility input; use entityTypes. }
-                entityTypeCodes:
-                  type: array
-                  items: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,63}$' }
-                jurisdiction: { type: string }
-        attachments: { type: array, items: { $ref: '#/components/schemas/AttachmentMetadata' } }
-    AttachmentMetadata:
+              name: { type: string }
+              code: { type: string, nullable: true }
+              countries:
+                type: array
+                items:
+                  type: object
+                  required: [name, subdivisions]
+                  properties:
+                    name: { type: string }
+                    code: { type: string, nullable: true }
+                    subdivisions:
+                      type: array
+                      items:
+                        type: object
+                        required: [name, provinces]
+                        properties:
+                          name: { type: string }
+                          code: { type: string, nullable: true }
+                          provinces:
+                            type: array
+                            items:
+                              type: object
+                              required: [name]
+                              properties:
+                                name: { type: string }
+                                code: { type: string, nullable: true }
+    LocationMetadataEdit:
       type: object
-      required: [name, mediaType]
+      required: [location, editorId]
       properties:
-        name: { type: string }
-        mediaType: { type: string }
-        sizeBytes: { type: integer, minimum: 0, maximum: 26214400 }
-        uri: { type: string, format: uri }
-        sha256: { type: string }
-        license: { type: string }
-        caption: { type: string }
-    ConflationDecision:
-      type: object
-      required: [decision, reviewerId]
-      properties:
-        decision: { type: string, enum: [MERGED, KEPT_SEPARATE, IGNORED, OPEN] }
-        reviewerId: { type: string }
-        survivorEntityId: { type: string, format: uuid }
-        note: { type: string }
-    ContentDraft:
-      type: object
-      required: [key, locale, value]
-      properties:
-        contentId: { type: string, format: uuid }
-        key: { type: string }
-        locale: { type: string }
-        fallbackLocale: { type: string, nullable: true }
-        value: { type: string }
-    PolicyDraft:
-      type: object
-      required: [type, name, schema]
-      properties:
-        draftId: { type: string, format: uuid }
-        type: { type: string, enum: [RULES, AWARD] }
-        name: { type: string }
-        schema: { type: object, description: Programme-owned policy schema; MyOTA does not prescribe its fields. }
-        effectiveFrom: { type: string, format: date-time, nullable: true }
-    ReviewDecision:
-      type: object
-      required: [decision, reviewerId]
-      properties:
-        decision: { type: string, enum: [APPROVED, CHANGES_REQUESTED] }
-        reviewerId: { type: string }
-        note: { type: string }
-    PublicationRequest:
-      type: object
-      required: [effectiveFrom, publisherId]
-      properties:
-        effectiveFrom: { type: string, format: date-time }
-        publisherId: { type: string }
-    GeometryEdit:
-      type: object
-      required: [geometry, editorId]
-      properties:
-        geometry:
-          type: object
-          required: [type, coordinates]
-          properties:
-            type: { type: string, enum: [Point, LineString, MultiLineString, Polygon, MultiPolygon] }
-            coordinates: { type: array }
+        location:
+          allOf:
+            - $ref: '#/components/schemas/LocationMetadata'
+          description: Stable GeoEntity location fields; null clears a manual value.
+        manualFields:
+          type: array
+          items: { type: string, enum: [continent, country, region, subdivision, province, county, city, municipality, locality] }
+          description: Fields that remain authoritative over reverse-geocoding refreshes.
         editorId: { type: string }
-        note: { type: string }
-    EntityStatusChange:
-      type: object
-      required: [status, reviewerId]
-      properties:
-        status: { type: string, enum: [APPROVED, CANDIDATE, RETIRED, REJECTED] }
-        reviewerId: { type: string }
         note: { type: string }
     Activation:
       type: object
@@ -793,3 +1203,147 @@ components:
         entityId: { type: string, format: uuid }
         operatorId: { type: string, format: uuid }
         startedAt: { type: string, format: date-time }
+        entityType: { type: string }
+        location: { type: object, additionalProperties: true }
+    Qso:
+      type: object
+      required: [workedCallsign, timestamp]
+      properties:
+        workedCallsign: { type: string }
+        timestamp: { type: string, format: date-time }
+        band: { type: string }
+        mode: { type: string }
+        rst: { type: string }
+        hunterId: { type: string, format: uuid }
+        workedEntityId: { type: string, format: uuid }
+        source: { type: string }
+    AwardCondition:
+      description: Programme-owned recursive AND/OR condition tree.
+      oneOf:
+        - type: object
+          required: [kind, conditions]
+          properties:
+            kind: { type: string, enum: [AND, OR, ALL, ANY] }
+            conditions: { type: array, items: { $ref: '#/components/schemas/AwardCondition' }, minItems: 1 }
+        - type: object
+          required: [kind, operator, value]
+          properties:
+            kind: { type: string, enum: [QSO_COUNT, ACTIVATION_COUNT, UNIQUE_CALLSIGNS, UNIQUE_ENTITIES, FIELD] }
+            field: { type: string }
+            operator: { type: string, enum: [GTE, GT, EQ, LTE, LT] }
+            value: { type: number }
+        - type: object
+          required: [kind, values]
+          properties:
+            kind: { type: string, enum: [ENTITY_TYPE] }
+            values: { type: array, items: { type: string }, minItems: 1 }
+        - type: object
+          required: [kind, condition]
+          properties:
+            kind: { type: string, enum: [NOT] }
+            condition: { $ref: '#/components/schemas/AwardCondition' }
+    AwardLevel:
+      type: object
+      required: [id, name, threshold]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        threshold: { type: number, exclusiveMinimum: 0 }
+    AwardAsset:
+      type: object
+      required: [kind, name, objectKey, mediaType, widthPx, heightPx]
+      properties:
+        assetId: { type: string, format: uuid }
+        kind: { type: string, enum: [BACKGROUND, SIGNATURE] }
+        name: { type: string }
+        objectKey: { type: string }
+        mediaType: { type: string, pattern: '^image/' }
+        widthPx: { type: integer, minimum: 1 }
+        heightPx: { type: integer, minimum: 1 }
+        sha256: { type: string }
+        bucket: { type: string }
+    AwardTemplateElement:
+      type: object
+      required: [kind, x, y, width, height]
+      properties:
+        kind: { type: string, enum: [AWARD_NAME, CALLSIGN, PERSON_NAME, DATE_OBTAINED, MANAGER_NAME, MANAGER_SIGNATURE] }
+        x: { type: number, minimum: 0, maximum: 1 }
+        y: { type: number, minimum: 0, maximum: 1 }
+        width: { type: number, exclusiveMinimum: 0, maximum: 1 }
+        height: { type: number, exclusiveMinimum: 0, maximum: 1 }
+        style: { type: object }
+    AwardTemplate:
+      type: object
+      required: [elements]
+      properties:
+        elements: { type: array, minItems: 6, items: { $ref: '#/components/schemas/AwardTemplateElement' } }
+    AwardPrintSpec:
+      type: object
+      properties:
+        page: { type: string, enum: [A4, LETTER], default: A4 }
+        orientation: { type: string, enum: [PORTRAIT, LANDSCAPE], default: PORTRAIT }
+        dpi: { type: integer, minimum: 150, default: 300 }
+    AwardDefinition:
+      type: object
+      required: [programmeSlug, code, name, category, condition, levels, backgroundAsset, template]
+      properties:
+        awardId: { type: string, format: uuid }
+        programmeSlug: { type: string }
+        code: { type: string }
+        name: { type: string }
+        description: { type: string }
+        category: { type: string, enum: [HUNTER, ACTIVATOR] }
+        achievementMetric: { type: string, enum: [QSO_COUNT, ACTIVATION_COUNT, UNIQUE_CALLSIGNS, UNIQUE_ENTITIES] }
+        condition: { $ref: '#/components/schemas/AwardCondition' }
+        levels: { type: array, minItems: 1, items: { $ref: '#/components/schemas/AwardLevel' } }
+        backgroundAsset: { $ref: '#/components/schemas/AwardAsset' }
+        printSpec: { $ref: '#/components/schemas/AwardPrintSpec' }
+        template: { $ref: '#/components/schemas/AwardTemplate' }
+    AwardReview:
+      type: object
+      required: [decision, reviewerId]
+      properties:
+        decision: { type: string, enum: [APPROVED, CHANGES_REQUESTED] }
+        reviewerId: { type: string }
+        note: { type: string }
+    AwardPublication:
+      type: object
+      required: [effectiveFrom, publisherId]
+      properties:
+        effectiveFrom: { type: string, format: date-time }
+        publisherId: { type: string }
+    AwardEvaluationRequest:
+      type: object
+      required: [awardId, subjectId, facts]
+      properties:
+        awardId: { type: string, format: uuid }
+        subjectId: { type: string, format: uuid }
+        facts: { type: object, additionalProperties: true }
+    AwardProgressRequest:
+      type: object
+      required: [awardId, subjectId]
+      properties:
+        awardId: { type: string, format: uuid }
+        subjectId: { type: string, format: uuid }
+    AwardRequest:
+      type: object
+      required: [awardId, levelId, subjectId, callsign, personName]
+      properties:
+        awardId: { type: string, format: uuid }
+        levelId: { type: string }
+        subjectId: { type: string, format: uuid }
+        callsign: { type: string }
+        personName: { type: string }
+        facts: { type: object, additionalProperties: true, description: Optional facts for trusted service/admin callers; participant requests use server-side activity facts. }
+    AwardIssuanceRequest:
+      type: object
+      required: [managerName, signatureAssetId]
+      properties:
+        managerName: { type: string }
+        signatureAssetId: { type: string, format: uuid }
+        dateObtained: { type: string, format: date-time }
+    AssetContent:
+      type: object
+      required: [contentBase64]
+      properties:
+        contentBase64: { type: string, contentEncoding: base64 }

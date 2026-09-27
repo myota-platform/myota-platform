@@ -28,7 +28,24 @@ Each run creates an immutable source manifest with a source hash and per-record 
 - `REVIEW_REQUIRED`: retain lifecycle status and queue source disappearance for human review;
 - `RETIRED`: retire the source entity while preserving historical references.
 
-The default is `REVIEW_REQUIRED`. An import run reports created, updated, skipped, invalid, disappeared, and conflation records and is idempotent when an idempotency key is supplied.
+The default is `REVIEW_REQUIRED`. File and pasted imports first normalize into
+durable `geodata_import_candidate` records and stop at `PREPROCESSED`. The
+administrator validates a paged selection, then a separate NATS-backed
+processing queue promotes confirmed records to an explicitly selected
+`CANDIDATE` or `APPROVED` entity. An import run reports pre-processed,
+promoted, skipped, invalid, disappeared, and conflation records and is
+idempotent when an idempotency key is supplied.
+
+The API surface is:
+
+- `GET /v1/geodata/imports/{runId}/candidates` for compact paged validation;
+- `POST /v1/geodata/imports/{runId}/candidates/validate` to confirm selected records;
+- `POST /v1/geodata/imports/{runId}/process` to publish the selected promotion request to `myota.geodata.import.process.v1`.
+
+The durable `geodata_import_processing_queue` table is the service-side
+projection of the NATS request. Local development has a bounded fallback
+worker; production consumers must preserve the same idempotency and explicit
+target-status checks.
 
 ## Conflation
 
