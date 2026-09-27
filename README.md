@@ -14,7 +14,7 @@ This repository is a runnable vertical-slice bootstrap for the service repositor
 
 - Amateur-radio-aware identity: operator/SWL participation, multiple callsigns, one primary callsign, lifecycle and verification fields.
 - Shared entity-category catalogue used by imports and review, with programme assignment and programme-owned rules handled separately.
-- Geodata lifecycle: imported candidate → community proposal → approver review → approved entity.
+- Geodata lifecycle: adapter/import run or community proposal → CANDIDATE → approver review → APPROVED or REJECTED; approved entities may only be RETIRED.
 - Production geodata pipeline with ParkServe/OSM/government/manual adapters, immutable manifests, refresh schedules, geometry validation, conflation review, disappearance policy, QGIS staging, and bounded spatial/tile APIs.
 - Activation and QSO primitives with idempotency keys and audit events.
 - Universal themed frontend with verified/candidate map distinction.

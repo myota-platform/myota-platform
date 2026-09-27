@@ -7,7 +7,7 @@ The existing project is retained as the product/charter source and is not modifi
 | MPOTA programme | `programme.slug = mpota` sample fixture |
 | municipal park | shared category `MUNICIPAL_PARK`, assigned to the sample `mpota` programme |
 | park reference | `geodata_entity` plus external `source_reference` |
-| proposal | candidate → proposed entity review |
+| proposal | community proposal source → candidate entity review |
 | approver country/continent scope | identity/authorization policy scoped by programme + jurisdiction |
 | activation log / ADIF | activity activation and QSO ingestion |
 | translation catalog | programme theme/content configuration and frontend locale bundles |

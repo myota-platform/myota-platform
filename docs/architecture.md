@@ -32,9 +32,9 @@ Each service owns its database tables and publishes events. No service reads ano
 flowchart TD
   S[Authoritative/imported source] --> R[Adapter + import run]
   R --> C[CANDIDATE]
-  C -->|community proposal| P[PROPOSED]
-  P -->|approver scope + review| A[APPROVED]
-  P -->|reject / changes| X[REJECTED]
+  Q[Community proposal] --> C
+  C -->|approver scope + review| A[APPROVED]
+  C -->|approver decision| X[REJECTED]
   A --> M[Public map + activation eligibility]
 ```
 

@@ -1,24 +1,36 @@
-# Geodata migration mirror
+# Geodata migration source
 
-These files mirror the canonical migration source in
-`myota-geodata-service/migrations/`. They are kept in the platform repository
-so the runnable vertical slice has a complete PostGIS bootstrap without
-depending on a service checkout.
+This directory is the canonical source for the geodata service schema. The
+ordered SQL files define the `myota_geo` database:
 
-Do not edit this mirror independently. Update the geodata service migration
-source first, synchronize the complete ordered set, and verify byte-for-byte
-equality. The location-enrichment migration adds reverse-geocoded entity
-fields and must remain synchronized with the service repository. The
-manual-location precedence migration also persists which fields are
-administrator-controlled and exposes them through the QGIS review views.
-The unscoped-imports migration keeps programme assignment optional for
-platform-wide candidate intake and adds the refresh category.
-The relational-entity-persistence migration adds the nullable cross-service
-programme slug and shared category code columns used by the geodata service
-when writing entities to PostGIS.
-The entity-category-assignment migration adds the relational many-category
-assignment table, keeps one primary compatibility category, and backfills
-existing entities. Its canonical source is
-`myota-geodata-service/migrations/008_entity_category_assignments.sql`.
-Shared core infrastructure is defined by
-`../core/001_core.sql` and must not be duplicated here.
+1. `001_geodata.sql` creates the core PostGIS entity, provenance, review and
+   conflation tables.
+2. `002_qgis_views.sql` creates the read-only QGIS review views.
+3. `003_production_pipeline.sql` adds refresh manifests, schedules,
+   disappearance policy, attachments, conflation history and QGIS staging.
+4. `004_location_enrichment.sql` adds normalized continent, country,
+   subdivision, province, county and city fields plus reverse-geocoding
+   provenance and indexes.
+5. `005_location_manual_precedence.sql` adds the municipality alias and
+   durable manual-location override fields, index, and QGIS view projections.
+6. `006_unscoped_imports.sql` makes programme assignment optional for
+   imported candidates and adds the category field used by global refresh
+   schedules.
+7. `007_relational_entity_persistence.sql` adds the nullable cross-service
+   programme slug and shared category code columns used by the service's
+   relational entity persistence adapter.
+8. `008_entity_category_assignments.sql` adds relational entity-to-category
+   assignments, enforces one primary category per entity, and backfills the
+   legacy primary category.
+9. `009_candidate_lifecycle.sql` removes the legacy `PROPOSED` lifecycle state,
+   normalizes old rows to `CANDIDATE`, and records that adapter/import runs and
+   community proposals are candidate sources rather than statuses.
+
+`myota-platform/db/migrations/geo/` and
+`myota-deploy/db/migrations/geo/` are synchronized copies used by the
+vertical-slice bootstrap and deployment migration runner. When this schema
+changes, update this directory first, then copy the complete ordered set to
+both repositories and verify the files are byte-for-byte identical.
+
+Shared platform tables such as service state, idempotency, outbox and event
+consumer bookkeeping belong to the core migration, not this geodata schema.

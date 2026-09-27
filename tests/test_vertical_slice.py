@@ -46,14 +46,22 @@ class VerticalSliceTests(unittest.TestCase):
         self.assertTrue(all(entity["provenance"]["adapter"] == "OSM" for entity in entities))
         self.assertTrue(all(entity["geometry"]["type"] == "Polygon" for entity in entities))
 
-    def test_candidate_propose_review_lifecycle(self) -> None:
+    def test_candidate_review_lifecycle(self) -> None:
         candidates = GeoHandler.list_entities(None, {"_path": "/v1/geodata/entities?programme=mpota&status=CANDIDATE"})["items"]
         self.assertEqual(len(candidates), 1)
         entity_id = candidates[0]["id"]
-        proposed = GeoHandler.propose(None, {"entityId": entity_id, "_body": {"proposerId": "operator-1"}})
-        self.assertEqual(proposed["status"], "PROPOSED")
+        candidate = GeoHandler.get_entity(None, {"entityId": entity_id})
+        self.assertEqual(candidate["status"], "CANDIDATE")
         approved = GeoHandler.review(None, {"entityId": entity_id, "_body": {"decision": "APPROVED", "reviewerId": "approver-1"}})
         self.assertEqual(approved["status"], "APPROVED")
+
+    def test_community_proposal_is_a_candidate_source(self) -> None:
+        proposal = GeoHandler.draw_proposal(None, {"_body": {"programmeSlug": "mpota", "proposerId": "operator-1",
+            "feature": {"properties": {"name": "Community trail", "entityType": "TRAIL"},
+                        "geometry": {"type": "Point", "coordinates": [-5.99, 37.38]}}}})
+        entity = GeoHandler.get_entity(None, {"entityId": proposal["created"][0]})
+        self.assertEqual(entity["status"], "CANDIDATE")
+        self.assertEqual(entity["candidateSource"]["type"], "COMMUNITY_PROPOSAL")
 
     def test_approved_entity_can_only_be_retired(self) -> None:
         approved = GeoHandler.get_entity(None, {"entityId": "00000000-0000-4000-8000-000000000201"})

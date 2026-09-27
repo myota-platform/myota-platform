@@ -323,7 +323,7 @@ paths:
           schema: { type: string }
         - in: query
           name: status
-          schema: { type: string, enum: [CANDIDATE, PROPOSED, APPROVED, RETIRED, REJECTED] }
+          schema: { type: string, enum: [CANDIDATE, APPROVED, RETIRED, REJECTED] }
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PageSize'
       responses: { '200': { description: Entity list } }
@@ -448,7 +448,7 @@ paths:
   /v1/geodata/entities/{entityId}/review:
     post:
       tags: [Geodata]
-      summary: Review a proposed entity
+      summary: Review a candidate entity
       parameters:
         - $ref: '#/components/parameters/EntityId'
         - $ref: '#/components/parameters/IdempotencyKey'
@@ -782,7 +782,7 @@ components:
       type: object
       required: [status, reviewerId]
       properties:
-        status: { type: string, enum: [APPROVED, CANDIDATE, PROPOSED, RETIRED, REJECTED] }
+        status: { type: string, enum: [APPROVED, CANDIDATE, RETIRED, REJECTED] }
         reviewerId: { type: string }
         note: { type: string }
     Activation:

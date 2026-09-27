@@ -14,5 +14,8 @@ Services publish durable, versioned events to an outbox owned by the emitting se
 }
 ```
 
-Important events include `identity.account.created.v1`, `identity.callsign.verified.v1`, `programme.created.v1`, `geodata.import.accepted.v1`, `geodata.entity.proposed.v1`, `geodata.entity.reviewed.v1`, `activity.activation.created.v1`, and `activity.qso.recorded.v1`.
+Important events include `identity.account.created.v1`, `identity.callsign.verified.v1`, `programme.created.v1`, `geodata.import.accepted.v1`, `geodata.entity.candidate.created.v1`, `geodata.entity.reviewed.v1`, `activity.activation.created.v1`, and `activity.qso.recorded.v1`.
 
+`CANDIDATE` is the single pre-review lifecycle state. Its `candidateSource`
+identifies either an adapter/import run or a community proposal; the former
+`PROPOSED` status and event are retired.
