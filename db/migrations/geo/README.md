@@ -27,6 +27,9 @@ ordered SQL files define the `myota_geo` database:
    community proposals are candidate sources rather than statuses.
 10. `010_import_preprocessing.sql` adds the normalized pre-processing records
    and durable projection of the administrator-controlled NATS promotion queue.
+11. `011_import_recovery.sql` adds execution attempts, heartbeat/lease
+   timestamps, and the last recovery error used to resume abandoned imports
+   safely after a service restart.
 
 `myota-platform/db/migrations/geo/` and
 `myota-deploy/db/migrations/geo/` are synchronized copies used by the
@@ -36,3 +39,13 @@ both repositories and verify the files are byte-for-byte identical.
 
 Shared platform tables such as service state, idempotency, outbox and event
 consumer bookkeeping belong to the core migration, not this geodata schema.
+
+Import recovery
+
+Uploaded and pasted import sources are stored in SeaweedFS before a durable
+background run is started. The geodata service claims a PostgreSQL lease,
+refreshes its heartbeat while parsing and normalizing, and clears the lease
+when the run reaches `PREPROCESSED` or `FAILED`. On startup, queued runs and
+processing runs whose lease has expired are requeued from their stored source.
+Runs without a recoverable source are marked `FAILED` with an explanatory
+error instead of remaining indefinitely in `PROCESSING`.
