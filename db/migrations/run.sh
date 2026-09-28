@@ -16,3 +16,4 @@ PGDATABASE=myota_geo psql -v ON_ERROR_STOP=1 -d myota_geo -f /migrations/migrati
 PGDATABASE=myota_geo psql -v ON_ERROR_STOP=1 -d myota_geo -f /migrations/migrations/geo/009_candidate_lifecycle.sql
 PGDATABASE=myota_geo psql -v ON_ERROR_STOP=1 -d myota_geo -f /migrations/migrations/geo/010_import_preprocessing.sql
 PGDATABASE=myota_geo psql -v ON_ERROR_STOP=1 -d myota_geo -f /migrations/migrations/geo/011_import_recovery.sql
+PGDATABASE=myota_geo psql -v ON_ERROR_STOP=1 -d myota_geo -f /migrations/migrations/geo/012_import_finalization.sql
