@@ -463,7 +463,7 @@ paths:
       description: Values are aggregated from stored BigDataCloud reverse-geocoding responses; this endpoint does not issue remote lookups.
       responses:
         '200':
-          description: Searchable continent, country, subdivision, and province hierarchy
+          description: Searchable hierarchy aggregated from stored provider-derived entity metadata. Admin clients use the hierarchy to populate dependent continent, country, subdivision, province, and city/municipality filters without direct database access.
           content: { application/json: { schema: { $ref: '#/components/schemas/LocationOptions' } } }
   /v1/geodata/entities/{entityId}/review:
     post:
@@ -1188,6 +1188,10 @@ components:
                   properties:
                     name: { type: string }
                     code: { type: string, nullable: true }
+                    cities:
+                      type: array
+                      description: City and municipality names observed directly under this country.
+                      items: { $ref: '#/components/schemas/LocationOption' }
                     subdivisions:
                       type: array
                       items:
@@ -1196,6 +1200,10 @@ components:
                         properties:
                           name: { type: string }
                           code: { type: string, nullable: true }
+                          cities:
+                            type: array
+                            description: City and municipality names observed in this subdivision.
+                            items: { $ref: '#/components/schemas/LocationOption' }
                           provinces:
                             type: array
                             items:
@@ -1204,6 +1212,16 @@ components:
                               properties:
                                 name: { type: string }
                                 code: { type: string, nullable: true }
+                                cities:
+                                  type: array
+                                  description: City and municipality names observed in this province.
+                                  items: { $ref: '#/components/schemas/LocationOption' }
+    LocationOption:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        code: { type: string, nullable: true }
     LocationMetadataEdit:
       type: object
       required: [location, editorId]
