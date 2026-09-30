@@ -445,7 +445,15 @@ paths:
       parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
       requestBody:
         required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/GeoImportUpload' } } }
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/GeoImportUpload' } }
+          multipart/form-data:
+            schema:
+              type: object
+              required: [metadata, file]
+              properties:
+                metadata: { type: string, description: JSON-encoded GeoImportUpload metadata without contentBase64. }
+                file: { type: string, format: binary, description: Original source document. }
       responses: { '202': { description: Upload stored and import queued } }
   /v1/geodata/location-options:
     get:
@@ -971,8 +979,9 @@ components:
         content: { type: string }
         filename: { type: string }
     GeoImportUpload:
+      description: Upload endpoint accepts multipart/form-data with a metadata JSON part and a file part. Legacy JSON contentBase64 remains supported for non-browser clients.
       type: object
-      required: [adapter, source, entityTypes, filename, contentBase64]
+      required: [adapter, source, entityTypes, filename]
       properties:
         programmeSlug: { type: string, nullable: true, description: Legacy optional scope; omit for a platform-wide import. }
         adapter: { type: string, enum: [PARKSERVE_US, OSM, GOVERNMENT_GIS, MANUAL] }
@@ -992,7 +1001,7 @@ components:
         entityType: { type: string, deprecated: true, description: Deprecated single-category compatibility input; use entityTypes. }
         source: { type: object }
         filename: { type: string }
-        contentBase64: { type: string, format: byte }
+        contentBase64: { type: string, format: byte, description: Legacy JSON upload field; omit when using multipart/form-data. }
     GeoImportRun:
       type: object
       required: [id, status, adapter, format, entityTypes]
