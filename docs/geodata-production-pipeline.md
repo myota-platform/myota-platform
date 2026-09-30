@@ -50,9 +50,13 @@ The API surface is:
 - `POST /v1/geodata/imports/{runId}/process` to publish the selected promotion request to `myota.geodata.import.process.v1`.
 
 The durable `geodata_import_processing_queue` table is the service-side
-projection of the NATS request. Local development has a bounded fallback
-worker; production consumers must preserve the same idempotency and explicit
-target-status checks.
+projection of the NATS request. Import preprocessing is restart-safe: source
+documents are kept in object storage, and the geodata service requeues queued
+or previously `PROCESSING` runs during startup before dispatching recovery
+workers. Pasted KML/GPX is replayed from normalized GeoJSON; unsupported
+binary adapters remain queued rather than being marked failed. Local
+development has a bounded fallback worker; production consumers must preserve
+the same idempotency and explicit target-status checks.
 
 ## Conflation
 

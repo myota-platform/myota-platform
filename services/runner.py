@@ -21,6 +21,10 @@ else:
     print("SERVICE must be one of: identity, programmes, geodata, activity", file=sys.stderr)
     raise SystemExit(2)
 seed()
+if service == "geodata":
+    # Requeue imports abandoned by the previous geodata instance only after
+    # durable state and seed data have been hydrated.
+    handler.recover_import_runs()
 if service == "identity":
     bootstrap_admin()
 handler.store.persist()
