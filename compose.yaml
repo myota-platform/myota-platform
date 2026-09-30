@@ -69,7 +69,8 @@ services:
       GEO_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_geo
       MYOTA_REQUIRE_DURABILITY: "1"
       MYOTA_AUTH_SIGNING_KEY: myota-local-development-signing-key
-      MYOTA_MAX_BODY_BYTES: "33554432"
+      MYOTA_MAX_BODY_BYTES: "1073741824"
+      MYOTA_UPLOAD_MAX_BYTES: "1073741824"
     depends_on: {migrations: {condition: service_completed_successfully}}
     ports: ["8003:8003"]
   activity:
