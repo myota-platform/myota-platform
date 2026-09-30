@@ -554,7 +554,7 @@ class GeoHandler(JsonHandler):
         run = GeoHandler.store.data.setdefault("importRuns", {}).get(run_id)
         if not run:
             return
-        if run.get("binaryObjectPending"):
+        if run.get("binaryObjectPending") or str(run.get("format") or "").upper() in {"OSM_PBF", "PARKSERVE_US"}:
             with GeoHandler.store.lock:
                 run["lastError"] = "binary import is queued for an available parser adapter"
                 GeoHandler.store.persist(include_import_state=True)
