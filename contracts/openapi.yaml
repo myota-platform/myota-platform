@@ -81,6 +81,7 @@ paths:
     post:
       tags: [Identity]
       security: [{ bearerAuth: [] }]
+      deprecated: true
       summary: Edit an account and replace its active administrative roles
       parameters: [{ $ref: '#/components/parameters/AccountId' }]
       requestBody:
@@ -117,6 +118,7 @@ paths:
     post:
       tags: [Identity]
       security: [{ bearerAuth: [] }]
+      deprecated: true
       summary: Edit a custom administrative role
       parameters:
         - in: path
@@ -196,6 +198,7 @@ paths:
     post:
       tags: [Identity]
       security: [{ bearerAuth: [] }]
+      deprecated: true
       parameters: [{ $ref: '#/components/parameters/AccountId' }]
       requestBody:
         required: true
@@ -244,6 +247,7 @@ paths:
     post:
       tags: [Programmes]
       security: [{ bearerAuth: [] }]
+      deprecated: true
       summary: Update programme-owned configuration
       parameters:
         - in: path
@@ -289,6 +293,7 @@ paths:
     post:
       tags: [Programmes]
       security: [{ bearerAuth: [] }]
+      deprecated: true
       summary: Assign a shared entity category to a programme
       parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { $ref: '#/components/parameters/IdempotencyKey' }]
       requestBody:
@@ -299,6 +304,7 @@ paths:
     post:
       tags: [Programmes]
       security: [{ bearerAuth: [] }]
+      deprecated: true
       summary: Remove a shared entity category from a programme
       parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { $ref: '#/components/parameters/IdempotencyKey' }]
       requestBody:
@@ -309,6 +315,7 @@ paths:
     post:
       tags: [Programmes]
       security: [{ bearerAuth: [] }]
+      deprecated: true
       summary: Archive a programme
       parameters:
         - in: path
@@ -640,10 +647,21 @@ paths:
       summary: Get an award definition
       parameters: [{ $ref: '#/components/parameters/AwardId' }]
       responses: { '200': { description: Award definition } }
+    patch:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: Update an award or advance its draft lifecycle
+      operationId: patchAward
+      parameters: [{ $ref: '#/components/parameters/AwardId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, additionalProperties: true, description: Set status to UNDER_REVIEW, APPROVED, CHANGES_REQUESTED, PUBLISHED, or RETIRED to invoke the corresponding lifecycle transition. } } }
+      responses: { '200': { description: Award updated or lifecycle transition recorded } }
   /v1/awards/{awardId}/submit:
     post:
       tags: [Awards]
       security: [{ bearerAuth: [] }]
+      deprecated: true
       summary: Submit an award definition for review
       parameters: [{ $ref: '#/components/parameters/AwardId' }]
       responses: { '200': { description: Award submitted } }
@@ -651,6 +669,7 @@ paths:
     post:
       tags: [Awards]
       security: [{ bearerAuth: [] }]
+      deprecated: true
       summary: Approve or return an award definition for changes
       parameters: [{ $ref: '#/components/parameters/AwardId' }]
       requestBody:
@@ -661,6 +680,7 @@ paths:
     post:
       tags: [Awards]
       security: [{ bearerAuth: [] }]
+      deprecated: true
       summary: Publish an approved award with an effective date
       parameters: [{ $ref: '#/components/parameters/AwardId' }]
       requestBody:
@@ -777,11 +797,76 @@ paths:
       summary: Get an account by identifier
       parameters: [{ $ref: '#/components/parameters/AccountId' }]
       responses: { '200': { description: Account } }
+    patch:
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      summary: Partially update an account and optionally replace its active administrative roles
+      operationId: patchIdentityAccount
+      parameters: [{ $ref: '#/components/parameters/AccountId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                displayName: { type: string }
+                email: { type: string, format: email, nullable: true }
+                participationType: { type: string, enum: [OPERATOR, SWL] }
+                status: { type: string, enum: [ACTIVE, DEACTIVATED] }
+                password: { type: string, minLength: 12, writeOnly: true }
+                roles: { type: array, items: { $ref: '#/components/schemas/RoleAssignment' } }
+      responses: { '200': { description: Updated account and active roles } }
+  /v1/identity/roles/{roleCode}:
+    patch:
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      summary: Partially update a custom administrative role
+      operationId: patchIdentityRole
+      parameters:
+        - in: path
+          name: roleCode
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AdminRoleDefinition' } } }
+      responses: { '200': { description: Updated role definition } }
+  /v1/identity/accounts/{accountId}/role-assignments:
+    put:
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      summary: Replace an account's active administrative role assignments
+      operationId: replaceAccountRoleAssignments
+      parameters: [{ $ref: '#/components/parameters/AccountId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [roles]
+              properties:
+                roles:
+                  type: array
+                  items: { $ref: '#/components/schemas/RoleAssignment' }
+      responses: { '200': { description: Updated account and active roles } }
   /v1/identity/accounts/{accountId}/primary-callsign:
     post:
       tags: [Identity]
       security: [{ bearerAuth: [] }]
+      deprecated: true
       summary: Set an account's primary callsign
+      parameters: [{ $ref: '#/components/parameters/AccountId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [callsignId], properties: { callsignId: { type: string, format: uuid } } } } }
+      responses: { '200': { description: Primary callsign changed } }
+    put:
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      summary: Replace an account's primary callsign
+      operationId: setPrimaryCallsign
       parameters: [{ $ref: '#/components/parameters/AccountId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
       requestBody:
         required: true
@@ -810,6 +895,37 @@ paths:
       summary: Get a programme configuration
       parameters: [{ in: path, name: slug, required: true, schema: { type: string } }]
       responses: { '200': { description: Programme } }
+    patch:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Partially update a programme configuration or archive it
+      operationId: patchProgramme
+      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/ProgrammeUpdate' } } }
+      responses: { '200': { description: Updated or archived programme } }
+  /v1/programmes/{slug}/entity-types/{categoryCode}:
+    put:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Idempotently assign an entity category to a programme
+      operationId: assignProgrammeEntityCategory
+      parameters:
+        - { in: path, name: slug, required: true, schema: { type: string } }
+        - { in: path, name: categoryCode, required: true, schema: { type: string } }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses: { '200': { description: Updated programme assignments } }
+    delete:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Idempotently remove an entity category from a programme
+      operationId: unassignProgrammeEntityCategory
+      parameters:
+        - { in: path, name: slug, required: true, schema: { type: string } }
+        - { in: path, name: categoryCode, required: true, schema: { type: string } }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses: { '200': { description: Updated programme assignments } }
   /v1/programmes/{slug}/content:
     get:
       tags: [Programmes]
@@ -842,6 +958,7 @@ paths:
     post:
       tags: [Programmes]
       security: [{ bearerAuth: [] }]
+      deprecated: true
       summary: Submit content for review
       parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { in: path, name: contentId, required: true, schema: { type: string, format: uuid } }, { $ref: '#/components/parameters/IdempotencyKey' }]
       responses: { '200': { description: Content submitted } }
@@ -849,6 +966,7 @@ paths:
     post:
       tags: [Programmes]
       security: [{ bearerAuth: [] }]
+      deprecated: true
       summary: Review programme content
       parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { in: path, name: contentId, required: true, schema: { type: string, format: uuid } }, { $ref: '#/components/parameters/IdempotencyKey' }]
       requestBody:
@@ -859,9 +977,21 @@ paths:
     post:
       tags: [Programmes]
       security: [{ bearerAuth: [] }]
+      deprecated: true
       summary: Publish programme content
       parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { in: path, name: contentId, required: true, schema: { type: string, format: uuid } }, { $ref: '#/components/parameters/IdempotencyKey' }]
       responses: { '200': { description: Content published } }
+  /v1/programmes/{slug}/content/{contentId}:
+    patch:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Update content or advance its draft lifecycle
+      operationId: patchProgrammeContent
+      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { in: path, name: contentId, required: true, schema: { type: string, format: uuid } }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, additionalProperties: true, description: Set status to UNDER_REVIEW, APPROVED, CHANGES_REQUESTED, or PUBLISHED to invoke the corresponding lifecycle transition. } } }
+      responses: { '200': { description: Content updated or lifecycle transition recorded } }
   /v1/programmes/{slug}/policy-drafts:
     get:
       tags: [Programmes]
@@ -882,6 +1012,7 @@ paths:
     post:
       tags: [Programmes]
       security: [{ bearerAuth: [] }]
+      deprecated: true
       summary: Submit a policy draft for review
       parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { in: path, name: draftId, required: true, schema: { type: string, format: uuid } }, { $ref: '#/components/parameters/IdempotencyKey' }]
       responses: { '200': { description: Policy draft submitted } }
@@ -889,6 +1020,7 @@ paths:
     post:
       tags: [Programmes]
       security: [{ bearerAuth: [] }]
+      deprecated: true
       summary: Review a policy draft
       parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { in: path, name: draftId, required: true, schema: { type: string, format: uuid } }, { $ref: '#/components/parameters/IdempotencyKey' }]
       requestBody:
@@ -899,9 +1031,21 @@ paths:
     post:
       tags: [Programmes]
       security: [{ bearerAuth: [] }]
+      deprecated: true
       summary: Publish a policy draft
       parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { in: path, name: draftId, required: true, schema: { type: string, format: uuid } }, { $ref: '#/components/parameters/IdempotencyKey' }]
       responses: { '200': { description: Policy draft published } }
+  /v1/programmes/{slug}/policy-drafts/{draftId}:
+    patch:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Update a policy draft or advance its lifecycle
+      operationId: patchProgrammePolicyDraft
+      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { in: path, name: draftId, required: true, schema: { type: string, format: uuid } }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, additionalProperties: true, description: Set status to UNDER_REVIEW, APPROVED, CHANGES_REQUESTED, or PUBLISHED to invoke the corresponding lifecycle transition. } } }
+      responses: { '200': { description: Policy draft updated or lifecycle transition recorded } }
   /v1/geodata/adapters:
     get:
       tags: [Geodata]
@@ -1107,6 +1251,7 @@ paths:
     post:
       tags: [Awards]
       security: [{ bearerAuth: [] }]
+      deprecated: true
       summary: Retire an award definition
       parameters: [{ $ref: '#/components/parameters/AwardId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
       responses: { '200': { description: Award retired } }
