@@ -35,9 +35,10 @@ geometry. Identical geometry or a centroid distance below 50 metres adds a
 non-blocking `POSSIBLE_DUPLICATE` warning and comparison geometry; it never
 silently merges or rejects a record. The admin web displays active runs in a
 dedicated pre-processing queue, separate from Geodata Review, with pending and
-confirmed candidate counts. The administrator validates a paged selection,
-then a separate NATS-backed processing queue promotes confirmed records to an
-explicitly selected `CANDIDATE` or `APPROVED` entity. Only then does a
+confirmed candidate counts. The administrator reviews a paged selection, then
+a separate NATS-backed processing queue promotes pending or explicitly
+confirmed records to an explicitly selected `CANDIDATE` or `APPROVED` entity.
+Rejected records are removed from staging. Only then does a
 candidate become visible to Geodata Review. An import run reports
 pre-processed, promoted, skipped, invalid, disappeared, and conflation
 records and is idempotent when an idempotency key is supplied.
@@ -46,8 +47,8 @@ The API surface is:
 
 - `GET /v1/geodata/imports/{runId}/candidates` for compact paged validation;
 - `GET /v1/geodata/imports` for run status and pending/confirmed/processed/rejected candidate counts;
-- `POST /v1/geodata/imports/{runId}/candidates/validate` to confirm selected records;
-- `POST /v1/geodata/imports/{runId}/process` to publish the selected promotion request to `myota.geodata.import.process.v1`.
+- `POST /v1/geodata/imports/{runId}/candidates/validate` for explicit confirmation or rejection;
+- `POST /v1/geodata/imports/{runId}/process` to publish the selected promotion request to `myota.geodata.import.process.v1`; pending records can be promoted directly.
 
 The durable `geodata_import_processing_queue` table is the service-side
 projection of the NATS request. Import preprocessing is restart-safe: source
