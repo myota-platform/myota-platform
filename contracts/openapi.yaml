@@ -448,8 +448,8 @@ paths:
     post:
       tags: [Geodata]
       security: [{ bearerAuth: [] }]
-      summary: Queue confirmed records for entity promotion
-      description: The request is published to the geodata import processing subject. The target is explicitly CANDIDATE or APPROVED.
+      summary: Queue selected records for entity promotion
+      description: The request is published to the geodata import processing subject. Pending or previously confirmed records may be selected. The target is explicitly CANDIDATE or APPROVED.
       parameters:
         - { in: path, name: runId, required: true, schema: { type: string, format: uuid } }
         - $ref: '#/components/parameters/IdempotencyKey'
