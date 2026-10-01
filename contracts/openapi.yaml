@@ -615,6 +615,16 @@ paths:
       summary: Get an activation and its normalized QSOs
       parameters: [{ $ref: '#/components/parameters/ActivationId' }]
       responses: { '200': { description: Activation } }
+    patch:
+      tags: [Activity]
+      security: [{ bearerAuth: [] }]
+      summary: Update an activation lifecycle state
+      operationId: patchActivation
+      parameters: [{ $ref: '#/components/parameters/ActivationId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/ActivationClose' } } }
+      responses: { '200': { description: Activation closed with the stored rule evaluation snapshot } }
   /v1/activations/{activationId}/qsos:
     post:
       tags: [Activity]
@@ -629,6 +639,7 @@ paths:
     post:
       tags: [Activity]
       security: [{ bearerAuth: [] }]
+      deprecated: true
       summary: Close an activation
       parameters: [{ $ref: '#/components/parameters/ActivationId' }]
       responses: { '200': { description: Activation closed } }
@@ -733,19 +744,49 @@ paths:
     post:
       tags: [Awards]
       security: [{ bearerAuth: [] }]
+      deprecated: true
       summary: Evaluate award conditions and eligible levels for a subject
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/AwardEvaluationRequest' } } }
       responses: { '200': { description: Evaluation result } }
+  /v1/awards/evaluation-jobs:
+    post:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: Queue award condition evaluation
+      operationId: createAwardEvaluationJob
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AwardEvaluationJobRequest' } } }
+      responses: { '202': { description: Evaluation queued for background processing } }
+  /v1/awards/evaluation-jobs/{jobId}:
+    get:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: Get award evaluation job status
+      operationId: getAwardEvaluationJob
+      parameters: [{ in: path, name: jobId, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Evaluation job status and retry information } }
   /v1/awards/progress:
     post:
       tags: [Awards]
       security: [{ bearerAuth: [] }]
+      deprecated: true
       summary: Calculate server-side award progress for the authenticated participant
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/AwardProgressRequest' } } }
+      responses: { '200': { description: Progress and eligible levels } }
+    get:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: Get award progress for a participant
+      operationId: getAwardProgress
+      parameters:
+        - { in: query, name: awardId, required: true, schema: { type: string, format: uuid } }
+        - { in: query, name: participantId, required: true, schema: { type: string, format: uuid } }
       responses: { '200': { description: Progress and eligible levels } }
   /v1/awards/requests:
     get:
@@ -769,8 +810,20 @@ paths:
     post:
       tags: [Awards]
       security: [{ bearerAuth: [] }]
+      deprecated: true
       summary: Issue and permanently record a certificate request
       parameters: [{ $ref: '#/components/parameters/RequestId' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AwardIssuanceRequest' } } }
+      responses: { '201': { description: Award issuance created } }
+  /v1/awards/requests/{requestId}/issuances:
+    post:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: Create a permanent award issuance
+      operationId: createAwardIssuance
+      parameters: [{ $ref: '#/components/parameters/RequestId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/AwardIssuanceRequest' } } }
@@ -785,9 +838,26 @@ paths:
     post:
       tags: [Awards]
       security: [{ bearerAuth: [] }]
+      deprecated: true
       summary: Retry rendering an issued certificate after its assets are available
       parameters: [{ $ref: '#/components/parameters/IssuanceId' }]
       responses: { '200': { description: Certificate rendered } }
+  /v1/awards/issuances/{issuanceId}/render-jobs:
+    post:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: Queue certificate rendering
+      operationId: createCertificateRenderJob
+      parameters: [{ $ref: '#/components/parameters/IssuanceId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      responses: { '202': { description: Certificate rendering queued } }
+  /v1/awards/issuances/{issuanceId}/render-jobs/{jobId}:
+    get:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: Get certificate render job status
+      operationId: getCertificateRenderJob
+      parameters: [{ $ref: '#/components/parameters/IssuanceId' }, { in: path, name: jobId, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Render job status and retry information } }
   /v1/awards/issuances/{issuanceId}/download:
     get:
       tags: [Awards]
@@ -795,6 +865,14 @@ paths:
       summary: Get a short-lived certificate download URL
       parameters: [{ $ref: '#/components/parameters/IssuanceId' }]
       responses: { '200': { description: Presigned certificate download URL } }
+  /v1/awards/issuances/{issuanceId}/artifact:
+    get:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: Get the issued certificate artifact
+      operationId: getAwardArtifact
+      parameters: [{ $ref: '#/components/parameters/IssuanceId' }]
+      responses: { '200': { description: Presigned certificate artifact URL } }
   /v1/identity/auth/service-token:
     post:
       tags: [Identity]
@@ -1254,16 +1332,37 @@ paths:
     post:
       tags: [Activity]
       security: [{ bearerAuth: [] }]
+      deprecated: true
       summary: Record a batch of normalized QSOs
       parameters: [{ $ref: '#/components/parameters/ActivationId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
       requestBody:
         required: true
         content: { application/json: { schema: { type: object, required: [qsos], properties: { qsos: { type: array, items: { $ref: '#/components/schemas/Qso' } } } } } }
       responses: { '201': { description: Batch accepted with duplicate counts } }
+  /v1/qso-ingestions:
+    post:
+      tags: [Activity]
+      security: [{ bearerAuth: [] }]
+      summary: Queue a high-volume normalized QSO ingestion
+      operationId: createQsoIngestion
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/QsoIngestionRequest' } } }
+      responses: { '202': { description: Ingestion queued for COPY-based processing } }
+  /v1/qso-ingestions/{ingestionId}:
+    get:
+      tags: [Activity]
+      security: [{ bearerAuth: [] }]
+      summary: Get QSO ingestion job status
+      operationId: getQsoIngestion
+      parameters: [{ in: path, name: ingestionId, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Ingestion job state and retry information } }
   /v1/adif/imports:
     post:
       tags: [Activity]
       security: [{ bearerAuth: [] }]
+      deprecated: true
       summary: Queue an ADIF import for an activation
       parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
       requestBody:
@@ -1291,11 +1390,23 @@ paths:
     post:
       tags: [Activity]
       security: [{ bearerAuth: [] }]
+      deprecated: true
       summary: Review a QSO correction request
       parameters: [{ in: path, name: correctionId, required: true, schema: { type: string, format: uuid } }, { $ref: '#/components/parameters/IdempotencyKey' }]
       requestBody:
         required: true
         content: { application/json: { schema: { type: object, required: [decision, reviewedBy], additionalProperties: true } } }
+      responses: { '200': { description: Correction decision recorded } }
+  /v1/qsos/{qsoId}/corrections/{correctionId}/review:
+    post:
+      tags: [Activity]
+      security: [{ bearerAuth: [] }]
+      summary: Review a QSO correction under its QSO resource
+      operationId: reviewQsoCorrection
+      parameters: [{ in: path, name: qsoId, required: true, schema: { type: string, format: uuid } }, { in: path, name: correctionId, required: true, schema: { type: string, format: uuid } }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/QsoCorrectionReview' } } }
       responses: { '200': { description: Correction decision recorded } }
   /v1/public/activations:
     get:
@@ -1319,11 +1430,30 @@ paths:
     post:
       tags: [Activity]
       security: [{ bearerAuth: [] }]
+      deprecated: true
       summary: Queue a reproducible activity statistics rebuild
       parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
       requestBody:
         content: { application/json: { schema: { type: object, additionalProperties: true } } }
       responses: { '202': { description: Statistics rebuild queued } }
+  /v1/statistics/rebuild-jobs:
+    post:
+      tags: [Activity]
+      security: [{ bearerAuth: [] }]
+      summary: Create a reproducible activity statistics rebuild job
+      operationId: createStatisticsRebuildJob
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        content: { application/json: { schema: { type: object, properties: { programmeSlug: { type: string, nullable: true } } } } }
+      responses: { '202': { description: Statistics rebuild queued } }
+  /v1/statistics/rebuild-jobs/{jobId}:
+    get:
+      tags: [Activity]
+      security: [{ bearerAuth: [] }]
+      summary: Get statistics rebuild job status
+      operationId: getStatisticsRebuildJob
+      parameters: [{ in: path, name: jobId, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Rebuild status, attempts, and retry error } }
   /v1/statistics:
     get:
       tags: [Activity]
@@ -1342,9 +1472,28 @@ paths:
     post:
       tags: [Awards]
       security: [{ bearerAuth: [] }]
+      deprecated: true
       summary: Queue historical award progress recalculation
       parameters: [{ $ref: '#/components/parameters/AwardId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
       responses: { '202': { description: Award recalculation queued } }
+  /v1/awards/{awardId}/recalculation-jobs:
+    post:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: Queue historical award progress recalculation
+      operationId: createAwardRecalculationJob
+      parameters: [{ $ref: '#/components/parameters/AwardId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        content: { application/json: { schema: { type: object, properties: { subjectIds: { type: array, items: { type: string, format: uuid } } } } } }
+      responses: { '202': { description: Award recalculation queued } }
+  /v1/awards/{awardId}/recalculation-jobs/{jobId}:
+    get:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: Get award recalculation job status
+      operationId: getAwardRecalculationJob
+      parameters: [{ $ref: '#/components/parameters/AwardId' }, { in: path, name: jobId, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Recalculation status and retry information } }
   /v1/awards/{awardId}/retire:
     post:
       tags: [Awards]
@@ -1905,6 +2054,12 @@ components:
         startedAt: { type: string, format: date-time }
         entityType: { type: string }
         location: { type: object, additionalProperties: true }
+    ActivationClose:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [CLOSED] }
+        endedAt: { type: string, format: date-time }
     Qso:
       type: object
       required: [workedCallsign, timestamp]
@@ -1917,6 +2072,20 @@ components:
         hunterId: { type: string, format: uuid }
         workedEntityId: { type: string, format: uuid }
         source: { type: string }
+    QsoIngestionRequest:
+      type: object
+      required: [activationId, qsos]
+      properties:
+        activationId: { type: string, format: uuid }
+        sourceFormat: { type: string, enum: [JSON, CSV, ADIF] }
+        qsos: { type: array, minItems: 1, items: { $ref: '#/components/schemas/Qso' } }
+    QsoCorrectionReview:
+      type: object
+      required: [decision, reviewedBy]
+      properties:
+        decision: { type: string, enum: [APPLIED, REJECTED] }
+        reviewedBy: { type: string }
+        reviewNote: { type: string }
     AwardCondition:
       description: Programme-owned recursive AND/OR condition tree.
       oneOf:
@@ -2019,6 +2188,13 @@ components:
         awardId: { type: string, format: uuid }
         subjectId: { type: string, format: uuid }
         facts: { type: object, additionalProperties: true }
+    AwardEvaluationJobRequest:
+      type: object
+      required: [awardId, subjectId]
+      properties:
+        awardId: { type: string, format: uuid }
+        subjectId: { type: string, format: uuid }
+        facts: { type: object, additionalProperties: true, description: Optional reproducible fact snapshot; omitted values are read from aggregates. }
     AwardProgressRequest:
       type: object
       required: [awardId, subjectId]
