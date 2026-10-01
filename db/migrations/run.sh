@@ -75,11 +75,16 @@ done
 # Preserve local development data during the first split. Activity is copied
 # from the existing core database and geodata from the legacy myota_geo
 # database only when the corresponding target is empty. Re-running the job is
-# safe and does not duplicate rows. The legacy geodata database is retained as
-# a recoverable source copy until an operator verifies the migration counts.
+# safe and does not duplicate rows. The legacy source databases may be removed
+# after an operator verifies all domain and operational table counts.
 if [ "$MIGRATION_DATA_COPY_ENABLED" = "1" ]; then
-  activity_source_has_data="$(psql_target "$CORE_HOST" "$CORE_PORT" "$CORE_DATABASE" \
-    -Atqc "SELECT CASE WHEN EXISTS (SELECT 1 FROM activity_activation LIMIT 1) OR EXISTS (SELECT 1 FROM activity_qso LIMIT 1) THEN 1 ELSE 0 END")"
+  activity_source_tables_exist="$(psql_target "$CORE_HOST" "$CORE_PORT" "$CORE_DATABASE" \
+    -Atqc "SELECT CASE WHEN to_regclass('public.activity_activation') IS NOT NULL AND to_regclass('public.activity_qso') IS NOT NULL THEN 1 ELSE 0 END")"
+  activity_source_has_data=0
+  if [ "$activity_source_tables_exist" = "1" ]; then
+    activity_source_has_data="$(psql_target "$CORE_HOST" "$CORE_PORT" "$CORE_DATABASE" \
+      -Atqc "SELECT CASE WHEN EXISTS (SELECT 1 FROM activity_activation LIMIT 1) OR EXISTS (SELECT 1 FROM activity_qso LIMIT 1) THEN 1 ELSE 0 END")"
+  fi
   activity_target_has_data="$(psql_target "$ACTIVITY_HOST" "$ACTIVITY_PORT" "$ACTIVITY_DATABASE" \
     -Atqc "SELECT CASE WHEN EXISTS (SELECT 1 FROM activity_activation LIMIT 1) OR EXISTS (SELECT 1 FROM activity_qso LIMIT 1) THEN 1 ELSE 0 END")"
   if [ "$activity_source_has_data" = "1" ] && [ "$activity_target_has_data" = "0" ]; then
@@ -92,6 +97,10 @@ if [ "$MIGRATION_DATA_COPY_ENABLED" = "1" ]; then
   legacy_geo_exists="$(psql_target "$LEGACY_GEO_HOST" "$LEGACY_GEO_PORT" "$CORE_DATABASE" \
     -Atqc "SELECT CASE WHEN EXISTS (SELECT 1 FROM pg_database WHERE datname = '$LEGACY_GEO_DATABASE') THEN 1 ELSE 0 END")"
   if [ "$legacy_geo_exists" = "1" ]; then
+    # A preserved legacy database may contain a PostGIS extension while the
+    # active core server is intentionally plain PostgreSQL. In that state the
+    # catalog is visible but pg_dump cannot load the extension library. Skip
+    # the recoverable source rather than failing every later migration run.
     legacy_geo_postgis="$(psql_target "$LEGACY_GEO_HOST" "$LEGACY_GEO_PORT" "$LEGACY_GEO_DATABASE" \
       -Atqc "SELECT CASE WHEN EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'postgis') THEN 1 ELSE 0 END" 2>/dev/null || true)"
     if [ "$legacy_geo_postgis" = "1" ]; then
@@ -117,11 +126,19 @@ if [ "$MIGRATION_DATA_COPY_ENABLED" = "1" ]; then
           -t public.geodata_entity_category \
           -t public.geodata_import_candidate \
           -t public.geodata_import_processing_queue \
+          -t public.service_state \
+          -t public.idempotency_record \
+          -t public.outbox_event \
+          -t public.consumer_checkpoint \
+          -t public.consumer_processed_event \
+          -t public.dead_letter_event \
           | PGHOST="$GEO_HOST" PGPORT="$GEO_PORT" PGDATABASE="$GEO_DATABASE" psql -v ON_ERROR_STOP=1
       fi
     else
-      echo "Legacy geodata database is retained but not mounted with PostGIS; skipping its already-migrated copy"
+      echo "Legacy geodata database is unavailable with PostGIS; skipping its copy"
     fi
+  else
+    echo "No legacy geodata database found; skipping its already-completed copy"
   fi
 fi
 
