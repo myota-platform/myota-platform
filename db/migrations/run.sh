@@ -92,29 +92,35 @@ if [ "$MIGRATION_DATA_COPY_ENABLED" = "1" ]; then
   legacy_geo_exists="$(psql_target "$LEGACY_GEO_HOST" "$LEGACY_GEO_PORT" "$CORE_DATABASE" \
     -Atqc "SELECT CASE WHEN EXISTS (SELECT 1 FROM pg_database WHERE datname = '$LEGACY_GEO_DATABASE') THEN 1 ELSE 0 END")"
   if [ "$legacy_geo_exists" = "1" ]; then
-    geo_source_has_data="$(psql_target "$LEGACY_GEO_HOST" "$LEGACY_GEO_PORT" "$LEGACY_GEO_DATABASE" \
-      -Atqc "SELECT CASE WHEN EXISTS (SELECT 1 FROM geodata_entity LIMIT 1) OR EXISTS (SELECT 1 FROM import_run LIMIT 1) THEN 1 ELSE 0 END")"
-    geo_target_has_data="$(psql_target "$GEO_HOST" "$GEO_PORT" "$GEO_DATABASE" \
-      -Atqc "SELECT CASE WHEN EXISTS (SELECT 1 FROM geodata_entity LIMIT 1) OR EXISTS (SELECT 1 FROM import_run LIMIT 1) THEN 1 ELSE 0 END")"
-    if [ "$geo_source_has_data" = "1" ] && [ "$geo_target_has_data" = "0" ]; then
-      echo "Copying existing geodata from $LEGACY_GEO_DATABASE to $GEO_DATABASE"
-      pg_dump_target "$LEGACY_GEO_HOST" "$LEGACY_GEO_PORT" "$LEGACY_GEO_DATABASE" \
-        --data-only --schema=public \
-        -t public.entity_type \
-        -t public.geodata_entity \
-        -t public.source_reference \
-        -t public.import_run \
-        -t public.entity_review \
-        -t public.conflation_candidate \
-        -t public.source_snapshot_manifest \
-        -t public.source_snapshot_record \
-        -t public.import_schedule \
-        -t public.geodata_entity_attachment \
-        -t public.geodata_edit_staging \
-        -t public.geodata_entity_category \
-        -t public.geodata_import_candidate \
-        -t public.geodata_import_processing_queue \
-        | PGHOST="$GEO_HOST" PGPORT="$GEO_PORT" PGDATABASE="$GEO_DATABASE" psql -v ON_ERROR_STOP=1
+    legacy_geo_postgis="$(psql_target "$LEGACY_GEO_HOST" "$LEGACY_GEO_PORT" "$LEGACY_GEO_DATABASE" \
+      -Atqc "SELECT CASE WHEN EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'postgis') THEN 1 ELSE 0 END" 2>/dev/null || true)"
+    if [ "$legacy_geo_postgis" = "1" ]; then
+      geo_source_has_data="$(psql_target "$LEGACY_GEO_HOST" "$LEGACY_GEO_PORT" "$LEGACY_GEO_DATABASE" \
+        -Atqc "SELECT CASE WHEN EXISTS (SELECT 1 FROM geodata_entity LIMIT 1) OR EXISTS (SELECT 1 FROM import_run LIMIT 1) THEN 1 ELSE 0 END")"
+      geo_target_has_data="$(psql_target "$GEO_HOST" "$GEO_PORT" "$GEO_DATABASE" \
+        -Atqc "SELECT CASE WHEN EXISTS (SELECT 1 FROM geodata_entity LIMIT 1) OR EXISTS (SELECT 1 FROM import_run LIMIT 1) THEN 1 ELSE 0 END")"
+      if [ "$geo_source_has_data" = "1" ] && [ "$geo_target_has_data" = "0" ]; then
+        echo "Copying existing geodata from $LEGACY_GEO_DATABASE to $GEO_DATABASE"
+        pg_dump_target "$LEGACY_GEO_HOST" "$LEGACY_GEO_PORT" "$LEGACY_GEO_DATABASE" \
+          --data-only --schema=public \
+          -t public.entity_type \
+          -t public.geodata_entity \
+          -t public.source_reference \
+          -t public.import_run \
+          -t public.entity_review \
+          -t public.conflation_candidate \
+          -t public.source_snapshot_manifest \
+          -t public.source_snapshot_record \
+          -t public.import_schedule \
+          -t public.geodata_entity_attachment \
+          -t public.geodata_edit_staging \
+          -t public.geodata_entity_category \
+          -t public.geodata_import_candidate \
+          -t public.geodata_import_processing_queue \
+          | PGHOST="$GEO_HOST" PGPORT="$GEO_PORT" PGDATABASE="$GEO_DATABASE" psql -v ON_ERROR_STOP=1
+      fi
+    else
+      echo "Legacy geodata database is retained but not mounted with PostGIS; skipping its already-migrated copy"
     fi
   fi
 fi
