@@ -407,20 +407,20 @@ paths:
         - $ref: '#/components/parameters/PageSize'
       responses:
         '200':
-          description: Paged pre-processed import records
+          description: Paged pending pre-processed import records; confirmed, rejected, and processed staging records are omitted
           content: { application/json: { schema: { $ref: '#/components/schemas/GeoImportCandidatePage' } } }
   /v1/geodata/imports/{runId}/candidates/validate:
     post:
       tags: [Geodata]
       security: [{ bearerAuth: [] }]
-      summary: Confirm selected pre-processed records for promotion
+      summary: Confirm or reject selected pre-processed records for promotion
       parameters:
         - { in: path, name: runId, required: true, schema: { type: string, format: uuid } }
         - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/GeoImportCandidateValidation' } } }
-      responses: { '200': { description: Selected records confirmed } }
+      responses: { '200': { description: Selected records confirmed or rejected; rejected records are deleted from staging } }
   /v1/geodata/imports/{runId}/process:
     post:
       tags: [Geodata]
@@ -437,6 +437,22 @@ paths:
         '202':
           description: Promotion queue accepted
           content: { application/json: { schema: { $ref: '#/components/schemas/GeoImportProcessingQueue' } } }
+  /v1/geodata/imports/{runId}/processed:
+    post:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Finalize an import and discard staged records
+      description: Idempotently removes the run's pre-processed candidate and promotion-queue rows while preserving the import summary and any already materialized entities.
+      parameters:
+        - { in: path, name: runId, required: true, schema: { type: string, format: uuid } }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/GeoImportFinalization' } } }
+      responses:
+        '200':
+          description: Import finalized and staged records discarded
+          content: { application/json: { schema: { $ref: '#/components/schemas/GeoImportRun' } } }
   /v1/geodata/imports/upload:
     post:
       tags: [Geodata]
@@ -445,15 +461,7 @@ paths:
       parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
       requestBody:
         required: true
-        content:
-          application/json: { schema: { $ref: '#/components/schemas/GeoImportUpload' } }
-          multipart/form-data:
-            schema:
-              type: object
-              required: [metadata, file]
-              properties:
-                metadata: { type: string, description: JSON-encoded GeoImportUpload metadata without contentBase64. }
-                file: { type: string, format: binary, description: Original source document. }
+        content: { application/json: { schema: { $ref: '#/components/schemas/GeoImportUpload' } } }
       responses: { '202': { description: Upload stored and import queued } }
   /v1/geodata/location-options:
     get:
@@ -463,7 +471,7 @@ paths:
       description: Values are aggregated from stored BigDataCloud reverse-geocoding responses; this endpoint does not issue remote lookups.
       responses:
         '200':
-          description: Searchable hierarchy aggregated from stored provider-derived entity metadata. Admin clients use the hierarchy to populate dependent continent, country, subdivision, province, and city/municipality filters without direct database access.
+          description: Searchable continent, country, subdivision, and province hierarchy
           content: { application/json: { schema: { $ref: '#/components/schemas/LocationOptions' } } }
   /v1/geodata/entities/{entityId}/review:
     post:
@@ -756,6 +764,352 @@ paths:
       summary: Get a short-lived certificate download URL
       parameters: [{ $ref: '#/components/parameters/IssuanceId' }]
       responses: { '200': { description: Presigned certificate download URL } }
+  /v1/identity/auth/service-token:
+    post:
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      summary: Issue a service token for an authorised service integration
+      responses: { '201': { description: Service token issued } }
+  /v1/identity/accounts/{accountId}:
+    get:
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      summary: Get an account by identifier
+      parameters: [{ $ref: '#/components/parameters/AccountId' }]
+      responses: { '200': { description: Account } }
+  /v1/identity/accounts/{accountId}/primary-callsign:
+    post:
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      summary: Set an account's primary callsign
+      parameters: [{ $ref: '#/components/parameters/AccountId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [callsignId], properties: { callsignId: { type: string, format: uuid } } } } }
+      responses: { '200': { description: Primary callsign changed } }
+  /v1/identity/accounts/{accountId}/callsigns/{callsignId}/retire:
+    post:
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      summary: Retire a callsign association
+      parameters: [{ $ref: '#/components/parameters/AccountId' }, { $ref: '#/components/parameters/CallsignId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      responses: { '200': { description: Callsign retired } }
+  /v1/identity/oidc/providers:
+    post:
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      summary: Register or update programme-scoped OIDC provider mapping
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, additionalProperties: true } } }
+      responses: { '200': { description: OIDC mapping saved } }
+  /v1/programmes/{slug}:
+    get:
+      tags: [Programmes]
+      summary: Get a programme configuration
+      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }]
+      responses: { '200': { description: Programme } }
+  /v1/programmes/{slug}/content:
+    get:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: List programme-owned content versions
+      parameters:
+        - { in: path, name: slug, required: true, schema: { type: string } }
+        - { in: query, name: locale, schema: { type: string } }
+        - { in: query, name: status, schema: { type: string } }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses: { '200': { description: Content version page } }
+    post:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Create or update a draft content version
+      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, additionalProperties: true } } }
+      responses: { '200': { description: Draft saved } }
+  /v1/programmes/{slug}/content/coverage:
+    get:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Report programme content locale coverage
+      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }]
+      responses: { '200': { description: Locale coverage report } }
+  /v1/programmes/{slug}/content/{contentId}/submit:
+    post:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Submit content for review
+      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { in: path, name: contentId, required: true, schema: { type: string, format: uuid } }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      responses: { '200': { description: Content submitted } }
+  /v1/programmes/{slug}/content/{contentId}/review:
+    post:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Review programme content
+      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { in: path, name: contentId, required: true, schema: { type: string, format: uuid } }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, additionalProperties: true } } }
+      responses: { '200': { description: Content review recorded } }
+  /v1/programmes/{slug}/content/{contentId}/publish:
+    post:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Publish programme content
+      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { in: path, name: contentId, required: true, schema: { type: string, format: uuid } }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      responses: { '200': { description: Content published } }
+  /v1/programmes/{slug}/policy-drafts:
+    get:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: List programme policy drafts
+      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
+      responses: { '200': { description: Policy draft page } }
+    post:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Create or update a programme policy draft
+      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, additionalProperties: true } } }
+      responses: { '200': { description: Policy draft saved } }
+  /v1/programmes/{slug}/policy-drafts/{draftId}/submit:
+    post:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Submit a policy draft for review
+      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { in: path, name: draftId, required: true, schema: { type: string, format: uuid } }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      responses: { '200': { description: Policy draft submitted } }
+  /v1/programmes/{slug}/policy-drafts/{draftId}/review:
+    post:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Review a policy draft
+      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { in: path, name: draftId, required: true, schema: { type: string, format: uuid } }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, additionalProperties: true } } }
+      responses: { '200': { description: Policy review recorded } }
+  /v1/programmes/{slug}/policy-drafts/{draftId}/publish:
+    post:
+      tags: [Programmes]
+      security: [{ bearerAuth: [] }]
+      summary: Publish a policy draft
+      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { in: path, name: draftId, required: true, schema: { type: string, format: uuid } }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      responses: { '200': { description: Policy draft published } }
+  /v1/geodata/adapters:
+    get:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: List supported geodata import adapters and formats
+      responses: { '200': { description: Adapter catalogue } }
+  /v1/geodata/entities/{entityId}:
+    get:
+      tags: [Geodata]
+      summary: Get a geodata entity
+      parameters: [{ $ref: '#/components/parameters/EntityId' }]
+      responses: { '200': { description: Geodata entity } }
+  /v1/geodata/entities/{entityId}/audit:
+    get:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Get entity review, geometry, and lifecycle audit context
+      parameters: [{ $ref: '#/components/parameters/EntityId' }]
+      responses: { '200': { description: Entity audit history } }
+  /v1/geodata/bbox:
+    get:
+      tags: [Geodata]
+      summary: List entities intersecting a map bounding box
+      parameters:
+        - { in: query, name: minLon, required: true, schema: { type: number, format: double } }
+        - { in: query, name: minLat, required: true, schema: { type: number, format: double } }
+        - { in: query, name: maxLon, required: true, schema: { type: number, format: double } }
+        - { in: query, name: maxLat, required: true, schema: { type: number, format: double } }
+      responses: { '200': { description: Bounded entity page } }
+  /v1/geodata/tiles/{z}/{x}/{y}:
+    get:
+      tags: [Geodata]
+      summary: Get a vector tile for geodata display
+      parameters:
+        - { in: path, name: z, required: true, schema: { type: integer } }
+        - { in: path, name: x, required: true, schema: { type: integer } }
+        - { in: path, name: y, required: true, schema: { type: integer } }
+      responses: { '200': { description: Vector tile } }
+  /v1/geodata/refresh-schedules:
+    get:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: List geodata refresh schedules
+      responses: { '200': { description: Refresh schedule page } }
+    post:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Create a geodata refresh schedule
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, additionalProperties: true } } }
+      responses: { '201': { description: Refresh schedule created } }
+  /v1/geodata/refresh-schedules/{scheduleId}/run:
+    post:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Run a geodata refresh schedule
+      parameters: [{ in: path, name: scheduleId, required: true, schema: { type: string, format: uuid } }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      responses: { '202': { description: Refresh run queued } }
+  /v1/geodata/conflation:
+    get:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: List open geodata conflation candidates
+      responses: { '200': { description: Conflation candidate page } }
+  /v1/geodata/conflation/{candidateId}/resolve:
+    post:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Resolve a geodata conflation candidate
+      parameters: [{ in: path, name: candidateId, required: true, schema: { type: string, format: uuid } }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, additionalProperties: true } } }
+      responses: { '200': { description: Conflation decision recorded } }
+  /v1/geodata/proposals/draw:
+    post:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Create a manually drawn candidate proposal
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/GeoImport' } } }
+      responses: { '201': { description: Candidate proposal created } }
+  /v1/geodata/entities/{entityId}/status:
+    post:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Change an entity lifecycle status
+      parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [status], properties: { status: { type: string, enum: [CANDIDATE, APPROVED, RETIRED, REJECTED] }, reviewerId: { type: string }, note: { type: string } } } } }
+      responses: { '200': { description: Status changed and audited } }
+  /v1/geodata/entities/{entityId}/geometry:
+    post:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Replace an entity geometry with validated GeoJSON
+      parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [geometry, editorId], properties: { geometry: { type: object }, editorId: { type: string }, note: { type: string } } } } }
+      responses: { '200': { description: Geometry replaced and audited } }
+  /v1/activations/{activationId}/qsos/batch:
+    post:
+      tags: [Activity]
+      security: [{ bearerAuth: [] }]
+      summary: Record a batch of normalized QSOs
+      parameters: [{ $ref: '#/components/parameters/ActivationId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [qsos], properties: { qsos: { type: array, items: { $ref: '#/components/schemas/Qso' } } } } } }
+      responses: { '201': { description: Batch accepted with duplicate counts } }
+  /v1/adif/imports:
+    post:
+      tags: [Activity]
+      security: [{ bearerAuth: [] }]
+      summary: Queue an ADIF import for an activation
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [activationId, filename], additionalProperties: true } } }
+      responses: { '202': { description: ADIF import queued } }
+  /v1/adif/imports/{importId}:
+    get:
+      tags: [Activity]
+      security: [{ bearerAuth: [] }]
+      summary: Get ADIF import status
+      parameters: [{ in: path, name: importId, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: ADIF import status } }
+  /v1/qsos/{qsoId}/corrections:
+    post:
+      tags: [Activity]
+      security: [{ bearerAuth: [] }]
+      summary: Request a QSO correction
+      parameters: [{ in: path, name: qsoId, required: true, schema: { type: string, format: uuid } }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, additionalProperties: true } } }
+      responses: { '201': { description: Correction request created } }
+  /v1/qso-corrections/{correctionId}/review:
+    post:
+      tags: [Activity]
+      security: [{ bearerAuth: [] }]
+      summary: Review a QSO correction request
+      parameters: [{ in: path, name: correctionId, required: true, schema: { type: string, format: uuid } }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [decision, reviewedBy], additionalProperties: true } } }
+      responses: { '200': { description: Correction decision recorded } }
+  /v1/public/activations:
+    get:
+      tags: [Activity]
+      summary: List public activation history
+      parameters: [{ in: query, name: programme, schema: { type: string } }, { $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
+      responses: { '200': { description: Public activation page } }
+  /v1/public/leaderboards:
+    get:
+      tags: [Activity]
+      summary: List public programme leaderboards
+      parameters: [{ in: query, name: programme, required: true, schema: { type: string } }, { in: query, name: category, required: true, schema: { type: string } }]
+      responses: { '200': { description: Public leaderboard } }
+  /v1/public/results:
+    get:
+      tags: [Activity]
+      summary: Download public activation results
+      parameters: [{ in: query, name: programme, schema: { type: string } }, { in: query, name: format, schema: { type: string, enum: [json, csv] } }]
+      responses: { '200': { description: Public results document } }
+  /v1/statistics/rebuild:
+    post:
+      tags: [Activity]
+      security: [{ bearerAuth: [] }]
+      summary: Queue a reproducible activity statistics rebuild
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        content: { application/json: { schema: { type: object, additionalProperties: true } } }
+      responses: { '202': { description: Statistics rebuild queued } }
+  /v1/statistics:
+    get:
+      tags: [Activity]
+      security: [{ bearerAuth: [] }]
+      summary: List precomputed activity statistics
+      parameters: [{ in: query, name: programme, schema: { type: string } }, { $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
+      responses: { '200': { description: Statistics page } }
+  /v1/notifications:
+    get:
+      tags: [Activity]
+      security: [{ bearerAuth: [] }]
+      summary: List notifications for the authenticated account
+      parameters: [{ in: query, name: recipientId, schema: { type: string, format: uuid } }, { $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
+      responses: { '200': { description: Notification page } }
+  /v1/awards/{awardId}/recalculate:
+    post:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: Queue historical award progress recalculation
+      parameters: [{ $ref: '#/components/parameters/AwardId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      responses: { '202': { description: Award recalculation queued } }
+  /v1/awards/{awardId}/retire:
+    post:
+      tags: [Awards]
+      security: [{ bearerAuth: [] }]
+      summary: Retire an award definition
+      parameters: [{ $ref: '#/components/parameters/AwardId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      responses: { '200': { description: Award retired } }
 components:
   securitySchemes:
     bearerAuth:
@@ -979,9 +1333,8 @@ components:
         content: { type: string }
         filename: { type: string }
     GeoImportUpload:
-      description: Upload endpoint accepts multipart/form-data with a metadata JSON part and a file part. Legacy JSON contentBase64 remains supported for non-browser clients.
       type: object
-      required: [adapter, source, entityTypes, filename]
+      required: [adapter, source, entityTypes, filename, contentBase64]
       properties:
         programmeSlug: { type: string, nullable: true, description: Legacy optional scope; omit for a platform-wide import. }
         adapter: { type: string, enum: [PARKSERVE_US, OSM, GOVERNMENT_GIS, MANUAL] }
@@ -1001,7 +1354,7 @@ components:
         entityType: { type: string, deprecated: true, description: Deprecated single-category compatibility input; use entityTypes. }
         source: { type: object }
         filename: { type: string }
-        contentBase64: { type: string, format: byte, description: Legacy JSON upload field; omit when using multipart/form-data. }
+        contentBase64: { type: string, format: byte }
     GeoImportRun:
       type: object
       required: [id, status, adapter, format, entityTypes]
@@ -1014,7 +1367,7 @@ components:
         entityType: { type: string, description: Primary compatibility category code }
         entityTypes: { type: array, items: { type: string } }
         source: { type: object, additionalProperties: true }
-        status: { type: string, enum: [QUEUED, PROCESSING, PREPROCESSED, PREPROCESSED_WITH_ERRORS, COMPLETED, COMPLETED_WITH_ERRORS, FAILED] }
+        status: { type: string, enum: [QUEUED, PROCESSING, PREPROCESSED, PREPROCESSED_WITH_ERRORS, COMPLETED, COMPLETED_WITH_ERRORS, FAILED, PROCESSED] }
         queuedAt: { type: string, format: date-time }
         startedAt: { type: string, format: date-time, nullable: true }
         completedAt: { type: string, format: date-time, nullable: true }
@@ -1023,6 +1376,8 @@ components:
         manifest: { type: object, nullable: true, additionalProperties: true }
         errors: { type: array, items: { type: object, additionalProperties: true } }
         candidateCounts: { type: object, additionalProperties: { type: integer } }
+        processedAt: { type: string, format: date-time, nullable: true }
+        processedBy: { type: string, nullable: true }
     GeoImportCandidate:
       type: object
       required: [id, importRunId, ordinal, name, geometry, validationStatus]
@@ -1074,6 +1429,7 @@ components:
       properties:
         candidateIds: { type: array, minItems: 1, items: { type: string, format: uuid } }
         reviewerId: { type: string }
+        validationStatus: { type: string, enum: [VALID, REJECTED], default: VALID, description: VALID confirms records for later promotion; REJECTED removes them from the import staging queue. }
         note: { type: string }
     GeoImportProcessingRequest:
       type: object
@@ -1083,6 +1439,12 @@ components:
         targetStatus: { type: string, enum: [CANDIDATE, APPROVED] }
         processorId: { type: string }
         note: { type: string }
+    GeoImportFinalization:
+      type: object
+      required: [processedBy]
+      properties:
+        processedBy: { type: string, description: Account or administrator identifier that finalized the run. }
+        actor: { type: string, description: Compatibility alias for processedBy. }
     GeoImportProcessingQueue:
       type: object
       required: [id, importRunId, candidateIds, targetStatus, status]
@@ -1188,10 +1550,6 @@ components:
                   properties:
                     name: { type: string }
                     code: { type: string, nullable: true }
-                    cities:
-                      type: array
-                      description: City and municipality names observed directly under this country.
-                      items: { $ref: '#/components/schemas/LocationOption' }
                     subdivisions:
                       type: array
                       items:
@@ -1200,10 +1558,6 @@ components:
                         properties:
                           name: { type: string }
                           code: { type: string, nullable: true }
-                          cities:
-                            type: array
-                            description: City and municipality names observed in this subdivision.
-                            items: { $ref: '#/components/schemas/LocationOption' }
                           provinces:
                             type: array
                             items:
@@ -1212,16 +1566,6 @@ components:
                               properties:
                                 name: { type: string }
                                 code: { type: string, nullable: true }
-                                cities:
-                                  type: array
-                                  description: City and municipality names observed in this province.
-                                  items: { $ref: '#/components/schemas/LocationOption' }
-    LocationOption:
-      type: object
-      required: [name]
-      properties:
-        name: { type: string }
-        code: { type: string, nullable: true }
     LocationMetadataEdit:
       type: object
       required: [location, editorId]
