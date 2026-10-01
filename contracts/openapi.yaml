@@ -114,6 +114,17 @@ paths:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/AdminRoleDefinition' } } }
       responses: { '201': { description: Created role definition } }
+  /v1/identity/roles:
+    post:
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      summary: Create a custom administrative role
+      operationId: createIdentityRole
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AdminRoleDefinition' } } }
+      responses: { '201': { description: Created role definition } }
   /v1/identity/admin/roles/{roleCode}/update:
     post:
       tags: [Identity]
@@ -578,6 +589,7 @@ paths:
   /v1/activations/admin/entities/{entityId}/deletion-impact:
     get:
       tags: [Activity]
+      deprecated: true
       security: [{ bearerAuth: [] }]
       summary: Calculate the QSO and award impact of deleting an entity
       parameters: [{ $ref: '#/components/parameters/EntityId' }]
@@ -585,9 +597,36 @@ paths:
   /v1/activations/admin/entities/{entityId}/cascade-delete:
     post:
       tags: [Activity]
+      deprecated: true
       security: [{ bearerAuth: [] }]
       summary: Delete linked valid QSOs and queue award recalculation
       parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      responses: { '200': { description: QSO cascade and award recalculation result } }
+  /v1/activations/entity-deletion-impacts/{entityId}:
+    get:
+      tags: [Activity]
+      security: [{ bearerAuth: [] }]
+      summary: Read the activity impact of deleting an entity
+      operationId: getEntityDeletionImpact
+      parameters: [{ $ref: '#/components/parameters/EntityId' }]
+      responses: { '200': { description: QSO and award impact } }
+  /v1/activations/entity-deletion-cascades:
+    post:
+      tags: [Activity]
+      security: [{ bearerAuth: [] }]
+      summary: Create the activity cascade for an approved geodata deletion job
+      operationId: cascadeEntityDeletion
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [entityId, deletedBy]
+              properties:
+                entityId: { type: string, format: uuid }
+                deletedBy: { type: string }
       responses: { '200': { description: QSO cascade and award recalculation result } }
   /v1/activations:
     get:
@@ -903,6 +942,7 @@ paths:
                 email: { type: string, format: email, nullable: true }
                 participationType: { type: string, enum: [OPERATOR, SWL] }
                 status: { type: string, enum: [ACTIVE, DEACTIVATED] }
+                anonymize: { type: boolean, description: Anonymize and revoke sessions when status is DEACTIVATED }
                 password: { type: string, minLength: 12, writeOnly: true }
                 roles: { type: array, items: { $ref: '#/components/schemas/RoleAssignment' } }
       responses: { '200': { description: Updated account and active roles } }
