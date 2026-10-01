@@ -348,6 +348,7 @@ paths:
         - { in: query, name: minLat, schema: { type: number, format: double } }
         - { in: query, name: maxLon, schema: { type: number, format: double } }
         - { in: query, name: maxLat, schema: { type: number, format: double } }
+        - { in: query, name: bbox, description: Preferred map filter as minLon,minLat,maxLon,maxLat. Takes precedence over legacy individual bounds when supplied., schema: { type: string, pattern: '^-?\\d+(\\.\\d+)?,-?\\d+(\\.\\d+)?,-?\\d+(\\.\\d+)?,-?\\d+(\\.\\d+)?$' } }
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PageSize'
       responses:
@@ -368,6 +369,7 @@ paths:
   /v1/geodata/imports/manual:
     post:
       tags: [Geodata]
+      deprecated: true
       summary: Import GeoJSON features as candidates
       parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
       requestBody:
@@ -384,11 +386,14 @@ paths:
     post:
       tags: [Geodata]
       security: [{ bearerAuth: [] }]
-      summary: Paste a text source document and queue candidate import
+      summary: Create a geodata import resource and queue candidate preprocessing
+      description: Accepts a JSON feature collection or text document, a multipart upload, or a durable object-storage reference. All sources enter the preprocessing queue before promotion.
       parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
       requestBody:
         required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/GeoImport' } } }
+        content:
+          application/json: { schema: { oneOf: [{ $ref: '#/components/schemas/GeoImport' }, { $ref: '#/components/schemas/GeoImportObjectReference' }] } }
+          multipart/form-data: { schema: { $ref: '#/components/schemas/GeoImportMultipart' } }
       responses: { '202': { description: Import accepted } }
   /v1/geodata/imports/{runId}:
     get:
@@ -463,6 +468,7 @@ paths:
   /v1/geodata/imports/upload:
     post:
       tags: [Geodata]
+      deprecated: true
       security: [{ bearerAuth: [] }]
       summary: Upload a binary or text source document and queue candidate import
       parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
@@ -483,6 +489,7 @@ paths:
   /v1/geodata/entities/{entityId}/review:
     post:
       tags: [Geodata]
+      deprecated: true
       summary: Review a candidate entity
       parameters:
         - $ref: '#/components/parameters/EntityId'
@@ -522,6 +529,7 @@ paths:
   /v1/geodata/entities/{entityId}/location:
     post:
       tags: [Geodata]
+      deprecated: true
       security: [{ bearerAuth: [] }]
       summary: Save manual location metadata and its provider precedence
       parameters:
@@ -535,6 +543,7 @@ paths:
   /v1/geodata/entities/{entityId}/entity-type:
     post:
       tags: [Geodata]
+      deprecated: true
       security: [{ bearerAuth: [] }]
       summary: Change an entity category and record an audit entry
       parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
@@ -545,6 +554,7 @@ paths:
   /v1/geodata/entities/{entityId}/name:
     post:
       tags: [Geodata]
+      deprecated: true
       security: [{ bearerAuth: [] }]
       summary: Change an entity display name and record an audit entry
       parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
@@ -555,6 +565,7 @@ paths:
   /v1/geodata/entities/{entityId}/delete:
     post:
       tags: [Geodata]
+      deprecated: true
       security: [{ bearerAuth: [] }]
       summary: Permanently delete an entity and its audit record; global deletion also requires activity cascade first
       parameters:
@@ -1058,6 +1069,16 @@ paths:
       summary: Get a geodata entity
       parameters: [{ $ref: '#/components/parameters/EntityId' }]
       responses: { '200': { description: Geodata entity } }
+    patch:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Update editable entity metadata
+      operationId: patchGeodataEntityMetadata
+      parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/GeodataEntityMetadataPatch' } } }
+      responses: { '200': { description: Metadata updated and audited } }
   /v1/geodata/entities/{entityId}/audit:
     get:
       tags: [Geodata]
@@ -1068,6 +1089,7 @@ paths:
   /v1/geodata/bbox:
     get:
       tags: [Geodata]
+      deprecated: true
       summary: List entities intersecting a map bounding box
       parameters:
         - { in: query, name: minLon, required: true, schema: { type: number, format: double } }
@@ -1125,6 +1147,7 @@ paths:
   /v1/geodata/proposals/draw:
     post:
       tags: [Geodata]
+      deprecated: true
       security: [{ bearerAuth: [] }]
       summary: Create a manually drawn candidate proposal
       parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
@@ -1132,9 +1155,21 @@ paths:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/GeoImport' } } }
       responses: { '201': { description: Candidate proposal created } }
+  /v1/geodata/proposals:
+    post:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Create a candidate proposal
+      operationId: postGeodataProposal
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/GeodataProposal' } } }
+      responses: { '201': { description: Candidate proposal created } }
   /v1/geodata/entities/{entityId}/status:
     post:
       tags: [Geodata]
+      deprecated: true
       security: [{ bearerAuth: [] }]
       summary: Change an entity lifecycle status
       parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
@@ -1145,6 +1180,7 @@ paths:
   /v1/geodata/entities/{entityId}/geometry:
     post:
       tags: [Geodata]
+      deprecated: true
       security: [{ bearerAuth: [] }]
       summary: Replace an entity geometry with validated GeoJSON
       parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
@@ -1152,6 +1188,68 @@ paths:
         required: true
         content: { application/json: { schema: { type: object, required: [geometry, editorId], properties: { geometry: { type: object }, editorId: { type: string }, note: { type: string } } } } }
       responses: { '200': { description: Geometry replaced and audited } }
+    put:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Replace an entity geometry with validated GeoJSON
+      operationId: putGeodataEntityGeometry
+      parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [geometry, editorId], properties: { geometry: { type: object }, editorId: { type: string }, note: { type: string } } } } }
+      responses: { '200': { description: Geometry replaced and audited } }
+  /v1/geodata/entities/{entityId}/categories:
+    put:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Replace an entity's shared category assignments
+      operationId: putGeodataEntityCategories
+      parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/GeodataEntityCategoriesPut' } } }
+      responses: { '200': { description: Categories replaced and audited } }
+  /v1/geodata/entities/{entityId}/reviews:
+    post:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Record an entity lifecycle review decision
+      operationId: postGeodataEntityReview
+      parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/GeodataEntityReview' } } }
+      responses: { '200': { description: Review decision recorded and audited } }
+  /v1/geodata/entity-deletion-jobs:
+    post:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Create an entity deletion impact and confirmation job
+      operationId: createGeodataEntityDeletionJob
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/GeodataEntityDeletionJobRequest' } } }
+      responses: { '201': { description: Impact calculated; explicit confirmation required } }
+  /v1/geodata/entity-deletion-jobs/{jobId}:
+    get:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Get an entity deletion job
+      operationId: getGeodataEntityDeletionJob
+      parameters: [{ in: path, name: jobId, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Deletion impact, confirmation, and execution status } }
+  /v1/geodata/entity-deletion-jobs/{jobId}/confirm:
+    post:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Confirm and queue entity deletion
+      operationId: confirmGeodataEntityDeletionJob
+      parameters: [{ in: path, name: jobId, required: true, schema: { type: string, format: uuid } }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/GeodataEntityDeletionConfirmation' } } }
+      responses: { '202': { description: Deletion queued; QSOs and derived award progress are recalculated by activity service } }
   /v1/activations/{activationId}/qsos/batch:
     post:
       tags: [Activity]
@@ -1500,6 +1598,41 @@ components:
         source: { type: object }
         filename: { type: string }
         contentBase64: { type: string, format: byte }
+    GeoImportObjectReference:
+      type: object
+      required: [adapter, source, entityTypes, filename]
+      properties:
+        programmeSlug: { type: string, nullable: true }
+        adapter: { type: string, enum: [PARKSERVE_US, OSM, GOVERNMENT_GIS, MANUAL] }
+        format: { type: string, enum: [GEOJSON, KML, GPX, WFS, SHAPEFILE, SHP, ARCGIS_FEATURESERVER, OSM_PBF, PARKSERVE_US] }
+        entityTypes: { type: array, minItems: 1, uniqueItems: true, items: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,63}$' } }
+        filename: { type: string }
+        source:
+          type: object
+          required: [objectKey]
+          properties:
+            bucket: { type: string }
+            objectKey: { type: string }
+            sha256: { type: string }
+            license: { type: string }
+            attribution: { type: string }
+    GeoImportMultipart:
+      type: object
+      required: [adapter, source, entityTypes, file]
+      properties:
+        adapter: { type: string, enum: [PARKSERVE_US, OSM, GOVERNMENT_GIS, MANUAL] }
+        format: { type: string, enum: [GEOJSON, KML, GPX, WFS, SHAPEFILE, SHP, ARCGIS_FEATURESERVER, OSM_PBF, PARKSERVE_US] }
+        entityTypes: { type: array, minItems: 1, uniqueItems: true, items: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,63}$' } }
+        source: { type: object, additionalProperties: true }
+        file: { type: string, format: binary }
+    GeodataProposal:
+      type: object
+      required: [feature]
+      properties:
+        feature: { type: object, description: GeoJSON Feature containing the proposed geometry and properties. }
+        source: { type: object, additionalProperties: true }
+        entityTypes: { type: array, minItems: 1, uniqueItems: true, items: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,63}$' } }
+        proposerId: { type: string }
     GeoImportRun:
       type: object
       required: [id, status, adapter, format, entityTypes]
@@ -1654,6 +1787,43 @@ components:
         geocodeStatus: { type: string, enum: [ENRICHED, FAILED, NOT_CONFIGURED, SKIPPED_NO_CENTROID], nullable: true }
         geocodedAt: { type: string, format: date-time, nullable: true }
         provenance: { type: object, additionalProperties: true }
+    GeodataEntityMetadataPatch:
+      type: object
+      required: [editorId]
+      minProperties: 2
+      properties:
+        editorId: { type: string }
+        name: { type: string, minLength: 1, maxLength: 240 }
+        location: { $ref: '#/components/schemas/LocationMetadata' }
+        manualFields: { type: array, items: { type: string } }
+        note: { type: string }
+    GeodataEntityCategoriesPut:
+      type: object
+      required: [entityTypes, editorId]
+      properties:
+        entityTypes: { type: array, minItems: 1, uniqueItems: true, items: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,63}$' } }
+        editorId: { type: string }
+        note: { type: string }
+    GeodataEntityReview:
+      type: object
+      required: [status, reviewerId]
+      properties:
+        status: { type: string, enum: [CANDIDATE, APPROVED, RETIRED, REJECTED] }
+        decision: { type: string, deprecated: true }
+        reviewerId: { type: string }
+        note: { type: string }
+    GeodataEntityDeletionJobRequest:
+      type: object
+      required: [entityId, requestedBy]
+      properties:
+        entityId: { type: string, format: uuid }
+        requestedBy: { type: string }
+    GeodataEntityDeletionConfirmation:
+      type: object
+      required: [confirmation, deletedBy]
+      properties:
+        confirmation: { type: string, enum: [DELETE] }
+        deletedBy: { type: string }
     LocationMetadata:
       type: object
       additionalProperties: false
