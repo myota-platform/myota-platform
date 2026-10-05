@@ -476,6 +476,39 @@ paths:
         '200':
           description: Import finalized and staged records discarded
           content: { application/json: { schema: { $ref: '#/components/schemas/GeoImportRun' } } }
+  /v1/geodata/load-test-runs/{testRunId}:
+    delete:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Clean up a tagged non-production geodata load-test run
+      description: Available only when load-test cleanup is explicitly enabled in development, test, or staging. Requires global administrator access and exact confirmation. Removes tagged import runs, their candidates/queues, uploaded source objects, and entities created by those runs; refuses active runs or entities with activity/award impact.
+      parameters:
+        - { in: path, name: testRunId, required: true, schema: { type: string, minLength: 8, maxLength: 64 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirmation]
+              properties:
+                confirmation: { type: string, description: Must exactly equal `DELETE LOAD TEST DATA <testRunId>`. }
+      responses:
+        '200':
+          description: Tagged fixtures and source objects removed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [testRunId, importsDeleted, entitiesDeleted, objectsDeleted, cleaned]
+                properties:
+                  testRunId: { type: string }
+                  importsDeleted: { type: integer, minimum: 0 }
+                  entitiesDeleted: { type: integer, minimum: 0 }
+                  objectsDeleted: { type: integer, minimum: 0 }
+                  cleaned: { type: boolean, const: true }
+        '400': { description: Active run, missing confirmation, or activity-impact safety refusal }
+        '403': { description: Cleanup disabled or caller is not a global administrator }
   /v1/geodata/imports/upload:
     post:
       tags: [Geodata]
@@ -1181,6 +1214,28 @@ paths:
       security: [{ bearerAuth: [] }]
       summary: List supported geodata import adapters and formats
       responses: { '200': { description: Adapter catalogue } }
+  /v1/geodata/load-test-runs/{testRunId}:
+    delete:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Permanently clean up one tagged non-production load-test run
+      description: Available only when explicitly enabled in development, test, or staging. Refuses active runs and refuses deletion if linked activity or award progress exists. Confirmation must exactly match DELETE LOAD TEST DATA followed by the testRunId.
+      operationId: deleteGeodataLoadTestRun
+      parameters:
+        - { in: path, name: testRunId, required: true, schema: { type: string, pattern: '^lt-[A-Za-z0-9._-]{1,77}$', maxLength: 80 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirmation]
+              properties:
+                confirmation: { type: string, description: Exact text DELETE LOAD TEST DATA <testRunId> }
+      responses:
+        '200': { description: Tagged test imports, entities, and source objects were removed; response includes counts }
+        '400': { description: Confirmation mismatch, active run, or protected activity exists }
+        '403': { description: Cleanup disabled, non-global administrator, or production environment }
   /v1/geodata/entities/{entityId}:
     get:
       tags: [Geodata]
