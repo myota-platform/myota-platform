@@ -32,6 +32,8 @@ ordered SQL files define the `myota_geo` database:
    safely after a service restart.
 12. `012_import_finalization.sql` records who finalized an import and when,
    while allowing staged candidate and queue data to be removed after review.
+13. `013_import_retention.sql` indexes finalized and inactive import runs
+   eligible for age-based retention cleanup.
 
 `myota-platform/db/migrations/geo/` and
 `myota-deploy/db/migrations/geo/` are synchronized copies used by the
@@ -51,3 +53,17 @@ when the run reaches `PREPROCESSED` or `FAILED`. On startup, queued runs and
 processing runs whose lease has expired are requeued from their stored source.
 Runs without a recoverable source are marked `FAILED` with an explanatory
 error instead of remaining indefinitely in `PROCESSING`.
+
+Import retention
+
+The geodata retention worker runs daily and permanently deletes source objects
+and import-specific history/log records after 30 days. `PROCESSED` runs age
+from `processed_at`; queued, upload-pending, processing, preprocessed,
+preprocessed-with-errors, legacy completed, and failed runs age from the latest
+of their start, completion, or heartbeat timestamps. Thus active processing is
+retained while heartbeats continue, but stalled work and unreviewed pending
+imports expire after 30 inactive days. Retention removes source objects,
+staged/snapshot records, compatibility run summaries, and published import-run
+outbox/consumer logs. It does not delete geodata entities or their provenance.
+Object deletion is idempotent; a database cleanup failure leaves the run
+eligible for retry.

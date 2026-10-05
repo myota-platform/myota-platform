@@ -67,7 +67,8 @@ for migration in \
   009_candidate_lifecycle.sql \
   010_import_preprocessing.sql \
   011_import_recovery.sql \
-  012_import_finalization.sql; do
+  012_import_finalization.sql \
+  013_import_retention.sql; do
   psql_target "$GEO_HOST" "$GEO_PORT" "$GEO_DATABASE" \
     -f "/migrations/migrations/geo/$migration"
 done
