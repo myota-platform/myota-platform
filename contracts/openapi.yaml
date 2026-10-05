@@ -2170,7 +2170,10 @@ components:
         widthPx: { type: integer, minimum: 1 }
         heightPx: { type: integer, minimum: 1 }
         sha256: { type: string }
-        bucket: { type: string }
+        bucket:
+          type: string
+          readOnly: true
+          description: Server-selected bucket determined by asset kind and storage configuration.
     AwardTemplateElement:
       type: object
       required: [kind, x, y, width, height]
