@@ -480,8 +480,8 @@ paths:
     delete:
       tags: [Geodata]
       security: [{ bearerAuth: [] }]
-      summary: Clean up a tagged non-production geodata load-test run
-      description: Available only when load-test cleanup is explicitly enabled in development, test, or staging. Requires global administrator access and exact confirmation. Removes tagged import runs, their candidates/queues, uploaded source objects, and entities created by those runs; refuses active runs or entities with activity/award impact.
+      summary: Clean up a tagged geodata load-test run
+      description: Available only when cleanup is explicitly enabled. Production additionally requires a separate production-cleanup acknowledgement. Requires the GLOBAL_ADMIN role and exact confirmation. Removes tagged import runs, their candidates/queues, uploaded source objects, and entities created by those runs; refuses active runs or entities with activity/award impact.
       parameters:
         - { in: path, name: testRunId, required: true, schema: { type: string, minLength: 8, maxLength: 64 } }
       requestBody:
@@ -508,7 +508,7 @@ paths:
                   objectsDeleted: { type: integer, minimum: 0 }
                   cleaned: { type: boolean, const: true }
         '400': { description: Active run, missing confirmation, or activity-impact safety refusal }
-        '403': { description: Cleanup disabled or caller is not a global administrator }
+        '403': { description: Cleanup disabled, production acknowledgement missing, or caller is not a global administrator }
   /v1/geodata/imports/upload:
     post:
       tags: [Geodata]
@@ -1218,8 +1218,8 @@ paths:
     delete:
       tags: [Geodata]
       security: [{ bearerAuth: [] }]
-      summary: Permanently clean up one tagged non-production load-test run
-      description: Available only when explicitly enabled in development, test, or staging. Refuses active runs and refuses deletion if linked activity or award progress exists. Confirmation must exactly match DELETE LOAD TEST DATA followed by the testRunId.
+      summary: Permanently clean up one tagged load-test run
+      description: Available only when explicitly enabled. Production additionally requires a separate production-cleanup acknowledgement. Requires the GLOBAL_ADMIN role, refuses active runs, and refuses deletion if linked activity or award progress exists. Confirmation must exactly match DELETE LOAD TEST DATA followed by the testRunId.
       operationId: deleteGeodataLoadTestRun
       parameters:
         - { in: path, name: testRunId, required: true, schema: { type: string, pattern: '^lt-[A-Za-z0-9._-]{1,77}$', maxLength: 80 } }
@@ -1235,7 +1235,7 @@ paths:
       responses:
         '200': { description: Tagged test imports, entities, and source objects were removed; response includes counts }
         '400': { description: Confirmation mismatch, active run, or protected activity exists }
-        '403': { description: Cleanup disabled, non-global administrator, or production environment }
+        '403': { description: Cleanup disabled, production acknowledgement missing, or non-global administrator }
   /v1/geodata/entities/{entityId}:
     get:
       tags: [Geodata]
