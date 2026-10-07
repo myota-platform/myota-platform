@@ -1,4 +1,5 @@
 """Shared HTTP, persistence and API-contract primitives."""
+
 from __future__ import annotations
 
 import json
@@ -19,14 +20,20 @@ from email.policy import default as email_default
 from http.server import BaseHTTPRequestHandler
 from typing import Any, Callable, Iterator
 
-MAX_BODY_BYTES = int(os.environ.get("MYOTA_MAX_BODY_BYTES", str(1024 * 1024 * 1024)))
+MAX_BODY_BYTES = int(
+    os.environ.get("MYOTA_MAX_BODY_BYTES", str(1024 * 1024 * 1024))
+)
 
 
 def require_durable_database(dsn_env: str | None, dsn: str) -> None:
     """Fail fast when a configured runtime must not use process memory."""
-    required = os.environ.get("MYOTA_REQUIRE_DURABILITY", "").strip().lower() in {"1", "true", "yes", "on"}
+    required = os.environ.get(
+        "MYOTA_REQUIRE_DURABILITY", ""
+    ).strip().lower() in {"1", "true", "yes", "on"}
     if required and dsn_env and not dsn:
-        raise RuntimeError(f"{dsn_env} is required when MYOTA_REQUIRE_DURABILITY is enabled")
+        raise RuntimeError(
+            f"{dsn_env} is required when MYOTA_REQUIRE_DURABILITY is enabled"
+        )
 
 
 def now() -> str:
@@ -46,9 +53,16 @@ def _unb64(value: str) -> bytes:
 
 
 def auth_signing_key() -> bytes:
-    value = os.environ.get("MYOTA_AUTH_SIGNING_KEY", "myota-development-key-change-me")
-    if os.environ.get("MYOTA_ENV", "development").lower() == "production" and value == "myota-development-key-change-me":
-        raise RuntimeError("MYOTA_AUTH_SIGNING_KEY must be set outside development")
+    value = os.environ.get(
+        "MYOTA_AUTH_SIGNING_KEY", "myota-development-key-change-me"
+    )
+    if (
+        os.environ.get("MYOTA_ENV", "development").lower() == "production"
+        and value == "myota-development-key-change-me"
+    ):
+        raise RuntimeError(
+            "MYOTA_AUTH_SIGNING_KEY must be set outside development"
+        )
     return value.encode("utf-8")
 
 
@@ -57,24 +71,43 @@ def sign_token(claims: dict[str, Any], token_type: str = "access") -> str:
     encoded_header = _b64(json.dumps(header, separators=(",", ":")).encode())
     encoded_claims = _b64(json.dumps(claims, separators=(",", ":")).encode())
     signing_input = f"{encoded_header}.{encoded_claims}".encode()
-    signature = hmac.new(auth_signing_key(), signing_input, hashlib.sha256).digest()
+    signature = hmac.new(
+        auth_signing_key(), signing_input, hashlib.sha256
+    ).digest()
     return f"{encoded_header}.{encoded_claims}.{_b64(signature)}"
 
 
-def verify_token(token: str, expected_type: str | None = None) -> dict[str, Any]:
+def verify_token(
+    token: str, expected_type: str | None = None
+) -> dict[str, Any]:
     try:
         encoded_header, encoded_claims, encoded_signature = token.split(".", 2)
         signing_input = f"{encoded_header}.{encoded_claims}".encode()
-        expected = hmac.new(auth_signing_key(), signing_input, hashlib.sha256).digest()
+        expected = hmac.new(
+            auth_signing_key(), signing_input, hashlib.sha256
+        ).digest()
         if not hmac.compare_digest(expected, _unb64(encoded_signature)):
             raise ValueError("invalid token signature")
-        header, claims = json.loads(_unb64(encoded_header)), json.loads(_unb64(encoded_claims))
-        if header.get("alg") != "HS256" or (expected_type and header.get("tokenType") != expected_type):
+        header, claims = (
+            json.loads(_unb64(encoded_header)),
+            json.loads(_unb64(encoded_claims)),
+        )
+        if header.get("alg") != "HS256" or (
+            expected_type and header.get("tokenType") != expected_type
+        ):
             raise ValueError("invalid token type")
-        if int(claims.get("exp", 0)) <= int(datetime.now(timezone.utc).timestamp()):
+        if int(claims.get("exp", 0)) <= int(
+            datetime.now(timezone.utc).timestamp()
+        ):
             raise ValueError("token expired")
         return claims
-    except (ValueError, TypeError, KeyError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+    except (
+        ValueError,
+        TypeError,
+        KeyError,
+        json.JSONDecodeError,
+        UnicodeDecodeError,
+    ) as exc:
         raise PermissionError("invalid or expired token") from exc
 
 
@@ -89,13 +122,17 @@ def verify_secret(value: str, encoded: str) -> bool:
         scheme, salt, expected = encoded.split("$", 2)
         if scheme != "scrypt":
             return False
-        actual = hashlib.scrypt(value.encode(), salt=_unb64(salt), n=2**14, r=8, p=1)
+        actual = hashlib.scrypt(
+            value.encode(), salt=_unb64(salt), n=2**14, r=8, p=1
+        )
         return hmac.compare_digest(actual, _unb64(expected))
     except (ValueError, TypeError):
         return False
 
 
-def page_result(items: list[Any], query: dict[str, list[str]] | None = None) -> dict[str, Any]:
+def page_result(
+    items: list[Any], query: dict[str, list[str]] | None = None
+) -> dict[str, Any]:
     query = query or {}
     try:
         page = max(1, int(query.get("page", ["1"])[0]))
@@ -104,14 +141,21 @@ def page_result(items: list[Any], query: dict[str, list[str]] | None = None) -> 
         raise ValueError("page and pageSize must be integers") from exc
     total = len(items)
     start = (page - 1) * page_size
-    return {"items": items[start:start + page_size], "page": page, "pageSize": page_size,
-            "total": total, "nextPage": page + 1 if start + page_size < total else None}
+    return {
+        "items": items[start : start + page_size],
+        "page": page,
+        "pageSize": page_size,
+        "total": total,
+        "nextPage": page + 1 if start + page_size < total else None,
+    }
 
 
 class Store:
     """Service-owned state with optional PostgreSQL durability and a durable outbox."""
 
-    def __init__(self, service: str = "service", dsn_env: str | None = None) -> None:
+    def __init__(
+        self, service: str = "service", dsn_env: str | None = None
+    ) -> None:
         self.service = service
         self.dsn = os.environ.get(dsn_env or "", "") if dsn_env else ""
         require_durable_database(dsn_env, self.dsn)
@@ -133,17 +177,26 @@ class Store:
         try:
             from psycopg_pool import ConnectionPool
         except ImportError as exc:  # pragma: no cover
-            raise RuntimeError("PostgreSQL is configured but psycopg[binary,pool] is not installed") from exc
+            raise RuntimeError(
+                "PostgreSQL is configured but psycopg[binary,pool] is not installed"
+            ) from exc
         last: Exception | None = None
         for attempt in range(1, 6):
             try:
-                self._pool = ConnectionPool(self.dsn, min_size=1, max_size=10, open=True,
-                                            kwargs={"connect_timeout": 5})
+                self._pool = ConnectionPool(
+                    self.dsn,
+                    min_size=1,
+                    max_size=10,
+                    open=True,
+                    kwargs={"connect_timeout": 5},
+                )
                 return self._pool
             except Exception as exc:  # pragma: no cover
                 last = exc
                 time.sleep(min(2 ** (attempt - 1), 8))
-        raise RuntimeError(f"unable to connect to PostgreSQL after retries: {last}")
+        raise RuntimeError(
+            f"unable to connect to PostgreSQL after retries: {last}"
+        )
 
     @contextmanager
     def transaction(self) -> Iterator[Any]:
@@ -163,12 +216,21 @@ class Store:
             self._hydrated = True
             return
         with self.transaction() as connection:
-            row = connection.execute("SELECT state FROM service_state WHERE service = %s", (self.service,)).fetchone()
+            row = connection.execute(
+                "SELECT state FROM service_state WHERE service = %s",
+                (self.service,),
+            ).fetchone()
             if row:
                 state = row[0]
-                self.items, self.events = state.get("items", {}), state.get("events", [])
+                self.items, self.events = (
+                    state.get("items", {}),
+                    state.get("events", []),
+                )
                 self.data = state.get("data", {})
-            rows = connection.execute("SELECT key, response FROM idempotency_record WHERE service = %s", (self.service,)).fetchall()
+            rows = connection.execute(
+                "SELECT key, response FROM idempotency_record WHERE service = %s",
+                (self.service,),
+            ).fetchall()
             self.idempotency = {key: response for key, response in rows}
         self._hydrated = True
 
@@ -179,28 +241,59 @@ class Store:
             connection.execute(
                 "INSERT INTO service_state(service, state, updated_at) VALUES (%s, %s::jsonb, now()) "
                 "ON CONFLICT (service) DO UPDATE SET state = EXCLUDED.state, updated_at = now()",
-                (self.service, json.dumps({"items": self.items, "events": self.events, "data": self.data})))
+                (
+                    self.service,
+                    json.dumps(
+                        {
+                            "items": self.items,
+                            "events": self.events,
+                            "data": self.data,
+                        }
+                    ),
+                ),
+            )
             for event in self.events:
                 connection.execute(
                     "INSERT INTO outbox_event(event_id, event_type, producer, aggregate_type, aggregate_id, payload, occurred_at) "
                     "VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s) ON CONFLICT (event_id) DO NOTHING",
-                    (event["eventId"], event["eventType"], event["producer"], event["aggregate"]["type"],
-                     event["aggregate"]["id"], json.dumps(event["payload"]), event["occurredAt"]))
+                    (
+                        event["eventId"],
+                        event["eventType"],
+                        event["producer"],
+                        event["aggregate"]["type"],
+                        event["aggregate"]["id"],
+                        json.dumps(event["payload"]),
+                        event["occurredAt"],
+                    ),
+                )
             for key, response in self.idempotency.items():
                 connection.execute(
                     "INSERT INTO idempotency_record(service, key, response) VALUES (%s, %s, %s::jsonb) "
                     "ON CONFLICT (service, key) DO UPDATE SET response = EXCLUDED.response",
-                    (self.service, key, json.dumps(response)))
+                    (self.service, key, json.dumps(response)),
+                )
 
     def close(self) -> None:
         if self._pool is not None:
             self._pool.close()
             self._pool = None
 
-    def event(self, event_type: str, aggregate_type: str, aggregate_id: str, payload: dict[str, Any]) -> dict[str, Any]:
-        event = {"eventId": new_id(), "eventType": event_type, "occurredAt": now(),
-                 "producer": self.service, "aggregate": {"type": aggregate_type, "id": aggregate_id},
-                 "correlationId": new_id(), "payload": payload}
+    def event(
+        self,
+        event_type: str,
+        aggregate_type: str,
+        aggregate_id: str,
+        payload: dict[str, Any],
+    ) -> dict[str, Any]:
+        event = {
+            "eventId": new_id(),
+            "eventType": event_type,
+            "occurredAt": now(),
+            "producer": self.service,
+            "aggregate": {"type": aggregate_type, "id": aggregate_id},
+            "correlationId": new_id(),
+            "payload": payload,
+        }
         self.events.append(event)
         return event
 
@@ -245,7 +338,8 @@ def read_multipart(handler: BaseHTTPRequestHandler) -> dict[str, Any]:
         raise ValueError("multipart request body must not be empty")
     content_type = handler.headers.get("Content-Type", "")
     content_header = BytesParser(policy=email_default).parsebytes(
-        f"Content-Type: {content_type}\r\n\r\n".encode("ascii"))
+        f"Content-Type: {content_type}\r\n\r\n".encode("ascii")
+    )
     boundary = content_header.get_boundary()
     if not boundary:
         raise ValueError("multipart request is missing its boundary")
@@ -270,7 +364,7 @@ def read_multipart(handler: BaseHTTPRequestHandler) -> dict[str, Any]:
             while b"\r\n" not in self.buffer:
                 self.fill()
             index = self.buffer.index(b"\r\n")
-            value, self.buffer = self.buffer[:index], self.buffer[index + 2:]
+            value, self.buffer = self.buffer[:index], self.buffer[index + 2 :]
             return value
 
         def read_part(self, delimiter: bytes, sink: Any) -> None:
@@ -279,7 +373,7 @@ def read_multipart(handler: BaseHTTPRequestHandler) -> dict[str, Any]:
                 index = self.buffer.find(delimiter)
                 if index >= 0:
                     sink.write(self.buffer[:index])
-                    self.buffer = self.buffer[index + len(delimiter):]
+                    self.buffer = self.buffer[index + len(delimiter) :]
                     return
                 if len(self.buffer) > keep:
                     sink.write(self.buffer[:-keep])
@@ -298,13 +392,17 @@ def read_multipart(handler: BaseHTTPRequestHandler) -> dict[str, Any]:
             if not line:
                 break
             header_lines.append(line)
-        headers = BytesParser(policy=email_default).parsebytes(b"\r\n".join(header_lines) + b"\r\n")
+        headers = BytesParser(policy=email_default).parsebytes(
+            b"\r\n".join(header_lines) + b"\r\n"
+        )
         field_name = headers.get_param("name", header="content-disposition")
         filename = headers.get_filename()
         if not field_name:
             raise ValueError("multipart part is missing its field name")
         if filename or field_name == "file":
-            temporary = tempfile.NamedTemporaryFile(prefix="myota-geodata-upload-", suffix=".part", delete=False)
+            temporary = tempfile.NamedTemporaryFile(
+                prefix="myota-geodata-upload-", suffix=".part", delete=False
+            )
             try:
                 with temporary:
                     reader.read_part(delimiter, temporary)
@@ -322,7 +420,9 @@ def read_multipart(handler: BaseHTTPRequestHandler) -> dict[str, Any]:
                 try:
                     metadata = json.loads(value.getvalue().decode("utf-8"))
                 except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-                    raise ValueError("metadata must contain valid JSON") from exc
+                    raise ValueError(
+                        "metadata must contain valid JSON"
+                    ) from exc
                 if not isinstance(metadata, dict):
                     raise ValueError("metadata must be a JSON object")
                 result.update(metadata)
@@ -335,9 +435,12 @@ def read_multipart(handler: BaseHTTPRequestHandler) -> dict[str, Any]:
         raise ValueError("multipart request must include a file")
     return result
 
+
 class JsonHandler(BaseHTTPRequestHandler):
     service = "myota-service"
-    routes: dict[tuple[str, str], Callable[["JsonHandler", dict[str, str]], Any]] = {}
+    routes: dict[
+        tuple[str, str], Callable[["JsonHandler", dict[str, str]], Any]
+    ] = {}
     store = Store()
 
     def log_message(self, format: str, *args: Any) -> None:
@@ -347,14 +450,21 @@ class JsonHandler(BaseHTTPRequestHandler):
         return self.headers.get("X-Request-ID") or new_id()
 
     def _send(self, status: int, payload: Any) -> None:
-        data = b"" if status == 204 else json.dumps(payload, separators=(",", ":")).encode("utf-8")
+        data = (
+            b""
+            if status == 204
+            else json.dumps(payload, separators=(",", ":")).encode("utf-8")
+        )
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(data)))
         self.send_header("X-Request-ID", self.request_id)
         self.send_header("X-Correlation-ID", self.correlation_id)
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, Idempotency-Key, X-Request-ID, X-Correlation-ID")
+        self.send_header(
+            "Access-Control-Allow-Headers",
+            "Content-Type, Authorization, Idempotency-Key, X-Request-ID, X-Correlation-ID",
+        )
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("API-Version", "v1")
         self.end_headers()
@@ -362,12 +472,24 @@ class JsonHandler(BaseHTTPRequestHandler):
             self.wfile.write(data)
 
     def _error(self, status: int, code: str, detail: str) -> None:
-        self._send(status, {"type": f"https://myota.dev/problems/{code}", "title": code.replace("_", " ").title(),
-                            "status": status, "code": code, "detail": detail,
-                            "requestId": self.request_id, "correlationId": self.correlation_id})
+        self._send(
+            status,
+            {
+                "type": f"https://myota.dev/problems/{code}",
+                "title": code.replace("_", " ").title(),
+                "status": status,
+                "code": code,
+                "detail": detail,
+                "requestId": self.request_id,
+                "correlationId": self.correlation_id,
+            },
+        )
 
     def do_OPTIONS(self) -> None:
-        self.request_id, self.correlation_id = self._request_id(), self.headers.get("X-Correlation-ID") or new_id()
+        self.request_id, self.correlation_id = (
+            self._request_id(),
+            self.headers.get("X-Correlation-ID") or new_id(),
+        )
         self._send(204, {})
 
     def do_GET(self) -> None:
@@ -377,15 +499,29 @@ class JsonHandler(BaseHTTPRequestHandler):
         self._dispatch("POST")
 
     def _dispatch(self, method: str) -> None:
-        self.request_id, self.correlation_id = self._request_id(), self.headers.get("X-Correlation-ID") or new_id()
+        self.request_id, self.correlation_id = (
+            self._request_id(),
+            self.headers.get("X-Correlation-ID") or new_id(),
+        )
         if self.path == "/healthz":
-            self._send(200, {"status": "ok", "service": self.service, "time": now(), "durable": self.store.durable})
+            self._send(
+                200,
+                {
+                    "status": "ok",
+                    "service": self.service,
+                    "time": now(),
+                    "durable": self.store.durable,
+                },
+            )
             return
         path = self.path.split("?", 1)[0]
         for (route_method, pattern), fn in self.routes.items():
             if route_method != method:
                 continue
-            parts, actual = pattern.strip("/").split("/"), path.strip("/").split("/")
+            parts, actual = (
+                pattern.strip("/").split("/"),
+                path.strip("/").split("/"),
+            )
             if len(parts) != len(actual):
                 continue
             params: dict[str, str] = {}
@@ -400,15 +536,37 @@ class JsonHandler(BaseHTTPRequestHandler):
                 try:
                     if method == "POST":
                         content_type = self.headers.get("Content-Type", "")
-                        body = read_multipart(self) if content_type.lower().startswith("multipart/form-data") else read_json(self)
+                        body = (
+                            read_multipart(self)
+                            if content_type.lower().startswith(
+                                "multipart/form-data"
+                            )
+                            else read_json(self)
+                        )
                     else:
                         body = {}
-                    result = fn(self, {**params, "_body": body, "_path": self.path,
-                                       "Idempotency-Key": self.headers.get("Idempotency-Key"),
-                                       "Authorization": self.headers.get("Authorization", ""),
-                                       "User-Agent": self.headers.get("User-Agent", ""),
-                                       "Remote-Addr": self.client_address[0], "_http": "1"})
-                    status = result.pop("_status", 200) if isinstance(result, dict) else 200
+                    result = fn(
+                        self,
+                        {
+                            **params,
+                            "_body": body,
+                            "_path": self.path,
+                            "Idempotency-Key": self.headers.get(
+                                "Idempotency-Key"
+                            ),
+                            "Authorization": self.headers.get(
+                                "Authorization", ""
+                            ),
+                            "User-Agent": self.headers.get("User-Agent", ""),
+                            "Remote-Addr": self.client_address[0],
+                            "_http": "1",
+                        },
+                    )
+                    status = (
+                        result.pop("_status", 200)
+                        if isinstance(result, dict)
+                        else 200
+                    )
                     if method == "POST":
                         self.store.persist()
                     self._send(status, result)
