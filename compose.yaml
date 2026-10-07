@@ -1,19 +1,46 @@
 services:
-  postgis:
-    image: postgis/postgis:16-3.4
+  core-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: myota
       POSTGRES_PASSWORD: myota-dev-only
       POSTGRES_DB: myota_core
     ports: ["5432:5432"]
     volumes:
+      # Keep the existing volume on the first split so core identity and
+      # programme data remain available. The old myota_geo database is copied
+      # to geo-db by the migration job.
       - postgis-data:/var/lib/postgresql/data
       - ./db/migrations/core/001_core.sql:/docker-entrypoint-initdb.d/001_core.sql:ro
-      - ./db/bootstrap/00-create-geo.sh:/docker-entrypoint-initdb.d/00-create-geo.sh:ro
-      - ./db/migrations/geo/001_geodata.sql:/docker-entrypoint-initdb.d/geo.sql:ro
-      - ./db/migrations/geo/002_qgis_views.sql:/docker-entrypoint-initdb.d/geo-views.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U myota -d myota_core"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  activity-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: myota
+      POSTGRES_PASSWORD: myota-dev-only
+      POSTGRES_DB: myota_activity
+    volumes: [activity-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myota -d myota_activity"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  geo-db:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: myota
+      POSTGRES_PASSWORD: myota-dev-only
+      POSTGRES_DB: myota_geo
+    volumes: [geo-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myota -d myota_geo"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -21,104 +48,355 @@ services:
     image: postgis/postgis:16-3.4
     command: ["/bin/bash", "/migrations/run.sh"]
     environment:
-      PGHOST: postgis
-      PGPORT: 5432
+      CORE_HOST: core-db
+      ACTIVITY_HOST: activity-db
+      GEO_HOST: geo-db
       PGUSER: myota
       PGPASSWORD: myota-dev-only
-      PGDATABASE: myota_core
+      CORE_DATABASE: myota_core
+      ACTIVITY_DATABASE: myota_activity
+      GEO_DATABASE: myota_geo
+      LEGACY_GEO_HOST: core-db
+      LEGACY_GEO_DATABASE: myota_geo
     volumes:
       - ./db/migrations:/migrations/migrations:ro
       - ./db/bootstrap:/migrations/bootstrap:ro
       - ./db/migrations/run.sh:/migrations/run.sh:ro
-    depends_on: {postgis: {condition: service_healthy}}
+    depends_on:
+      core-db: {condition: service_healthy}
+      activity-db: {condition: service_healthy}
+      geo-db: {condition: service_healthy}
   identity:
     build: .
+    restart: unless-stopped
     env_file: [.env]
     environment:
       SERVICE: identity
-      CORE_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_core
+      CORE_DATABASE_URL: postgresql://myota:myota-dev-only@core-db:5432/myota_core
       MYOTA_REQUIRE_DURABILITY: "1"
       MYOTA_ENV: development
       MYOTA_AUTH_SIGNING_KEY: myota-local-development-signing-key
       MYOTA_EXPOSE_DEV_TOKENS: "1"
+      MYOTA_OTEL_ENABLED: "1"
+      OTEL_SERVICE_NAME: myota-identity
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
     depends_on: {migrations: {condition: service_completed_successfully}}
     ports: ["8001:8001"]
   identity-maintenance:
     build: .
+    restart: unless-stopped
     command: ["python3", "services/identity_maintenance.py"]
     environment:
-      CORE_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_core
+      CORE_DATABASE_URL: postgresql://myota:myota-dev-only@core-db:5432/myota_core
       MYOTA_REQUIRE_DURABILITY: "1"
       MYOTA_AUTH_SIGNING_KEY: myota-local-development-signing-key
+      MYOTA_OTEL_ENABLED: "1"
+      OTEL_SERVICE_NAME: myota-programmes
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
       MYOTA_IDENTITY_MAINTENANCE_SECONDS: "3600"
     depends_on: {migrations: {condition: service_completed_successfully}}
   programmes:
     build: .
+    restart: unless-stopped
     environment:
       SERVICE: programmes
-      CORE_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_core
+      CORE_DATABASE_URL: postgresql://myota:myota-dev-only@core-db:5432/myota_core
       MYOTA_REQUIRE_DURABILITY: "1"
       MYOTA_AUTH_SIGNING_KEY: myota-local-development-signing-key
+      MYOTA_OTEL_ENABLED: "1"
+      OTEL_SERVICE_NAME: myota-programmes
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
     depends_on: {migrations: {condition: service_completed_successfully}}
     ports: ["8002:8002"]
   geodata:
     build: ../myota-geodata-service
+    restart: unless-stopped
     env_file: [../myota-geodata-service/.env]
     environment:
       SERVICE: geodata
-      GEO_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_geo
+      GEO_DATABASE_URL: postgresql://myota:myota-dev-only@geo-db:5432/myota_geo
       MYOTA_REQUIRE_DURABILITY: "1"
+      MYOTA_ENV: development
       MYOTA_AUTH_SIGNING_KEY: myota-local-development-signing-key
+      MYOTA_LOAD_TEST_CLEANUP_ENABLED: "1"
       MYOTA_MAX_BODY_BYTES: "1073741824"
       MYOTA_UPLOAD_MAX_BYTES: "1073741824"
-    depends_on: {migrations: {condition: service_completed_successfully}}
+      # Upload and import work is consumed from durable JetStream queues by a
+      # separately scalable geodata-owned worker process.
+      MYOTA_UPLOAD_PART_MAX_BYTES: "16777216"
+      MYOTA_OBJECT_STORAGE_ENDPOINT: http://seaweedfs:8333
+      MYOTA_OBJECT_STORAGE_PUBLIC_ENDPOINT: http://localhost:8333
+      MYOTA_OBJECT_STORAGE_ACCESS_KEY: myota-s3
+      MYOTA_OBJECT_STORAGE_SECRET_KEY: myota-s3-dev-only
+      MYOTA_GEODATA_IMPORT_BUCKET: myota-geodata-imports
+      GEODATA_IMPORT_RETENTION_DAYS: "30"
+      NATS_URL: nats://nats:4222
+      MYOTA_OTEL_ENABLED: "1"
+      OTEL_SERVICE_NAME: myota-geodata
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+    depends_on: {migrations: {condition: service_completed_successfully}, seaweedfs: {condition: service_healthy}, nats: {condition: service_started}}
     ports: ["8003:8003"]
+  geodata-import-retention:
+    build: ../myota-geodata-service
+    restart: unless-stopped
+    command: ["python3", "geodata_retention_worker.py", "--loop"]
+    environment:
+      GEO_DATABASE_URL: postgresql://myota:myota-dev-only@geo-db:5432/myota_geo
+      MYOTA_OBJECT_STORAGE_ENDPOINT: http://seaweedfs:8333
+      MYOTA_OBJECT_STORAGE_ACCESS_KEY: myota-s3
+      MYOTA_OBJECT_STORAGE_SECRET_KEY: myota-s3-dev-only
+      MYOTA_GEODATA_IMPORT_BUCKET: myota-geodata-imports
+      GEODATA_IMPORT_RETENTION_DAYS: "30"
+      GEODATA_IMPORT_RETENTION_INTERVAL_SECONDS: "86400"
+    depends_on:
+      migrations: {condition: service_completed_successfully}
+      geo-db: {condition: service_healthy}
+      seaweedfs: {condition: service_healthy}
   activity:
     build: .
+    restart: unless-stopped
     environment:
       SERVICE: activity
-      CORE_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_core
+      ACTIVITY_DATABASE_URL: postgresql://myota:myota-dev-only@activity-db:5432/myota_activity
       MYOTA_REQUIRE_DURABILITY: "1"
       MYOTA_AUTH_SIGNING_KEY: myota-local-development-signing-key
-    depends_on: {migrations: {condition: service_completed_successfully}}
+      MYOTA_OBJECT_STORAGE_ENDPOINT: http://seaweedfs:8333
+      MYOTA_OBJECT_STORAGE_PUBLIC_ENDPOINT: http://localhost:8333
+      MYOTA_OBJECT_STORAGE_ACCESS_KEY: myota-s3
+      MYOTA_OBJECT_STORAGE_SECRET_KEY: myota-s3-dev-only
+      MYOTA_AWARD_ASSET_BUCKET: myota-award-assets
+      MYOTA_AWARD_SIGNATURE_BUCKET: myota-award-signatures
+      MYOTA_CERTIFICATE_BUCKET: myota-certificates
+      MYOTA_ACTIVITY_DB_POOL_MAX: "12"
+      MYOTA_HTTP_MAX_WORKERS: "64"
+      MYOTA_OTEL_ENABLED: "1"
+      OTEL_SERVICE_NAME: myota-activity
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+    depends_on: {migrations: {condition: service_completed_successfully}, seaweedfs: {condition: service_healthy}}
     ports: ["8004:8004"]
+  activity-worker:
+    build: .
+    restart: unless-stopped
+    command: ["python3", "services/activity_worker.py"]
+    environment:
+      ACTIVITY_DATABASE_URL: postgresql://myota:myota-dev-only@activity-db:5432/myota_activity
+      MYOTA_REQUIRE_DURABILITY: "1"
+      MYOTA_AUTH_SIGNING_KEY: myota-local-development-signing-key
+      MYOTA_OBJECT_STORAGE_ENDPOINT: http://seaweedfs:8333
+      MYOTA_OBJECT_STORAGE_PUBLIC_ENDPOINT: http://localhost:8333
+      MYOTA_OBJECT_STORAGE_ACCESS_KEY: myota-s3
+      MYOTA_OBJECT_STORAGE_SECRET_KEY: myota-s3-dev-only
+      MYOTA_ADIF_BUCKET: myota-adif
+      MYOTA_CERTIFICATE_BUCKET: myota-certificates
+      MYOTA_ACTIVITY_DB_POOL_MAX: "4"
+    depends_on: {migrations: {condition: service_completed_successfully}, nats: {condition: service_started}, seaweedfs: {condition: service_healthy}}
+  activity-adif-retention:
+    build: ../myota-activity-service
+    restart: unless-stopped
+    command: ["python3", "adif_retention_worker.py", "--loop"]
+    environment:
+      ACTIVITY_DATABASE_URL: postgresql://myota:myota-dev-only@activity-db:5432/myota_activity
+      MYOTA_REQUIRE_DURABILITY: "1"
+      MYOTA_OBJECT_STORAGE_ENDPOINT: http://seaweedfs:8333
+      MYOTA_OBJECT_STORAGE_ACCESS_KEY: myota-s3
+      MYOTA_OBJECT_STORAGE_SECRET_KEY: myota-s3-dev-only
+      MYOTA_ADIF_BUCKET: myota-adif
+      MYOTA_ADIF_RETENTION_DAYS: "15"
+      MYOTA_ADIF_RETENTION_BATCH_SIZE: "500"
+      MYOTA_ADIF_RETENTION_INTERVAL_SECONDS: "86400"
+      MYOTA_ACTIVITY_DB_POOL_MAX: "2"
+    depends_on:
+      migrations: {condition: service_completed_successfully}
+      activity-db: {condition: service_healthy}
+      seaweedfs: {condition: service_healthy}
+  activity-notifications:
+    build: .
+    restart: unless-stopped
+    command: ["python3", "services/activity_notification_consumer.py"]
+    environment:
+      ACTIVITY_DATABASE_URL: postgresql://myota:myota-dev-only@activity-db:5432/myota_activity
+      MYOTA_REQUIRE_DURABILITY: "1"
+      NATS_URL: nats://nats:4222
+      MYOTA_ACTIVITY_DB_POOL_MAX: "4"
+    depends_on: {migrations: {condition: service_completed_successfully}, nats: {condition: service_started}}
+  operations:
+    build: ../myota-operations-service
+    restart: unless-stopped
+    environment:
+      CORE_DATABASE_URL: postgresql://myota:myota-dev-only@core-db:5432/myota_core
+      MYOTA_REQUIRE_DURABILITY: "1"
+      MYOTA_AUTH_SIGNING_KEY: myota-local-development-signing-key
+      NATS_URL: nats://nats:4222
+      OPERATIONS_POLL_SECONDS: "30"
+      OPERATIONS_HISTORY_DAYS: "7"
+      MYOTA_OTEL_ENABLED: "1"
+      OTEL_SERVICE_NAME: myota-operations
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+    depends_on: {migrations: {condition: service_completed_successfully}, nats: {condition: service_started}}
   gateway:
     build: .
+    restart: unless-stopped
     command: ["python3", "services/dev_server.py"]
     environment:
       MYOTA_IDENTITY_URL: http://identity:8001
       MYOTA_PROGRAMMES_URL: http://programmes:8002
       MYOTA_GEODATA_URL: http://geodata:8003
       MYOTA_ACTIVITY_URL: http://activity:8004
-    depends_on: [identity, programmes, geodata, activity]
+      MYOTA_OPERATIONS_URL: http://operations:8005
+      MYOTA_PROXY_UPLOAD_TIMEOUT_SECONDS: "3600"
+      MYOTA_OTEL_ENABLED: "1"
+      OTEL_SERVICE_NAME: myota-gateway
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+    depends_on: [identity, programmes, geodata, activity, operations]
     ports: ["8080:8080"]
   admin-web:
     build: ../myota-admin-web
+    restart: unless-stopped
+    environment:
+      MYOTA_GATEWAY_UPSTREAM: gateway:8080
+      MYOTA_GRAFANA_UPSTREAM: grafana:3000
     depends_on: [gateway]
     ports: ["8090:8080"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
   nats:
     image: nats:2.10-alpine
+    restart: unless-stopped
     command: ["-js", "-sd", "/data"]
     volumes: ["nats-data:/data"]
     ports: ["4222:4222"]
+  seaweedfs:
+    image: chrislusf/seaweedfs:latest@sha256:ce9e796f1fe6f06968f4c04bdaf8f678dad9c8acdfef3d244133d71bfa6bf882
+    restart: unless-stopped
+    command: ["mini", "-dir=/data", "-ip.bind=0.0.0.0"]
+    environment:
+      AWS_ACCESS_KEY_ID: myota-s3
+      AWS_SECRET_ACCESS_KEY: myota-s3-dev-only
+    volumes: ["seaweedfs-data:/data"]
+    ports: ["8333:8333", "8888:8888"]
+    healthcheck:
+      # Probe the S3 status endpoint. Probing the filer HTML root with
+      # wget --spider makes the template writer log a broken pipe because the
+      # client closes the response before the directory page is rendered.
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8333/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
   outbox-core:
     build: .
+    restart: unless-stopped
     command: ["python3", "services/outbox_worker.py"]
     environment:
-      OUTBOX_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_core
+      OUTBOX_DATABASE_URL: postgresql://myota:myota-dev-only@core-db:5432/myota_core
       MYOTA_REQUIRE_DURABILITY: "1"
       NATS_URL: nats://nats:4222
       OUTBOX_WORKER: core-outbox
     depends_on: {migrations: {condition: service_completed_successfully}, nats: {condition: service_started}}
-  outbox-geo:
+  outbox-activity:
     build: .
+    restart: unless-stopped
     command: ["python3", "services/outbox_worker.py"]
     environment:
-      OUTBOX_DATABASE_URL: postgresql://myota:myota-dev-only@postgis:5432/myota_geo
+      OUTBOX_DATABASE_URL: postgresql://myota:myota-dev-only@activity-db:5432/myota_activity
+      MYOTA_REQUIRE_DURABILITY: "1"
+      NATS_URL: nats://nats:4222
+      OUTBOX_WORKER: activity-outbox
+    depends_on: {migrations: {condition: service_completed_successfully}, nats: {condition: service_started}}
+  outbox-geo:
+    build: .
+    restart: unless-stopped
+    command: ["python3", "services/outbox_worker.py"]
+    environment:
+      OUTBOX_DATABASE_URL: postgresql://myota:myota-dev-only@geo-db:5432/myota_geo
       MYOTA_REQUIRE_DURABILITY: "1"
       NATS_URL: nats://nats:4222
       OUTBOX_WORKER: geo-outbox
     depends_on: {migrations: {condition: service_completed_successfully}, nats: {condition: service_started}}
+  geodata-import-processing:
+    build: ../myota-geodata-service
+    restart: unless-stopped
+    stop_grace_period: 3m
+    command: ["python3", "geodata_import_worker.py"]
+    environment:
+      MYOTA_ACTIVITY_URL: http://activity:8004
+      GEO_DATABASE_URL: postgresql://myota:myota-dev-only@geo-db:5432/myota_geo
+      MYOTA_REQUIRE_DURABILITY: "1"
+      MYOTA_AUTH_SIGNING_KEY: myota-local-development-signing-key
+      NATS_URL: nats://nats:4222
+      MYOTA_OBJECT_STORAGE_ENDPOINT: http://seaweedfs:8333
+      MYOTA_OBJECT_STORAGE_ACCESS_KEY: myota-s3
+      MYOTA_OBJECT_STORAGE_SECRET_KEY: myota-s3-dev-only
+      MYOTA_GEODATA_IMPORT_BUCKET: myota-geodata-imports
+      MYOTA_IMPORT_WORKERS: "1"
+      GEODATA_WORKER_MAX_DELIVERIES: "100"
+      GEODATA_WORKER_MAX_ACK_PENDING: "1"
+    depends_on: {migrations: {condition: service_completed_successfully}, nats: {condition: service_started}, seaweedfs: {condition: service_healthy}}
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    profiles: [observability]
+    restart: unless-stopped
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus"]
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/rules.yml:/etc/prometheus/rules.yml:ro
+      - prometheus-data:/prometheus
+    depends_on: [otel-collector]
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    profiles: [observability]
+    restart: unless-stopped
+    command: ["--config.file=/etc/alertmanager/alertmanager.yml", "--storage.path=/alertmanager"]
+    volumes:
+      - ./observability/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.135.0
+    profiles: [observability]
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes:
+      - ./observability/otel-collector.yaml:/etc/otelcol-contrib/config.yaml:ro
+    depends_on: [gateway, identity, programmes, geodata, activity, tempo]
+  tempo:
+    image: grafana/tempo:2.6.1
+    profiles: [observability]
+    restart: unless-stopped
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    volumes:
+      - ./observability/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - tempo-data:/var/tempo
+  grafana:
+    image: grafana/grafana:11.2.2
+    profiles: [observability]
+    restart: unless-stopped
+    environment:
+      GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s/observability/"
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_AUTH_BASIC_ENABLED: "false"
+      GF_AUTH_PROXY_ENABLED: "true"
+      GF_AUTH_PROXY_HEADER_NAME: X-WEBAUTH-USER
+      GF_AUTH_PROXY_HEADER_PROPERTY: username
+      GF_AUTH_PROXY_AUTO_SIGN_UP: "true"
+      GF_AUTH_PROXY_ENABLE_LOGIN_TOKEN: "false"
+      GF_AUTH_PROXY_HEADERS: "Name:X-WEBAUTH-NAME Email:X-WEBAUTH-EMAIL Role:X-WEBAUTH-ROLE"
+      GF_USERS_AUTO_ASSIGN_ORG_ROLE: Viewer
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/etc/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    depends_on: [prometheus, alertmanager, tempo]
 volumes:
   postgis-data:
+  activity-data:
+  geo-data:
   nats-data:
+  seaweedfs-data:
+  prometheus-data:
+  grafana-data:
+  tempo-data:
+  alertmanager-data:

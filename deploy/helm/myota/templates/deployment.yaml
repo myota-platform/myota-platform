@@ -4,33 +4,148 @@ kind: Deployment
 metadata:
   name: {{ include "myota.fullname" (dict "name" $name) }}
 spec:
-  replicas: 1
+  replicas: {{ default 1 $cfg.replicas }}
   selector: {matchLabels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: {{ $name }}}}
   template:
-    metadata: {labels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: {{ $name }}}}
+    metadata:
+      labels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: {{ $name }}}
+      annotations:
+        rollout.myota.dev/image-digest: {{ index $.Values.imageRollout.digests $name | default "untracked" | quote }}
     spec:
+      initContainers:
+        {{- if eq $name "activity" }}
+        {{ include "myota.waitForSchema" (dict "root" $ "databaseUrlKey" "activity-database-url") | nindent 8 }}
+        {{- else if eq $name "geodata" }}
+        {{ include "myota.waitForSchema" (dict "root" $ "databaseUrlKey" "geo-database-url") | nindent 8 }}
+        {{- else }}
+        {{ include "myota.waitForSchema" (dict "root" $ "databaseUrlKey" "core-database-url") | nindent 8 }}
+        {{- end }}
       containers:
         - name: {{ $name }}
-          image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag }}"
+          image: "{{ default $.Values.image.repository $cfg.imageRepository }}:{{ default $.Values.image.tag $cfg.imageTag }}"
           imagePullPolicy: {{ $.Values.image.pullPolicy }}
           env:
             - name: SERVICE
               value: {{ $name | quote }}
-            - name: CORE_DATABASE_URL
-              valueFrom: {secretKeyRef: {name: {{ $.Values.postgres.existingSecret }}, key: core-database-url}}
+            {{- if eq $name "activity" }}
+            - name: ACTIVITY_DATABASE_URL
+              valueFrom: {secretKeyRef: {name: {{ $.Values.postgres.existingSecret }}, key: activity-database-url}}
+            {{- else if eq $name "geodata" }}
             - name: GEO_DATABASE_URL
               valueFrom: {secretKeyRef: {name: {{ $.Values.postgres.existingSecret }}, key: geo-database-url}}
+            {{- else }}
+            - name: CORE_DATABASE_URL
+              valueFrom: {secretKeyRef: {name: {{ $.Values.postgres.existingSecret }}, key: core-database-url}}
+            {{- end }}
             - name: MYOTA_REQUIRE_DURABILITY
               value: "1"
             - name: MYOTA_ENV
               value: {{ $.Values.auth.environment | quote }}
+            {{- if eq $name "operations" }}
+            - name: NATS_URL
+              value: {{ $.Values.nats.url | default "nats://myota-nats:4222" | quote }}
+            - name: OPERATIONS_POLL_SECONDS
+              value: {{ $cfg.pollSeconds | default 30 | quote }}
+            - name: OPERATIONS_HISTORY_DAYS
+              value: {{ $cfg.historyDays | default 7 | quote }}
+            {{- end }}
+            {{- if eq $name "geodata" }}
+            - name: MYOTA_ACTIVITY_URL
+              value: {{ $.Values.services.activity.internalUrl | quote }}
+            - name: MYOTA_LOAD_TEST_CLEANUP_ENABLED
+              value: {{ ternary "1" "0" $.Values.geodataLoadTestCleanup.enabled | quote }}
+            {{- if and $.Values.geodataLoadTestCleanup.enabled $.Values.geodataLoadTestCleanup.allowProductionCleanup (eq $.Values.auth.environment "production") }}
+            - name: MYOTA_LOAD_TEST_ALLOW_PRODUCTION_CLEANUP
+              value: "YES"
+            {{- end }}
+            {{- end }}
             - name: MYOTA_AUTH_SIGNING_KEY
               valueFrom: {secretKeyRef: {name: {{ $.Values.auth.existingSecret }}, key: signing-key}}
-            {{- if eq $name "geodata" }}
+            {{- if $.Values.observability.enabled }}
+            - name: MYOTA_OTEL_ENABLED
+              value: "1"
+            - name: OTEL_SERVICE_NAME
+              value: {{ printf "myota-%s" $name | quote }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://myota-otel-collector:4317
+            {{- end }}
+            {{- if eq $name "activity" }}
+            - name: MYOTA_OBJECT_STORAGE_ENDPOINT
+              value: {{ $.Values.objectStorage.endpoint | quote }}
+            - name: MYOTA_OBJECT_STORAGE_PUBLIC_ENDPOINT
+              value: {{ $.Values.objectStorage.publicEndpoint | default $.Values.objectStorage.endpoint | quote }}
+            - name: MYOTA_OBJECT_STORAGE_ACCESS_KEY
+              valueFrom: {secretKeyRef: {name: {{ $.Values.objectStorage.existingSecret }}, key: {{ $.Values.objectStorage.accessKeyKey }}}}
+            - name: MYOTA_OBJECT_STORAGE_SECRET_KEY
+              valueFrom: {secretKeyRef: {name: {{ $.Values.objectStorage.existingSecret }}, key: {{ $.Values.objectStorage.secretKeyKey }}}}
+            - name: MYOTA_AWARD_ASSET_BUCKET
+              value: {{ $.Values.objectStorage.awardAssetBucket | quote }}
+            - name: MYOTA_AWARD_SIGNATURE_BUCKET
+              value: {{ $.Values.objectStorage.awardSignatureBucket | quote }}
+            - name: MYOTA_CERTIFICATE_BUCKET
+              value: {{ $.Values.objectStorage.certificateBucket | quote }}
+            - name: MYOTA_ACTIVITY_DB_POOL_MAX
+              value: {{ default 10 $cfg.dbPoolMax | quote }}
+            - name: MYOTA_HTTP_MAX_WORKERS
+              value: {{ default 64 $cfg.httpMaxWorkers | quote }}
+            - name: MYOTA_ADIF_BUCKET
+              value: {{ $.Values.objectStorage.adifBucket | quote }}
+            {{- end }}
+            {{- if and (eq $name "geodata") $.Values.geodataPipeline.enabled }}
+            - name: MYOTA_OBJECT_STORAGE_ENDPOINT
+              value: {{ $.Values.objectStorage.endpoint | quote }}
+            - name: MYOTA_OBJECT_STORAGE_PUBLIC_ENDPOINT
+              value: {{ $.Values.objectStorage.publicEndpoint | default $.Values.objectStorage.endpoint | quote }}
+            - name: MYOTA_OBJECT_STORAGE_ACCESS_KEY
+              valueFrom: {secretKeyRef: {name: {{ $.Values.objectStorage.existingSecret }}, key: {{ $.Values.objectStorage.accessKeyKey }}}}
+            - name: MYOTA_OBJECT_STORAGE_SECRET_KEY
+              valueFrom: {secretKeyRef: {name: {{ $.Values.objectStorage.existingSecret }}, key: {{ $.Values.objectStorage.secretKeyKey }}}}
+            - name: MYOTA_GEODATA_IMPORT_BUCKET
+              value: {{ $.Values.objectStorage.geodataImportBucket | quote }}
+            - name: GEODATA_IMPORT_RETENTION_DAYS
+              value: {{ $.Values.geodataImportRetention.retentionDays | quote }}
+            - name: NATS_URL
+              value: {{ $.Values.nats.url | default "nats://myota-nats:4222" | quote }}
+            - name: GEODATA_PIPELINE_ENABLED
+              value: "true"
+            - name: GEODATA_MAX_IMPORT_FEATURES
+              value: {{ $.Values.geodataPipeline.maxImportFeatures | quote }}
+            - name: GEODATA_MAX_COORDINATES
+              value: {{ $.Values.geodataPipeline.maxCoordinates | quote }}
+            - name: MYOTA_MAX_BODY_BYTES
+              value: {{ $.Values.geodataPipeline.maxBodyBytes | quote }}
+            - name: MYOTA_UPLOAD_MAX_BYTES
+              value: {{ $.Values.geodataPipeline.maxUploadBytes | quote }}
+            - name: MYOTA_UPLOAD_PART_MAX_BYTES
+              value: "16777216"
+            - name: GEODATA_TILE_CACHE_TTL_SECONDS
+              value: {{ $.Values.geodataPipeline.tileCacheTtlSeconds | quote }}
+            {{- if $.Values.geodataPipeline.locationEnrichment.enabled }}
             - name: BIGDATACLOUD_API_KEY
-              valueFrom: {secretKeyRef: {name: {{ $.Values.geodata.existingSecret }}, key: {{ $.Values.geodata.apiKey }}}}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.geodataPipeline.locationEnrichment.existingSecret }}
+                  key: {{ $.Values.geodataPipeline.locationEnrichment.apiKeyKey }}
+                  optional: true
             - name: BIGDATACLOUD_LOCALITY_LANGUAGE
-              value: {{ $.Values.geodata.localityLanguage | quote }}
+              value: {{ $.Values.geodataPipeline.locationEnrichment.language | quote }}
+            {{- end }}
+            {{- end }}
+            {{- if eq $name "identity" }}
+            - name: MYOTA_ACCESS_TOKEN_SECONDS
+              value: {{ $.Values.auth.accessTokenSeconds | default 1800 | quote }}
+            - name: MYOTA_BOOTSTRAP_ADMIN_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.auth.existingSecret }}
+                  key: bootstrap-email
+                  optional: true
+            - name: MYOTA_BOOTSTRAP_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.auth.existingSecret }}
+                  key: bootstrap-password
+                  optional: true
             {{- end }}
           ports: [{name: http, containerPort: {{ $cfg.port }} }]
           readinessProbe: {httpGet: {path: /healthz, port: http}}
@@ -38,6 +153,148 @@ spec:
           resources: {{- toYaml $.Values.resources | nindent 12 }}
 ---
 {{- end }}
+{{- if .Values.activityWorkers.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myota-activity-worker
+spec:
+  replicas: {{ .Values.activityWorkers.replicas }}
+  selector: {matchLabels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: activity-worker}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: activity-worker}
+      annotations:
+        rollout.myota.dev/image-digest: {{ .Values.imageRollout.digests.activity | default "untracked" | quote }}
+    spec:
+      initContainers:
+        {{ include "myota.waitForSchema" (dict "root" . "databaseUrlKey" "activity-database-url") | nindent 8 }}
+      containers:
+        - name: activity-worker
+          image: "{{ .Values.services.activity.imageRepository }}:{{ default .Values.image.tag .Values.services.activity.imageTag }}"
+          command: ["python3", "activity_worker.py"]
+          env:
+            - name: ACTIVITY_DATABASE_URL
+              valueFrom: {secretKeyRef: {name: {{ .Values.postgres.existingSecret }}, key: activity-database-url}}
+            - name: MYOTA_REQUIRE_DURABILITY
+              value: "1"
+            - name: MYOTA_OBJECT_STORAGE_ENDPOINT
+              value: {{ .Values.objectStorage.endpoint | quote }}
+            - name: MYOTA_OBJECT_STORAGE_PUBLIC_ENDPOINT
+              value: {{ .Values.objectStorage.publicEndpoint | default .Values.objectStorage.endpoint | quote }}
+            - name: MYOTA_OBJECT_STORAGE_ACCESS_KEY
+              valueFrom: {secretKeyRef: {name: {{ .Values.objectStorage.existingSecret }}, key: {{ .Values.objectStorage.accessKeyKey }}}}
+            - name: MYOTA_OBJECT_STORAGE_SECRET_KEY
+              valueFrom: {secretKeyRef: {name: {{ .Values.objectStorage.existingSecret }}, key: {{ .Values.objectStorage.secretKeyKey }}}}
+            - name: MYOTA_ADIF_BUCKET
+              value: {{ .Values.objectStorage.adifBucket | quote }}
+            - name: MYOTA_CERTIFICATE_BUCKET
+              value: {{ .Values.objectStorage.certificateBucket | quote }}
+            - name: MYOTA_ACTIVITY_DB_POOL_MAX
+              value: {{ .Values.activityWorkers.dbPoolMax | quote }}
+            - name: MYOTA_ACTIVITY_WORKER_POLL_SECONDS
+              value: {{ .Values.activityWorkers.pollSeconds | quote }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+{{- end }}
+{{- if .Values.activityNotifications.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myota-activity-notifications
+spec:
+  replicas: {{ .Values.activityNotifications.replicas }}
+  selector: {matchLabels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: activity-notifications}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: activity-notifications}
+      annotations:
+        rollout.myota.dev/image-digest: {{ .Values.imageRollout.digests.activity | default "untracked" | quote }}
+    spec:
+      initContainers:
+        {{ include "myota.waitForSchema" (dict "root" . "databaseUrlKey" "activity-database-url") | nindent 8 }}
+      containers:
+        - name: activity-notifications
+          image: "{{ .Values.services.activity.imageRepository }}:{{ default .Values.image.tag .Values.services.activity.imageTag }}"
+          command: ["python3", "activity_notification_consumer.py"]
+          env:
+            - name: ACTIVITY_DATABASE_URL
+              valueFrom: {secretKeyRef: {name: {{ .Values.postgres.existingSecret }}, key: activity-database-url}}
+            - name: MYOTA_REQUIRE_DURABILITY
+              value: "1"
+            - name: NATS_URL
+              value: {{ .Values.nats.url | quote }}
+            - name: MYOTA_ACTIVITY_DB_POOL_MAX
+              value: "4"
+            {{- if .Values.observability.enabled }}
+            - name: MYOTA_OTEL_ENABLED
+              value: "1"
+            - name: OTEL_SERVICE_NAME
+              value: myota-activity-notifications
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://myota-otel-collector:4317
+            {{- end }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+{{- end }}
+{{- if .Values.geodataImportProcessing.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myota-geodata-import-processing
+spec:
+  # Conservative rollout avoids consuming extra database/broker capacity while
+  # the old worker drains. Durable pull consumers and database leases make
+  # overlapping replicas safe when scaling the steady-state replica count.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+  replicas: {{ .Values.geodataImportProcessing.replicas }}
+  selector: {matchLabels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: geodata-import-processing}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: geodata-import-processing}
+      annotations:
+        rollout.myota.dev/image-digest: {{ .Values.imageRollout.digests.geodata | default "untracked" | quote }}
+    spec:
+      terminationGracePeriodSeconds: 180
+      initContainers:
+        {{ include "myota.waitForSchema" (dict "root" . "databaseUrlKey" "geo-database-url") | nindent 8 }}
+      containers:
+        - name: geodata-import-processing
+          image: "{{ .Values.services.geodata.imageRepository }}:{{ default .Values.image.tag .Values.services.geodata.imageTag }}"
+          command: ["python3", "geodata_import_worker.py"]
+          env:
+            - name: MYOTA_ACTIVITY_URL
+              value: {{ .Values.services.activity.internalUrl | quote }}
+            - name: GEO_DATABASE_URL
+              valueFrom: {secretKeyRef: {name: {{ .Values.postgres.existingSecret }}, key: geo-database-url}}
+            - name: MYOTA_REQUIRE_DURABILITY
+              value: "1"
+            - name: MYOTA_AUTH_SIGNING_KEY
+              valueFrom: {secretKeyRef: {name: {{ .Values.auth.existingSecret }}, key: signing-key}}
+            - name: NATS_URL
+              value: {{ .Values.nats.url | quote }}
+            - name: MYOTA_OBJECT_STORAGE_ENDPOINT
+              value: {{ .Values.objectStorage.endpoint | quote }}
+            - name: MYOTA_GEODATA_IMPORT_BUCKET
+              value: {{ .Values.objectStorage.geodataImportBucket | quote }}
+            - name: MYOTA_OBJECT_STORAGE_ACCESS_KEY
+              valueFrom: {secretKeyRef: {name: {{ .Values.objectStorage.existingSecret }}, key: {{ .Values.objectStorage.accessKeyKey }}}}
+            - name: MYOTA_OBJECT_STORAGE_SECRET_KEY
+              valueFrom: {secretKeyRef: {name: {{ .Values.objectStorage.existingSecret }}, key: {{ .Values.objectStorage.secretKeyKey }}}}
+            - name: GEODATA_WORKER_MAX_DELIVERIES
+              value: {{ .Values.geodataImportProcessing.maxDeliveries | quote }}
+            - name: GEODATA_WORKER_ACK_WAIT_SECONDS
+              value: "120"
+            - name: GEODATA_WORKER_MAX_ACK_PENDING
+              value: {{ .Values.geodataImportProcessing.maxAckPending | quote }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+{{- end }}
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -46,11 +303,14 @@ spec:
   replicas: 1
   selector: {matchLabels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: gateway}}
   template:
-    metadata: {labels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: gateway}}
+    metadata:
+      labels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: gateway}
+      annotations:
+        rollout.myota.dev/image-digest: {{ .Values.imageRollout.digests.gateway | default "untracked" | quote }}
     spec:
       containers:
         - name: gateway
-          image: "{{ .Values.gateway.imageRepository }}:{{ .Values.image.tag }}"
+          image: "{{ .Values.gateway.imageRepository }}:{{ default .Values.image.tag .Values.gateway.imageTag }}"
           command: ["python3", "services/dev_server.py"]
           env:
             - name: MYOTA_IDENTITY_URL
@@ -61,12 +321,24 @@ spec:
               value: http://myota-geodata:8003
             - name: MYOTA_ACTIVITY_URL
               value: http://myota-activity:8004
+            - name: MYOTA_OPERATIONS_URL
+              value: http://myota-operations:8005
+            - name: MYOTA_PROXY_UPLOAD_TIMEOUT_SECONDS
+              value: {{ .Values.gateway.proxyUploadTimeoutSeconds | quote }}
+            {{- if .Values.observability.enabled }}
+            - name: MYOTA_OTEL_ENABLED
+              value: "1"
+            - name: OTEL_SERVICE_NAME
+              value: myota-gateway
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://myota-otel-collector:4317
+            {{- end }}
           ports: [{name: http, containerPort: 8080}]
-          readinessProbe: {httpGet: {path: /, port: http}}
-          livenessProbe: {httpGet: {path: /, port: http}}
+          readinessProbe: {httpGet: {path: /healthz, port: http}}
+          livenessProbe: {httpGet: {path: /healthz, port: http}}
 ---
 {{- if .Values.outbox.enabled }}
-{{- range $db, $worker := dict "core" "core-outbox" "geo" "geo-outbox" }}
+{{- range $db, $worker := dict "core" "core-outbox" "activity" "activity-outbox" "geo" "geo-outbox" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -75,8 +347,13 @@ spec:
   replicas: 1
   selector: {matchLabels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: {{ $worker }}}}
   template:
-    metadata: {labels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: {{ $worker }}}}
+    metadata:
+      labels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: {{ $worker }}}
+      annotations:
+        rollout.myota.dev/image-digest: {{ $.Values.imageRollout.digests.platform | default "untracked" | quote }}
     spec:
+      initContainers:
+        {{ include "myota.waitForSchema" (dict "root" $ "databaseUrlKey" (printf "%s-database-url" $db)) | nindent 8 }}
       containers:
         - name: outbox
           image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag }}"

@@ -1,0 +1,66 @@
+{
+  "annotations": {"list": []},
+  "editable": false,
+  "graphTooltip": 1,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {"type": "prometheus", "uid": "myota-prometheus"},
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "unit": "reqps"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+      "id": 1,
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "repeat": "service",
+      "repeatDirection": "v",
+      "targets": [{"expr": "sum by (http_route, http_request_method) (rate(myota_http_server_requests_total{service_name=~\"$service\"}[5m]))", "legendFormat": "{{http_request_method}} {{http_route}}", "refId": "A"}],
+      "title": "$service · request rate by API endpoint",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "myota-prometheus"},
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "unit": "ms"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8},
+      "id": 2,
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "repeat": "service",
+      "repeatDirection": "v",
+      "targets": [{"expr": "histogram_quantile(0.95, sum by (le, http_route, http_request_method) (rate(myota_http_server_duration_milliseconds_bucket{service_name=~\"$service\"}[5m])))", "legendFormat": "{{http_request_method}} {{http_route}}", "refId": "A"}],
+      "title": "$service · p95 response time by API endpoint",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "myota-prometheus"},
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "unit": "reqps"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
+      "id": 3,
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "repeat": "service",
+      "repeatDirection": "v",
+      "targets": [{"expr": "sum by (http_route, http_request_method) (rate(myota_http_server_requests_total{service_name=~\"$service\",http_response_status_code=~\"5..\"}[5m]))", "legendFormat": "{{http_request_method}} {{http_route}} · 5xx", "refId": "A"}],
+      "title": "$service · server error rate by API endpoint",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "myota-prometheus"},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "decimals": 2, "unit": "percent"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 24},
+      "id": 4,
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "repeat": "service",
+      "repeatDirection": "v",
+      "targets": [{"expr": "100 * (1 - (sum by (http_route, http_request_method) (rate(myota_http_server_requests_total{service_name=~\"$service\",http_response_status_code=~\"5..\"}[5m])) / clamp_min(sum by (http_route, http_request_method) (rate(myota_http_server_requests_total{service_name=~\"$service\"}[5m])), 0.001)))", "legendFormat": "{{http_request_method}} {{http_route}} · availability", "refId": "A"}],
+      "title": "$service · API availability by endpoint",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["myota", "real-data", "opentelemetry", "api", "slo"],
+  "templating": {"list": [{"current": {"selected": true, "text": "All", "value": "$__all"}, "datasource": {"type": "prometheus", "uid": "myota-prometheus"}, "includeAll": true, "label": "Service", "multi": true, "name": "service", "options": [], "query": "label_values(myota_http_server_requests_total, service_name)", "refresh": 2, "sort": 1, "type": "query"}]},
+  "time": {"from": "now-6h", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "MyOTA API performance",
+  "uid": "myota-api-performance",
+  "version": 1
+}

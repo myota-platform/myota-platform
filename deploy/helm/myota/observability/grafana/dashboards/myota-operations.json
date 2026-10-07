@@ -1,0 +1,20 @@
+{
+  "annotations": {"list": []},
+  "editable": false,
+  "panels": [
+    {"type":"stat","title":"Users","gridPos":{"h":5,"w":4,"x":0,"y":0},"targets":[{"expr":"myota_identity_users_total{job=\"myota-otel-collector\"}","refId":"A"}]},
+    {"type":"stat","title":"Geo entities","gridPos":{"h":5,"w":4,"x":4,"y":0},"targets":[{"expr":"myota_geodata_entities_total{job=\"myota-otel-collector\"}","refId":"A"}]},
+    {"type":"stat","title":"QSOs","gridPos":{"h":5,"w":4,"x":8,"y":0},"targets":[{"expr":"myota_activity_qsos_total{job=\"myota-otel-collector\"}","refId":"A"}]},
+    {"type":"stat","title":"Programmes","gridPos":{"h":5,"w":4,"x":12,"y":0},"targets":[{"expr":"myota_programmes_total{job=\"myota-otel-collector\"}","refId":"A"}]},
+    {"type":"timeseries","title":"Entity lifecycle","gridPos":{"h":8,"w":12,"x":0,"y":5},"targets":[{"expr":"myota_geodata_entities_by_status_total{job=\"myota-otel-collector\"}","legendFormat":"{{status}}"}]},
+    {"type":"timeseries","title":"Activity QSOs and activations","gridPos":{"h":8,"w":12,"x":12,"y":5},"targets":[{"expr":"myota_activity_qsos_total{job=\"myota-otel-collector\"}","legendFormat":"valid QSOs"},{"expr":"sum(myota_activity_activations_by_status_total{job=\"myota-otel-collector\"})","legendFormat":"activations"}]},
+    {"type":"timeseries","title":"HTTP error rate","gridPos":{"h":8,"w":12,"x":0,"y":13},"targets":[{"expr":"sum by (service, status) (rate(myota_http_requests_total{job=\"myota-otel-collector\",status=~\"4..|5..\"}[5m]))","legendFormat":"{{service}} {{status}}"}]},
+    {"type":"timeseries","title":"OTel request latency p95","gridPos":{"h":8,"w":12,"x":12,"y":13},"targets":[{"expr":"histogram_quantile(0.95, sum by (le, service_name) (rate(myota_http_server_duration_milliseconds_bucket[5m])))","legendFormat":"{{service_name}}"}]}
+  ],
+  "schemaVersion": 39,
+  "tags": ["myota", "operations", "opentelemetry", "real-data"],
+  "templating": {"list": []},
+  "time": {"from": "now-6h", "to": "now"},
+  "title": "MyOTA operations",
+  "uid": "myota-operations"
+}

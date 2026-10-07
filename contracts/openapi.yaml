@@ -11,6 +11,7 @@ tags:
   - name: Geodata
   - name: Activity
   - name: Awards
+  - name: Operations
 paths:
   /v1/identity/auth/register:
     post:
@@ -1291,13 +1292,13 @@ paths:
       tags: [Geodata]
       summary: Get a geodata entity
       parameters: [{ $ref: '#/components/parameters/EntityId' }]
-      responses: { '200': { description: Geodata entity } }
+      responses: { '409': { description: Stale version or conflicting concurrent update }, '200': { description: Geodata entity } }
     patch:
       tags: [Geodata]
       security: [{ bearerAuth: [] }]
       summary: Update editable entity metadata
       operationId: patchGeodataEntityMetadata
-      parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }, { $ref: '#/components/parameters/IfMatch' }]
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/GeodataEntityMetadataPatch' } } }
@@ -1406,43 +1407,43 @@ paths:
       deprecated: true
       security: [{ bearerAuth: [] }]
       summary: Replace an entity geometry with validated GeoJSON
-      parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }, { $ref: '#/components/parameters/IfMatch' }]
       requestBody:
         required: true
         content: { application/json: { schema: { type: object, required: [geometry, editorId], properties: { geometry: { type: object }, editorId: { type: string }, note: { type: string } } } } }
-      responses: { '200': { description: Geometry replaced and audited } }
+      responses: { '409': { description: Stale version or conflicting concurrent update }, '200': { description: Geometry replaced and audited } }
     put:
       tags: [Geodata]
       security: [{ bearerAuth: [] }]
       summary: Replace an entity geometry with validated GeoJSON
       operationId: putGeodataEntityGeometry
-      parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }, { $ref: '#/components/parameters/IfMatch' }]
       requestBody:
         required: true
         content: { application/json: { schema: { type: object, required: [geometry, editorId], properties: { geometry: { type: object }, editorId: { type: string }, note: { type: string } } } } }
-      responses: { '200': { description: Geometry replaced and audited } }
+      responses: { '409': { description: Stale version or conflicting concurrent update }, '200': { description: Geometry replaced and audited } }
   /v1/geodata/entities/{entityId}/categories:
     put:
       tags: [Geodata]
       security: [{ bearerAuth: [] }]
       summary: Replace an entity's shared category assignments
       operationId: putGeodataEntityCategories
-      parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }, { $ref: '#/components/parameters/IfMatch' }]
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/GeodataEntityCategoriesPut' } } }
-      responses: { '200': { description: Categories replaced and audited } }
+      responses: { '409': { description: Stale version or conflicting concurrent update }, '200': { description: Categories replaced and audited } }
   /v1/geodata/entities/{entityId}/reviews:
     post:
       tags: [Geodata]
       security: [{ bearerAuth: [] }]
       summary: Record an entity lifecycle review decision
       operationId: postGeodataEntityReview
-      parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }, { $ref: '#/components/parameters/IfMatch' }]
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/GeodataEntityReview' } } }
-      responses: { '200': { description: Review decision recorded and audited } }
+      responses: { '409': { description: Stale version or conflicting concurrent update }, '200': { description: Review decision recorded and audited } }
   /v1/geodata/entity-deletion-jobs:
     post:
       tags: [Geodata]
@@ -1647,6 +1648,44 @@ paths:
       summary: Retire an award definition
       parameters: [{ $ref: '#/components/parameters/AwardId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
       responses: { '200': { description: Award retired } }
+  /v1/operations/jetstream:
+    get:
+      operationId: getJetStreamStatus
+      tags: [Operations]
+      security: [{ bearerAuth: [] }]
+      summary: Get the latest timestamped broker status sample
+      description: Requires global administration, observability.view or operations.read. No credentials or message payloads are exposed. Stale, partial and unavailable state is explicit.
+      responses:
+        '200':
+          description: Latest actual stream and consumer sample, including backlog, delivery limits, sequence positions and message-age availability
+          content: { application/json: { schema: { $ref: '#/components/schemas/JetStreamSnapshot' } } }
+        '403': { description: Missing or insufficient administrator authentication }
+        '503': { description: No broker sample recorded yet }
+  /v1/operations/jetstream/snapshots:
+    get:
+      operationId: listJetStreamSnapshots
+      tags: [Operations]
+      security: [{ bearerAuth: [] }]
+      summary: List persistent broker status history
+      description: Timestamped samples, not an exhaustive per-message delivery log. Retained seven days by default. The API caps pageSize at 50.
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - { in: query, name: pageSize, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+      responses:
+        '200':
+          description: Paged snapshots newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, page, pageSize, total, nextPage]
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/JetStreamSnapshot' } }
+                  page: { type: integer }
+                  pageSize: { type: integer }
+                  total: { type: integer }
+                  nextPage: { type: [integer, 'null'] }
+        '403': { description: Missing or insufficient administrator authentication }
 components:
   securitySchemes:
     bearerAuth:
@@ -1654,6 +1693,12 @@ components:
       scheme: bearer
       bearerFormat: JWT
   parameters:
+    IfMatch:
+      in: header
+      name: If-Match
+      required: false
+      description: Quoted entity version from a previous GET or catalogue response. A stale version returns HTTP 409; reload and reconcile rather than retrying blindly.
+      schema: { type: string, pattern: '^"[0-9]+"$' }
     IdempotencyKey:
       in: header
       name: Idempotency-Key
@@ -1708,6 +1753,53 @@ components:
       name: pageSize
       schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
   schemas:
+    JetStreamConsumer:
+      type: object
+      required: [name, filterSubjects, pending, ackPending, redelivered, oldestMessageAgeSeconds]
+      properties:
+        name: { type: string }
+        durable: { type: [string, 'null'] }
+        filterSubjects: { type: array, items: { type: string } }
+        pending: { type: integer, minimum: 0 }
+        ackPending: { type: integer, minimum: 0 }
+        redelivered: { type: integer, minimum: 0, description: Current broker num_redelivered value; not a cumulative lifetime total. }
+        waiting: { type: integer }
+        ackPolicy: { type: string }
+        ackWaitSeconds: { type: number }
+        maxAckPending: { type: integer }
+        maxDeliver: { type: integer }
+        deliveredSequence: { type: integer }
+        ackFloorSequence: { type: integer }
+        oldestMessageAgeSeconds: { type: [number, 'null'], description: Null if the referenced message timestamp cannot be verified. }
+    JetStreamStream:
+      type: object
+      required: [name, subjects, messages, bytes, consumers]
+      properties:
+        name: { type: string }
+        subjects: { type: array, items: { type: string } }
+        messages: { type: integer }
+        bytes: { type: integer }
+        firstSequence: { type: integer }
+        lastSequence: { type: integer }
+        consumerCount: { type: integer }
+        consumersTruncated: { type: boolean }
+        storage: { type: string }
+        retention: { type: string }
+        consumers: { type: array, items: { $ref: '#/components/schemas/JetStreamConsumer' } }
+    JetStreamSnapshot:
+      type: object
+      required: [id, capturedAt, status, streams, errors, pollSeconds, historyRetentionDays]
+      properties:
+        id: { type: string }
+        capturedAt: { type: string, format: date-time }
+        sampledAt: { type: string, format: date-time }
+        status: { type: string, enum: [HEALTHY, PARTIAL, UNAVAILABLE] }
+        stale: { type: boolean }
+        streamsTruncated: { type: boolean }
+        pollSeconds: { type: integer }
+        historyRetentionDays: { type: integer }
+        errors: { type: array, items: { type: string } }
+        streams: { type: array, items: { $ref: '#/components/schemas/JetStreamStream' } }
     Account:
       type: object
       required: [id, displayName, participationType, status]
@@ -2062,6 +2154,7 @@ components:
       required: [id, name, status, geometry]
       properties:
         id: { type: string, format: uuid }
+        version: { type: integer, minimum: 1, readOnly: true, description: Database revision for optimistic concurrency; also returned as ETag on entity responses. }
         programmeSlug: { type: string, nullable: true, description: Optional programme eligibility assignment. }
         entityType: { type: string }
         entityTypes:

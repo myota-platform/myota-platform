@@ -1,0 +1,10 @@
+apiVersion: 1
+providers:
+  - name: MyOTA
+    orgId: 1
+    folder: MyOTA
+    type: file
+    disableDeletion: true
+    editable: false
+    options:
+      path: /etc/grafana/dashboards

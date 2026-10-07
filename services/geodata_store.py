@@ -1,17 +1,18 @@
-"""Durable relational persistence for the geodata catalogue.
-
-The compatibility JSON snapshot is retained for older service metadata and
-tests. Entity writes are additionally stored in the PostGIS-owned tables so a
-manual proposal is durable and visible to GIS tooling.
-"""
+"""Row encoders and database-authoritative geodata repositories."""
 
 from __future__ import annotations
 
 import json
+import logging
+import os
+import time
 import uuid
+from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from common import Store, now
+from common import Store, json_default, now
+from metrics import METRICS
 
 
 def _uuid(value: Any) -> uuid.UUID | None:
@@ -43,10 +44,94 @@ def _entity_categories(entity: dict[str, Any]) -> list[str]:
     return result
 
 
-class GeodataStore(Store):
+def _cached_import_expired(
+    run: dict[str, Any], now: datetime | None = None
+) -> bool:
+    """Mirror database retention rules so stale API memory cannot resurrect runs."""
+    status = str(run.get("status") or "").upper()
+    days = int(os.environ.get("GEODATA_IMPORT_RETENTION_DAYS", "30"))
+    if status == "PROCESSED":
+        values = [run.get("processedAt")]
+    elif status in {
+        "UPLOAD_PENDING",
+        "QUEUED",
+        "PROCESSING",
+        "PREPROCESSED",
+        "PREPROCESSED_WITH_ERRORS",
+        "COMPLETED",
+        "COMPLETED_WITH_ERRORS",
+        "FAILED",
+    }:
+        values = [
+            run.get("startedAt") or run.get("queuedAt"),
+            run.get("heartbeatAt"),
+            run.get("completedAt"),
+        ]
+    else:
+        return False
+    timestamps = []
+    for value in values:
+        if not value:
+            continue
+        if isinstance(value, datetime):
+            parsed = value
+        else:
+            try:
+                parsed = datetime.fromisoformat(
+                    str(value).replace("Z", "+00:00")
+                )
+            except ValueError:
+                continue
+        timestamps.append(
+            parsed.replace(tzinfo=timezone.utc)
+            if parsed.tzinfo is None
+            else parsed
+        )
+    if not timestamps:
+        return False
+    reference = min(timestamps) if status == "PROCESSED" else max(timestamps)
+    return reference < (now or datetime.now(timezone.utc)) - timedelta(
+        days=days
+    )
+
+
+class CompatibilityGeodataStore(Store):
+    def __init__(
+        self, service: str = "geodata", dsn_env: str | None = None
+    ) -> None:
+        super().__init__(service, dsn_env)
+        self._dirty_import_candidate_ids: set[str] = set()
+        self._deleted_import_candidate_ids: set[str] = set()
+        self._dirty_import_queue_ids: set[str] = set()
+        self._deleted_import_queue_ids: set[str] = set()
+
+    def mark_import_candidate_dirty(self, candidate_id: str) -> None:
+        with self.lock:
+            self._dirty_import_candidate_ids.add(str(candidate_id))
+            self._deleted_import_candidate_ids.discard(str(candidate_id))
+
+    def mark_import_candidate_deleted(self, candidate_id: str) -> None:
+        with self.lock:
+            self._deleted_import_candidate_ids.add(str(candidate_id))
+            self._dirty_import_candidate_ids.discard(str(candidate_id))
+
+    def mark_import_queue_dirty(self, queue_id: str) -> None:
+        with self.lock:
+            self._dirty_import_queue_ids.add(str(queue_id))
+            self._deleted_import_queue_ids.discard(str(queue_id))
+
+    def mark_import_queue_deleted(self, queue_id: str) -> None:
+        with self.lock:
+            self._deleted_import_queue_ids.add(str(queue_id))
+            self._dirty_import_queue_ids.discard(str(queue_id))
+
     def _category_id(
         self, connection: Any, code: str, geometry_type: str
     ) -> uuid.UUID:
+        connection.execute(
+            "SELECT pg_advisory_xact_lock(hashtextextended(%s,0))",
+            (f"geodata:category:{code}",),
+        )
         row = connection.execute(
             "SELECT id FROM entity_type WHERE programme_id IS NULL AND code = %s LIMIT 1",
             (code,),
@@ -78,7 +163,9 @@ class GeodataStore(Store):
         if not entity_id:
             raise ValueError("geodata entity ids must be UUIDs")
         geometry = entity.get("geometry") or {}
-        geometry_json = json.dumps(geometry, separators=(",", ":"))
+        geometry_json = json.dumps(
+            geometry, separators=(",", ":"), default=json_default
+        )
         categories = _entity_categories(entity) or ["UNKNOWN"]
         entity_type = categories[0]
         category_id = self._category_id(
@@ -99,12 +186,16 @@ class GeodataStore(Store):
                 entity.get("status") or "CANDIDATE",
                 geometry_json,
                 geometry_json,
-                json.dumps(self._public_properties(entity)),
+                json.dumps(
+                    self._public_properties(entity), default=json_default
+                ),
                 entity.get("sourceState") or "CURRENT",
                 provenance.get("sourceKey"),
                 provenance.get("sourceHash"),
                 entity.get("jurisdiction"),
-                json.dumps(entity.get("attachments") or []),
+                json.dumps(
+                    entity.get("attachments") or [], default=json_default
+                ),
             ),
         )
         connection.execute(
@@ -134,7 +225,10 @@ class GeodataStore(Store):
                 source.get("license") or provenance.get("license"),
                 source.get("attribution") or provenance.get("attribution"),
                 source.get("retrievedAt"),
-                json.dumps(provenance.get("sourceFeature") or source),
+                json.dumps(
+                    provenance.get("sourceFeature") or source,
+                    default=json_default,
+                ),
             ),
         )
 
@@ -143,10 +237,15 @@ class GeodataStore(Store):
             return
         with self.transaction() as connection:
             for entity in self.items.values():
-                self._upsert_entity(connection, entity)
+                started = time.perf_counter()
+                try:
+                    self._upsert_entity(connection, entity)
+                finally:
+                    self._observe_postgis_query("entity_upsert", started)
             if not include_import_state:
                 return
-            for run in self.data.get("importRuns", {}).values():
+            import_runs = self.data.get("importRuns", {})
+            for run in import_runs.values():
                 run_id = _uuid(run.get("id"))
                 if not run_id:
                     continue
@@ -179,11 +278,15 @@ class GeodataStore(Store):
                                 "binaryObjectPending": bool(
                                     run.get("binaryObjectPending")
                                 ),
-                            }
+                                "uploadSpoolPath": run.get("uploadSpoolPath"),
+                            },
+                            default=json_default,
                         ),
                         run.get("startedAt") or run.get("queuedAt") or now(),
                         run.get("completedAt"),
-                        json.dumps(run.get("stats") or {}),
+                        json.dumps(
+                            run.get("stats") or {}, default=json_default
+                        ),
                         run.get("status") or "QUEUED",
                         int(run.get("attemptCount") or 0),
                         run.get("heartbeatAt"),
@@ -193,7 +296,17 @@ class GeodataStore(Store):
                         run.get("processedBy"),
                     ),
                 )
-            for candidate in self.data.get("importCandidates", {}).values():
+            for candidate_id in self._deleted_import_candidate_ids:
+                connection.execute(
+                    "DELETE FROM geodata_import_candidate WHERE id = %s",
+                    (_uuid(candidate_id),),
+                )
+            for candidate_id in self._dirty_import_candidate_ids:
+                candidate = self.data.get("importCandidates", {}).get(
+                    candidate_id
+                )
+                if not candidate:
+                    continue
                 entity = candidate.get("entity") or {}
                 geometry = entity.get("geometry") or {}
                 candidate_id = _uuid(candidate.get("id"))
@@ -204,21 +317,30 @@ class GeodataStore(Store):
                     "INSERT INTO geodata_import_candidate "
                     "(id, import_run_id, ordinal, planned_entity_id, programme_slug, entity_type_codes, name, geom, candidate_source, source_ref, source_hash, provenance, entity_payload, validation_status, validation_note, validated_by, validated_at, target_status, processed_entity_id, processed_at, updated_at) "
                     "VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326), %s::jsonb, %s, %s, %s::jsonb, %s::jsonb, %s, %s, %s, %s, %s, %s, %s, now()) "
-                    "ON CONFLICT (id) DO UPDATE SET validation_status=EXCLUDED.validation_status, validation_note=EXCLUDED.validation_note, validated_by=EXCLUDED.validated_by, validated_at=EXCLUDED.validated_at, target_status=EXCLUDED.target_status, processed_entity_id=EXCLUDED.processed_entity_id, processed_at=EXCLUDED.processed_at, entity_payload=EXCLUDED.entity_payload, updated_at=now()",
+                    "ON CONFLICT (import_run_id, ordinal) DO UPDATE SET planned_entity_id=EXCLUDED.planned_entity_id, programme_slug=EXCLUDED.programme_slug, entity_type_codes=EXCLUDED.entity_type_codes, name=EXCLUDED.name, geom=EXCLUDED.geom, candidate_source=EXCLUDED.candidate_source, source_ref=EXCLUDED.source_ref, source_hash=EXCLUDED.source_hash, provenance=EXCLUDED.provenance, entity_payload=EXCLUDED.entity_payload, validation_status=EXCLUDED.validation_status, validation_note=EXCLUDED.validation_note, validated_by=EXCLUDED.validated_by, validated_at=EXCLUDED.validated_at, target_status=EXCLUDED.target_status, processed_entity_id=EXCLUDED.processed_entity_id, processed_at=EXCLUDED.processed_at, updated_at=now()",
                     (
                         candidate_id,
                         run_id,
                         int(candidate.get("ordinal", 0)),
                         _uuid(entity.get("id")),
                         entity.get("programmeSlug"),
-                        json.dumps(entity.get("entityTypes") or []),
+                        json.dumps(
+                            entity.get("entityTypes") or [],
+                            default=json_default,
+                        ),
                         entity.get("name") or "Unnamed candidate",
-                        json.dumps(geometry),
-                        json.dumps(candidate.get("candidateSource") or {}),
+                        json.dumps(geometry, default=json_default),
+                        json.dumps(
+                            candidate.get("candidateSource") or {},
+                            default=json_default,
+                        ),
                         entity.get("sourceRef"),
                         (entity.get("provenance") or {}).get("sourceHash"),
-                        json.dumps(entity.get("provenance") or {}),
-                        json.dumps(entity),
+                        json.dumps(
+                            entity.get("provenance") or {},
+                            default=json_default,
+                        ),
+                        json.dumps(entity, default=json_default),
                         candidate.get("validationStatus", "PENDING"),
                         candidate.get("validationNote"),
                         candidate.get("validatedBy"),
@@ -228,7 +350,17 @@ class GeodataStore(Store):
                         candidate.get("processedAt"),
                     ),
                 )
-            for queue in self.data.get("importProcessingQueues", {}).values():
+            for queue_id in self._deleted_import_queue_ids:
+                connection.execute(
+                    "DELETE FROM geodata_import_processing_queue WHERE id = %s",
+                    (_uuid(queue_id),),
+                )
+            for queue_id in self._dirty_import_queue_ids:
+                queue = self.data.get("importProcessingQueues", {}).get(
+                    queue_id
+                )
+                if not queue:
+                    continue
                 queue_id = _uuid(queue.get("id"))
                 run_id = _uuid(queue.get("importRunId"))
                 if not queue_id or not run_id:
@@ -240,11 +372,16 @@ class GeodataStore(Store):
                     (
                         queue_id,
                         run_id,
-                        json.dumps(queue.get("candidateIds") or []),
+                        json.dumps(
+                            queue.get("candidateIds") or [],
+                            default=json_default,
+                        ),
                         queue.get("targetStatus"),
                         queue.get("requestedBy"),
                         queue.get("status", "QUEUED"),
-                        json.dumps(queue.get("result") or {}),
+                        json.dumps(
+                            queue.get("result") or {}, default=json_default
+                        ),
                         queue.get("error"),
                         queue.get("requestedAt"),
                         queue.get("startedAt"),
@@ -279,223 +416,208 @@ class GeodataStore(Store):
                 "DELETE FROM geodata_entity WHERE id = %s", (entity_uuid,)
             )
 
-    def hydrate(self) -> None:
-        super().hydrate()
-        if not self.durable:
-            return
-        with self.transaction() as connection:
-            rows = connection.execute(
-                "SELECT id::text, programme_slug, entity_type_code, name, lifecycle_status, ST_AsGeoJSON(geom)::jsonb, public_properties, source_state, jurisdiction, attachments FROM geodata_entity"
-            ).fetchall()
-            source_rows = connection.execute(
-                "SELECT entity_id::text, adapter_code, source_uri, source_record_id, license, attribution, retrieved_at, source_payload FROM source_reference"
-            ).fetchall()
-            category_rows = connection.execute(
-                "SELECT entity_id::text, category_code, is_primary FROM geodata_entity_category ORDER BY entity_id, is_primary DESC, category_code"
-            ).fetchall()
-            import_rows = connection.execute(
-                "SELECT id::text, adapter_code, source_metadata, started_at, completed_at, stats, status, "
-                "attempt_count, heartbeat_at, lease_until, last_error, processed_at, processed_by FROM import_run"
-            ).fetchall()
-        import_runs = self.data.setdefault("importRuns", {})
-        for row in import_rows:
-            metadata = (
-                row[2]
-                if isinstance(row[2], dict)
-                else json.loads(row[2] or "{}")
+    @staticmethod
+    def _observe_postgis_query(query: str, started: float) -> None:
+        duration = time.perf_counter() - started
+        METRICS.observe(
+            "myota_geodata_postgis_query_duration_seconds",
+            duration,
+            {"query": query},
+        )
+        try:
+            threshold_ms = max(
+                0.0,
+                float(os.environ.get("MYOTA_SLOW_QUERY_THRESHOLD_MS", "250")),
             )
-            run = import_runs.setdefault(row[0], {"id": row[0]})
-            # Relational state is authoritative for lifecycle and timestamps;
-            # preserve compatibility-only fields such as manifest and errors.
-            run.update(
+        except ValueError:
+            threshold_ms = 250.0
+        if duration * 1000 >= threshold_ms:
+            METRICS.inc("myota_geodata_slow_queries_total", {"query": query})
+
+    def query_bbox(
+        self,
+        bounds: tuple[float, float, float, float],
+        limit: int,
+        programme: str | None = None,
+        status: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """Run the map query through the PostGIS GiST index and time the SQL."""
+        if not self.durable:
+            raise RuntimeError(
+                "PostGIS bounding-box query requires durable storage"
+            )
+        started = time.perf_counter()
+        try:
+            with self.transaction() as connection:
+                rows = connection.execute(
+                    "SELECT id::text, programme_slug, entity_type_code, name, lifecycle_status, "
+                    "ST_AsGeoJSON(geom)::jsonb, public_properties "
+                    "FROM geodata_entity "
+                    "WHERE geom && ST_MakeEnvelope(%s, %s, %s, %s, 4326) "
+                    "AND ST_Intersects(geom, ST_MakeEnvelope(%s, %s, %s, %s, 4326)) "
+                    "AND (%s IS NULL OR programme_slug = %s) "
+                    "AND (%s IS NULL OR lifecycle_status = %s) "
+                    "ORDER BY name, id LIMIT %s",
+                    (
+                        *bounds,
+                        *bounds,
+                        programme,
+                        programme,
+                        status,
+                        status,
+                        limit,
+                    ),
+                ).fetchall()
+            return [
                 {
                     "id": row[0],
-                    "adapter": row[1],
-                    "source": metadata.get("source")
-                    or run.get("source")
-                    or {},
-                    "programmeSlug": metadata.get(
-                        "programmeSlug", run.get("programmeSlug")
-                    ),
-                    "format": metadata.get(
-                        "format", run.get("format") or "GEOJSON"
-                    ),
-                    "filename": metadata.get("filename", run.get("filename")),
-                    "entityType": metadata.get(
-                        "entityType", run.get("entityType")
-                    ),
-                    "entityTypes": metadata.get("entityTypes")
-                    or run.get("entityTypes")
-                    or [],
-                    "queuedAt": metadata.get("queuedAt", run.get("queuedAt")),
-                    "featureCount": metadata.get(
-                        "featureCount", run.get("featureCount")
-                    ),
-                    "binaryObjectPending": bool(
-                        metadata.get(
-                            "binaryObjectPending",
-                            run.get("binaryObjectPending", False),
-                        )
-                    ),
-                    "status": row[6],
-                    "startedAt": row[3].isoformat().replace("+00:00", "Z")
-                    if row[3]
-                    else run.get("startedAt"),
-                    "completedAt": row[4].isoformat().replace("+00:00", "Z")
-                    if row[4]
-                    else run.get("completedAt"),
-                    "stats": row[5]
-                    if isinstance(row[5], dict)
-                    else json.loads(row[5] or "{}"),
-                    "attemptCount": row[7] or 0,
-                    "heartbeatAt": row[8].isoformat().replace("+00:00", "Z")
-                    if row[8]
-                    else None,
-                    "leaseUntil": row[9].isoformat().replace("+00:00", "Z")
-                    if row[9]
-                    else None,
-                    "lastError": row[10],
-                    "processedAt": row[11].isoformat().replace("+00:00", "Z")
-                    if row[11]
-                    else None,
-                    "processedBy": row[12],
+                    "programmeSlug": row[1],
+                    "entityType": row[2],
+                    "name": row[3],
+                    "status": row[4],
+                    "geometry": row[5],
+                    "publicProperties": row[6]
+                    if isinstance(row[6], dict)
+                    else json.loads(row[6] or "{}"),
                 }
-            )
-        sources = {row[0]: row for row in source_rows}
-        categories = {}
-        for entity_id, category_code, _ in category_rows:
-            categories.setdefault(entity_id, []).append(category_code)
-        for row in rows:
-            if row[0] in self.items:
-                assigned = categories.get(row[0]) or [row[2]]
-                self.items[row[0]]["entityType"] = assigned[0]
-                self.items[row[0]]["entityTypes"] = assigned
-                self.items[row[0]]["entityTypeCodes"] = list(assigned)
-                continue
-            properties = (
-                row[6]
-                if isinstance(row[6], dict)
-                else json.loads(row[6] or "{}")
-            )
-            entity = {
-                **properties,
-                "id": row[0],
-                "programmeSlug": row[1],
-                "entityType": row[2],
-                "name": row[3],
-                "status": row[4],
-                "geometry": row[5],
-                "sourceState": row[7],
-                "jurisdiction": row[8],
-                "attachments": row[9] or [],
-            }
-            entity["entityTypes"] = categories.get(row[0]) or [row[2]]
-            entity["entityTypeCodes"] = list(entity["entityTypes"])
-            source = sources.get(row[0])
-            if source:
-                payload = (
-                    source[7]
-                    if isinstance(source[7], dict)
-                    else json.loads(source[7] or "{}")
-                )
-                entity["sourceRef"] = source[3]
-                entity.setdefault("provenance", {}).update(
-                    {
-                        "adapter": source[1],
-                        "source": {
-                            "url": source[2],
-                            "license": source[4],
-                            "attribution": source[5],
-                            "retrievedAt": source[6],
-                        },
-                        "sourceFeature": payload,
-                    }
-                )
-            self.items[row[0]] = entity
+                for row in rows
+            ]
+        finally:
+            self._observe_postgis_query("bbox", started)
 
-    def refresh_import_runs(self) -> None:
-        """Refresh import lifecycle state from PostgreSQL for read endpoints."""
+
+class GeodataStore(CompatibilityGeodataStore):
+    """Database-authoritative geodata with scoped compatibility projections."""
+
+    def __init__(self, service="geodata", dsn_env=None):
+        super().__init__(service, dsn_env)
+        self._repository = None
+
+    def wait_for_authority_schema(self):
+        """Do not serve or consume work before the row-authority migration."""
         if not self.durable:
             return
-        with self.transaction() as connection:
-            rows = connection.execute(
-                "SELECT id::text, adapter_code, source_metadata, started_at, completed_at, stats, status, "
-                "attempt_count, heartbeat_at, lease_until, last_error, processed_at, processed_by FROM import_run"
-            ).fetchall()
-        with self.lock:
-            import_runs = self.data.setdefault("importRuns", {})
-            for row in rows:
-                metadata = (
-                    row[2]
-                    if isinstance(row[2], dict)
-                    else json.loads(row[2] or "{}")
-                )
-                run = import_runs.setdefault(row[0], {"id": row[0]})
-                run.update(
-                    {
-                        "id": row[0],
-                        "adapter": row[1],
-                        "source": metadata.get("source")
-                        or run.get("source")
-                        or {},
-                        "programmeSlug": metadata.get(
-                            "programmeSlug", run.get("programmeSlug")
-                        ),
-                        "format": metadata.get(
-                            "format", run.get("format") or "GEOJSON"
-                        ),
-                        "filename": metadata.get(
-                            "filename", run.get("filename")
-                        ),
-                        "entityType": metadata.get(
-                            "entityType", run.get("entityType")
-                        ),
-                        "entityTypes": metadata.get("entityTypes")
-                        or run.get("entityTypes")
-                        or [],
-                        "queuedAt": metadata.get(
-                            "queuedAt", run.get("queuedAt")
-                        ),
-                        "featureCount": metadata.get(
-                            "featureCount", run.get("featureCount")
-                        ),
-                        "binaryObjectPending": bool(
-                            metadata.get(
-                                "binaryObjectPending",
-                                run.get("binaryObjectPending", False),
-                            )
-                        ),
-                        "status": row[6],
-                        "startedAt": row[3].isoformat().replace("+00:00", "Z")
-                        if row[3]
-                        else run.get("startedAt"),
-                        "completedAt": row[4]
-                        .isoformat()
-                        .replace("+00:00", "Z")
-                        if row[4]
-                        else run.get("completedAt"),
-                        "stats": row[5]
-                        if isinstance(row[5], dict)
-                        else json.loads(row[5] or "{}"),
-                        "attemptCount": row[7] or 0,
-                        "heartbeatAt": row[8]
-                        .isoformat()
-                        .replace("+00:00", "Z")
-                        if row[8]
-                        else None,
-                        "leaseUntil": row[9].isoformat().replace("+00:00", "Z")
-                        if row[9]
-                        else None,
-                        "lastError": row[10],
-                        "processedAt": row[11]
-                        .isoformat()
-                        .replace("+00:00", "Z")
-                        if row[11]
-                        else None,
-                        "processedBy": row[12],
-                    }
-                )
+        import psycopg
 
-    def persist(self, include_import_state: bool = False) -> None:
-        self._sync_relational(include_import_state)
-        super().persist()
+        while True:
+            try:
+                with self.base_transaction() as connection:
+                    if connection.execute(
+                        "SELECT 1 FROM geodata_schema_feature "
+                        "WHERE name='row_authority_v1'"
+                    ).fetchone():
+                        return
+            except psycopg.Error:
+                pass
+            logging.getLogger(__name__).warning(
+                "Waiting for geodata migration 016 before accepting work"
+            )
+            time.sleep(3)
+
+    def hydrate(self):
+        if not self.durable:
+            self._hydrated = True
+            return
+        if self._repository is not None:
+            return
+        from relational_state import DatabaseEvents, RowRepository
+
+        self._repository = RowRepository(
+            self, CompatibilityGeodataStore._sync_relational
+        )
+        self.items = self._repository.mapping("entities")
+        self.data = {
+            kind: self._repository.mapping(kind)
+            for kind in (
+                "importRuns",
+                "importCandidates",
+                "importProcessingQueues",
+                "schedules",
+                "conflationCandidates",
+                "sourceManifests",
+                "entityDeletionJobs",
+            )
+        }
+        self.events = DatabaseEvents(self._repository)
+        self.idempotency = {}
+        self._hydrated = True
+
+    @contextmanager
+    def base_transaction(self):
+        with Store.transaction(self) as connection:
+            if connection is not None:
+                connection.execute("SET LOCAL myota.geodata_writer = 'row-v1'")
+            yield connection
+
+    def transaction(self):
+        if self._repository is not None:
+            return self._repository.connection()
+        return self.base_transaction()
+
+    def operation(self, write=False, atomic=True):
+        from contextlib import nullcontext
+
+        if not self.durable:
+            return nullcontext()
+        self.hydrate()
+        return self._repository.operation(write, atomic)
+
+    def persist(self, include_import_state=False):
+        if self.durable:
+            self.hydrate()
+            self._repository.flush()
+
+    def persist_snapshot_only(self):
+        if self.durable:
+            self.hydrate()
+            self._repository.flush(events_only=True)
+
+    def rollback_pending(self):
+        if self._repository is not None:
+            self._repository.rollback_pending()
+
+    def delete_relational(self, entity_id):
+        if self.durable:
+            self.hydrate()
+            self._repository.scope.deleted.add(("entities", str(entity_id)))
+
+    def delete_encoded_entity(self, entity_id):
+        CompatibilityGeodataStore.delete_relational(self, entity_id)
+
+    def once(self, key, callback):
+        if not self.durable:
+            return super().once(key, callback)
+        self.hydrate()
+        return self._repository.once(key, callback)
+
+    def refresh_import_runs(self):
+        if self.durable:
+            self.hydrate()
+            self._repository.invalidate("importRuns")
+
+    def refresh_import_candidates_for_run(self, run_id):
+        if self.durable:
+            self.hydrate()
+            self._repository.invalidate("importCandidates")
+
+    def refresh_import_queue(self, queue_id):
+        if self.durable:
+            self.hydrate()
+            self._repository.invalidate("importProcessingQueues", queue_id)
+            self._repository.invalidate("importCandidates")
+
+    def mark_import_candidate_dirty(self, candidate_id):
+        if not self.durable:
+            super().mark_import_candidate_dirty(candidate_id)
+
+    def mark_import_candidate_deleted(self, candidate_id):
+        if not self.durable:
+            super().mark_import_candidate_deleted(candidate_id)
+
+    def mark_import_queue_dirty(self, queue_id):
+        if not self.durable:
+            super().mark_import_queue_dirty(queue_id)
+
+    def mark_import_queue_deleted(self, queue_id):
+        if not self.durable:
+            super().mark_import_queue_deleted(queue_id)

@@ -15,10 +15,25 @@ set -euo pipefail
 : "${CORE_DATABASE:=myota_core}"
 : "${ACTIVITY_DATABASE:=myota_activity}"
 : "${GEO_DATABASE:=myota_geo}"
+: "${MYOTA_SCHEMA_REVISION:=0}"
 : "${LEGACY_GEO_HOST:=$CORE_HOST}"
 : "${LEGACY_GEO_PORT:=$CORE_PORT}"
 : "${LEGACY_GEO_DATABASE:=myota_geo}"
 : "${MIGRATION_DATA_COPY_ENABLED:=1}"
+
+# This runner is used from two layouts: directly from the deployment image
+# (/app/db/migrations/run.sh), and from Compose with the script mounted at
+# /migrations/run.sh and the SQL mounted below /migrations/migrations. Resolve
+# the SQL directory from the runner instead of assuming one absolute path.
+RUNNER_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -d "$RUNNER_DIR/core" && -d "$RUNNER_DIR/geo" ]]; then
+  MIGRATION_FILES_DIR="$RUNNER_DIR"
+elif [[ -d "$RUNNER_DIR/migrations/core" && -d "$RUNNER_DIR/migrations/geo" ]]; then
+  MIGRATION_FILES_DIR="$RUNNER_DIR/migrations"
+else
+  echo "Migration SQL directory not found beside runner: $RUNNER_DIR" >&2
+  exit 1
+fi
 
 export PGUSER PGPASSWORD
 
@@ -26,6 +41,7 @@ psql_target() {
   local host="$1" port="$2" database="$3"
   shift 3
   PGHOST="$host" PGPORT="$port" PGDATABASE="$database" \
+    PGOPTIONS="${PGOPTIONS:-} -c myota.geodata_writer=row-v1" \
     psql -v ON_ERROR_STOP=1 "$@"
 }
 
@@ -47,13 +63,49 @@ wait_for_db "$CORE_HOST" "$CORE_PORT" "$CORE_DATABASE"
 wait_for_db "$ACTIVITY_HOST" "$ACTIVITY_PORT" "$ACTIVITY_DATABASE"
 wait_for_db "$GEO_HOST" "$GEO_PORT" "$GEO_DATABASE"
 
+# App pods gate their startup on this marker. Clear all markers before running
+# any migration so a failed/partial run cannot expose a mixed schema as ready.
+for target in \
+  "$CORE_HOST $CORE_PORT $CORE_DATABASE" \
+  "$ACTIVITY_HOST $ACTIVITY_PORT $ACTIVITY_DATABASE" \
+  "$GEO_HOST $GEO_PORT $GEO_DATABASE"; do
+  read -r host port database <<< "$target"
+  psql_target "$host" "$port" "$database" -c "
+    CREATE TABLE IF NOT EXISTS public.myota_deployment_schema_state (
+      id text PRIMARY KEY,
+      ready boolean NOT NULL DEFAULT false,
+      release_revision integer NOT NULL DEFAULT 0,
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+    ALTER TABLE public.myota_deployment_schema_state
+      ADD COLUMN IF NOT EXISTS release_revision integer NOT NULL DEFAULT 0;
+    INSERT INTO public.myota_deployment_schema_state (id, ready, release_revision)
+    VALUES ('deployment', false, $MYOTA_SCHEMA_REVISION)
+    ON CONFLICT (id) DO UPDATE
+      SET ready = false, release_revision = EXCLUDED.release_revision, updated_at = now();
+    DO \$grant\$
+    BEGIN
+      IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'myota_app') THEN
+        EXECUTE 'GRANT SELECT ON public.myota_deployment_schema_state TO myota_app';
+      END IF;
+    END
+    \$grant\$;
+  "
+done
+
 psql_target "$CORE_HOST" "$CORE_PORT" "$CORE_DATABASE" \
-  -f /migrations/migrations/core/001_core.sql
+  -f "$MIGRATION_FILES_DIR/core/001_core.sql"
+psql_target "$CORE_HOST" "$CORE_PORT" "$CORE_DATABASE" \
+  -f "$MIGRATION_FILES_DIR/core/002_operations.sql"
 
 psql_target "$ACTIVITY_HOST" "$ACTIVITY_PORT" "$ACTIVITY_DATABASE" \
-  -f /migrations/migrations/activity/001_activity_relational.sql
+  -f "$MIGRATION_FILES_DIR/activity/001_activity_relational.sql"
 psql_target "$ACTIVITY_HOST" "$ACTIVITY_PORT" "$ACTIVITY_DATABASE" \
-  -f /migrations/migrations/activity/002_activity_entity_deletion.sql
+  -f "$MIGRATION_FILES_DIR/activity/002_activity_entity_deletion.sql"
+psql_target "$ACTIVITY_HOST" "$ACTIVITY_PORT" "$ACTIVITY_DATABASE" \
+  -f "$MIGRATION_FILES_DIR/activity/003_adif_source_retention.sql"
+psql_target "$ACTIVITY_HOST" "$ACTIVITY_PORT" "$ACTIVITY_DATABASE" \
+  -f "$MIGRATION_FILES_DIR/activity/004_adif_failed_source_retention.sql"
 
 for migration in \
   001_geodata.sql \
@@ -70,9 +122,10 @@ for migration in \
   012_import_finalization.sql \
   013_import_retention.sql \
   014_resumable_uploads.sql \
-  015_jetstream_worker_dispatch.sql; do
+  015_jetstream_worker_dispatch.sql \
+  016_relational_authority.sql; do
   psql_target "$GEO_HOST" "$GEO_PORT" "$GEO_DATABASE" \
-    -f "/migrations/migrations/geo/$migration"
+    -f "$MIGRATION_FILES_DIR/geo/$migration"
 done
 
 # Preserve local development data during the first split. Activity is copied
@@ -144,5 +197,19 @@ if [ "$MIGRATION_DATA_COPY_ENABLED" = "1" ]; then
     echo "No legacy geodata database found; skipping its already-completed copy"
   fi
 fi
+
+# Mark every database ready only after all schemas and any one-time data copy
+# have completed successfully. On any earlier error the marker remains false.
+for target in \
+  "$CORE_HOST $CORE_PORT $CORE_DATABASE" \
+  "$ACTIVITY_HOST $ACTIVITY_PORT $ACTIVITY_DATABASE" \
+  "$GEO_HOST $GEO_PORT $GEO_DATABASE"; do
+  read -r host port database <<< "$target"
+  psql_target "$host" "$port" "$database" -c "
+    UPDATE public.myota_deployment_schema_state
+       SET ready = true, updated_at = now()
+     WHERE id = 'deployment' AND release_revision = $MYOTA_SCHEMA_REVISION;
+  "
+done
 
 echo "MyOTA database migrations completed: core=$CORE_DATABASE activity=$ACTIVITY_DATABASE geo=$GEO_DATABASE"

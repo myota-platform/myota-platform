@@ -36,6 +36,16 @@ SECURITY_EVENT_RETENTION_SECONDS = int(
 
 ADMIN_PERMISSION_CATALOG = [
     {
+        "code": "operations.read",
+        "label": "View NATS / JetStream status and sampled history",
+        "group": "Operations",
+    },
+    {
+        "code": "observability.view",
+        "label": "View platform operational status",
+        "group": "Operations",
+    },
+    {
         "code": "identity.admin",
         "label": "View and edit user accounts",
         "group": "Identity",
@@ -768,6 +778,21 @@ class IdentityHandler(JsonHandler):
                 ):
                     raise ValueError("status must be ACTIVE or DEACTIVATED")
                 account[field] = body[field]
+        if body.get("anonymize") and account.get("status") == "DEACTIVATED":
+            account.update(
+                {"displayName": "Deactivated account", "email": None}
+            )
+            for session in IdentityHandler._bucket("sessions").values():
+                if session["accountId"] == account["id"]:
+                    session["revokedAt"] = now()
+            IdentityHandler._audit(
+                "identity.account.deactivated.v1",
+                {
+                    "accountId": account["id"],
+                    "anonymized": True,
+                },
+                account["id"],
+            )
         if body.get("password"):
             IdentityHandler._set_password(account["id"], body["password"])
             for session in IdentityHandler._bucket("sessions").values():
@@ -904,22 +929,26 @@ class IdentityHandler(JsonHandler):
         require(body, "callsignId")
         IdentityHandler._auth(p, account_id=p["accountId"])
         account = IdentityHandler._account(p["accountId"])
-        if not any(
-            c["id"] == body["callsignId"] and c["status"] != "RETIRED"
-            for c in account["callsigns"]
-        ):
-            raise ValueError(
-                "callsignId is not an active callsign on this account"
+
+        def change() -> dict[str, Any]:
+            if not any(
+                c["id"] == body["callsignId"] and c["status"] != "RETIRED"
+                for c in account["callsigns"]
+            ):
+                raise ValueError(
+                    "callsignId is not an active callsign on this account"
+                )
+            account["primaryCallsignId"] = body["callsignId"]
+            account["updatedAt"] = now()
+            IdentityHandler.store.event(
+                "identity.callsign.primary-changed.v1",
+                "account",
+                account["id"],
+                {"callsignId": body["callsignId"]},
             )
-        account["primaryCallsignId"] = body["callsignId"]
-        account["updatedAt"] = now()
-        IdentityHandler.store.event(
-            "identity.callsign.primary-changed.v1",
-            "account",
-            account["id"],
-            {"callsignId": body["callsignId"]},
-        )
-        return account
+            return account
+
+        return IdentityHandler.store.once(p.get("Idempotency-Key"), change)
 
     @staticmethod
     def add_evidence(_: JsonHandler, p: dict[str, str]) -> dict[str, Any]:
@@ -1293,6 +1322,23 @@ IdentityHandler.routes = {
     ("GET", "/v1/identity/me"): IdentityHandler.current_account,
     ("GET", "/v1/identity/accounts/{accountId}"): IdentityHandler.get_account,
     (
+        "PATCH",
+        "/v1/identity/accounts/{accountId}",
+    ): IdentityHandler.update_admin_account,
+    (
+        "PATCH",
+        "/v1/identity/roles/{roleCode}",
+    ): IdentityHandler.update_admin_role,
+    ("POST", "/v1/identity/roles"): IdentityHandler.create_admin_role,
+    (
+        "PUT",
+        "/v1/identity/accounts/{accountId}/role-assignments",
+    ): IdentityHandler.update_admin_account,
+    (
+        "PUT",
+        "/v1/identity/accounts/{accountId}/primary-callsign",
+    ): IdentityHandler.set_primary,
+    (
         "GET",
         "/v1/identity/admin/accounts",
     ): IdentityHandler.list_admin_accounts,
@@ -1347,6 +1393,13 @@ IdentityHandler.routes = {
         "/v1/identity/accounts/{accountId}/roles",
     ): IdentityHandler.assign_role,
     ("POST", "/v1/identity/oidc/providers"): IdentityHandler.oidc_mapping,
+}
+
+IdentityHandler.deprecated_routes = {
+    ("POST", "/v1/identity/admin/accounts/{accountId}/update"),
+    ("POST", "/v1/identity/admin/roles/{roleCode}/update"),
+    ("POST", "/v1/identity/accounts/{accountId}/primary-callsign"),
+    ("POST", "/v1/identity/accounts/{accountId}/roles"),
 }
 
 

@@ -1,7 +1,6 @@
 apiVersion: v2
 name: myota
-description: MyOTA Outdoor Activation Platform services
+description: MyOTA Outdoor Activation Platform services and optional persistent databases
 type: application
-version: 0.1.0
+version: 0.2.10
 appVersion: 0.1.0
-

@@ -1,0 +1,118 @@
+groups:
+  - name: myota-observability
+    rules:
+      - alert: MyOTAJetStreamStatusUnavailable
+        expr: myota_operations_jetstream_up == 0
+        for: 2m
+        labels: {severity: warning}
+        annotations:
+          summary: Operational JetStream inspection is unavailable or partial
+          description: Check the operations service, broker permissions and inspection limits; this is not a zero-backlog reading.
+      - alert: MyOTAJetStreamStatusSamplesStale
+        expr: time() - myota_operations_jetstream_last_sample_timestamp_seconds > 120
+        for: 2m
+        labels: {severity: warning}
+        annotations:
+          summary: JetStream status history is no longer being recorded
+          description: Check the operations sampler and its core database connection.
+      - alert: MyOTAMetricsCollectorDown
+        expr: up{job="myota-otel-collector"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: MyOTA metrics collector is unavailable
+          description: Prometheus cannot scrape the OpenTelemetry Collector.
+      - alert: MyOTAServiceMetricsUnavailable
+        expr: up{job="myota-otel-collector", exported_job="myota-services"} == 0
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: MyOTA service metrics are unavailable
+          description: A service is not responding at its metrics endpoint.
+      - alert: MyOTAActivityQueueBacklog
+        expr: myota_activity_jobs_queued_total{job="myota-otel-collector"} > 100
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: MyOTA activity queue backlog is high
+          description: More than 100 activity jobs have been queued for 10 minutes.
+      - alert: MyOTAActivityDatabaseMetricsUnavailable
+        expr: myota_activity_metrics_database_unavailable{job="myota-otel-collector"} > 0
+        for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: Activity database metrics are unavailable
+          description: Activity domain gauges cannot currently be read from PostgreSQL.
+      - alert: MyOTAApiErrorRateHigh
+        expr: |
+          (
+            sum by (service_name, http_route, http_request_method) (
+              rate(myota_http_server_requests_total{http_response_status_code=~"5.."}[5m])
+            )
+            /
+            clamp_min(
+              sum by (service_name, http_route, http_request_method) (
+                rate(myota_http_server_requests_total[5m])
+              ),
+              0.1
+            )
+          ) > 0.05
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: MyOTA API 5xx rate is high
+          description: '{{ $labels.service_name }} {{ $labels.http_request_method }} {{ $labels.http_route }} has exceeded 5% server errors for five minutes.'
+      - alert: MyOTAApiLatencyHigh
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le, service_name, http_route, http_request_method) (
+              rate(myota_http_server_duration_milliseconds_bucket[5m])
+            )
+          ) > 1000
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: MyOTA API p95 latency is high
+          description: '{{ $labels.service_name }} {{ $labels.http_request_method }} {{ $labels.http_route }} p95 latency has exceeded one second for ten minutes.'
+      - alert: MyOTAApiLatencyCritical
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le, service_name, http_route, http_request_method) (
+              rate(myota_http_server_duration_milliseconds_bucket[5m])
+            )
+          ) > 5000
+        for: 5m
+        labels: {severity: critical}
+        annotations:
+          summary: MyOTA API p95 latency is critical
+          description: '{{ $labels.service_name }} {{ $labels.http_request_method }} {{ $labels.http_route }} p95 latency has exceeded five seconds for five minutes.'
+      - alert: MyOTAGeodataDatabasePoolWaiting
+        expr: myota_geodata_postgres_pool_waiting_requests{job="myota-otel-collector"} > 0
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: Geodata API is waiting for PostgreSQL pool connections
+          description: Geodata database requests have waited for a pooled connection for five minutes; check API replica count and database capacity.
+      - alert: MyOTAGeodataOutboxBacklog
+        expr: myota_geodata_outbox_oldest_pending_age_seconds{job="myota-otel-collector"} > 120
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: Geodata events are waiting to publish
+          description: The oldest unpublished geodata outbox event is over two minutes old.
+      - alert: MyOTAGeodataImportQueueAge
+        expr: myota_geodata_import_oldest_queued_age_seconds{job="myota-otel-collector"} > 600
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: Geodata import queue is aging
+          description: A queued geodata import has waited over ten minutes; inspect worker health and JetStream delivery.
+      - alert: MyOTAGeodataImportHeartbeatStale
+        expr: myota_geodata_import_oldest_processing_heartbeat_age_seconds{job="myota-otel-collector"} > 900
+        for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: A geodata import has a stale processing heartbeat
+          description: A processing import heartbeat is older than the default lease interval; inspect and recover the run.

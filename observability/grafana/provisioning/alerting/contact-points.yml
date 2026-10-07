@@ -1,0 +1,10 @@
+apiVersion: 1
+contactPoints:
+  - orgId: 1
+    name: myota-alertmanager
+    receivers:
+      - uid: myota-alertmanager
+        type: prometheus-alertmanager
+        disableResolveMessage: false
+        settings:
+          url: http://alertmanager:9093

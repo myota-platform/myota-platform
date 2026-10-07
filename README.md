@@ -8,10 +8,21 @@ records the accessibility motivation and public positioning. The
 distinguishes this integration bootstrap from the remaining public-launch and
 production-readiness work.
 
-This repository is a runnable vertical-slice bootstrap for the service repositories described in [`docs/repository-map.md`](docs/repository-map.md). It contains four independently runnable Python services, an API-first contract, a universal browser UI, PostGIS migrations, and Kubernetes/Helm deployment assets.
+This repository is the integration bootstrap and synchronized deployment
+mirror. Domain implementations belong to the repositories in the
+[repository map](https://github.com/myota-platform/myota-docs/blob/main/docs/repository-map.md).
+Production/local deployment is maintained in `myota-deploy`; identity,
+programmes, geodata, activity and the read-only operations status service are
+separate runtime components.
 
 ## What works now
 
+- Geodata Phase 1 uses database-authoritative rows, revision conflicts, atomic
+  audit/outbox writes, and a durable deletion consumer. Migration 016 fences
+  old writers; new API/consumer images wait for it before accepting work.
+- The admin UI's **NATS / JetStream** page uses authenticated operations APIs
+  for real broker queues, consumers and seven days of sampled history.
+  See the [status service guide](https://github.com/myota-platform/myota-docs/blob/main/docs/jetstream-admin-status.md).
 - Amateur-radio-aware identity: operator/SWL participation, multiple callsigns, one primary callsign, lifecycle and verification fields.
 - Shared entity-category catalogue used by imports and review, with programme assignment and programme-owned rules handled separately.
 - Geodata lifecycle: adapter/import run or community proposal → pre-processing → administrator validation → CANDIDATE or APPROVED; normal review then permits CANDIDATE → APPROVED or REJECTED, and approved entities may only be RETIRED.

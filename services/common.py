@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import base64
+import errno
 import hashlib
 import hmac
 import io
@@ -17,16 +18,22 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from email.parser import BytesParser
 from email.policy import default as email_default
-from http.server import BaseHTTPRequestHandler
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from typing import Any, Callable, Iterator
+from metrics import METRICS
+from otel import telemetry_for
 
+# Geodata imports are sent as JSON envelopes and can legitimately contain a
+# sizeable pasted FeatureCollection. Deployments may lower this explicitly,
+# but the service default must not reject ordinary large dataset intake.
 MAX_BODY_BYTES = int(
     os.environ.get("MYOTA_MAX_BODY_BYTES", str(1024 * 1024 * 1024))
 )
 
 
 def require_durable_database(dsn_env: str | None, dsn: str) -> None:
-    """Fail fast when a configured runtime must not use process memory."""
+    """Fail fast instead of silently dropping writes into process memory."""
     required = os.environ.get(
         "MYOTA_REQUIRE_DURABILITY", ""
     ).strip().lower() in {"1", "true", "yes", "on"}
@@ -36,8 +43,42 @@ def require_durable_database(dsn_env: str | None, dsn: str) -> None:
         )
 
 
+class BoundedThreadingHTTPServer(ThreadingHTTPServer):
+    """Thread-per-request server with an explicit concurrency ceiling."""
+
+    daemon_threads = True
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._request_slots = threading.BoundedSemaphore(
+            max(1, int(os.environ.get("MYOTA_HTTP_MAX_WORKERS", "64")))
+        )
+
+    def process_request(self, request: Any, client_address: Any) -> None:
+        self._request_slots.acquire()
+
+        def run() -> None:
+            try:
+                self.process_request_thread(request, client_address)
+            finally:
+                self._request_slots.release()
+
+        threading.Thread(target=run, daemon=True).start()
+
+
 def now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def json_default(value: Any) -> str:
+    """Encode database timestamp values safely at JSON/API boundaries."""
+    if isinstance(value, datetime):
+        return value.isoformat().replace("+00:00", "Z")
+    if isinstance(value, Path):
+        return str(value)
+    raise TypeError(
+        f"Object of type {type(value).__name__} is not JSON serializable"
+    )
 
 
 def new_id() -> str:
@@ -154,11 +195,15 @@ class Store:
     """Service-owned state with optional PostgreSQL durability and a durable outbox."""
 
     def __init__(
-        self, service: str = "service", dsn_env: str | None = None
+        self,
+        service: str = "service",
+        dsn_env: str | None = None,
+        persist_state: bool = True,
     ) -> None:
         self.service = service
         self.dsn = os.environ.get(dsn_env or "", "") if dsn_env else ""
         require_durable_database(dsn_env, self.dsn)
+        self.persist_state = persist_state
         self.items: dict[str, dict[str, Any]] = {}
         self.events: list[dict[str, Any]] = []
         self.data: dict[str, Any] = {}
@@ -186,7 +231,9 @@ class Store:
                 self._pool = ConnectionPool(
                     self.dsn,
                     min_size=1,
-                    max_size=10,
+                    max_size=max(
+                        1, int(os.environ.get("MYOTA_DB_POOL_MAX", "10"))
+                    ),
                     open=True,
                     kwargs={"connect_timeout": 5},
                 )
@@ -212,7 +259,7 @@ class Store:
                 raise
 
     def hydrate(self) -> None:
-        if self._hydrated or not self.durable:
+        if self._hydrated or not self.durable or not self.persist_state:
             self._hydrated = True
             return
         with self.transaction() as connection:
@@ -234,23 +281,23 @@ class Store:
             self.idempotency = {key: response for key, response in rows}
         self._hydrated = True
 
-    def persist(self) -> None:
-        if not self.durable:
+    def persist(self, state: dict[str, Any] | None = None) -> None:
+        if not self.durable or not self.persist_state:
             return
+        snapshot = (
+            state
+            if state is not None
+            else {
+                "items": self.items,
+                "events": self.events,
+                "data": self.data,
+            }
+        )
         with self.transaction() as connection:
             connection.execute(
                 "INSERT INTO service_state(service, state, updated_at) VALUES (%s, %s::jsonb, now()) "
                 "ON CONFLICT (service) DO UPDATE SET state = EXCLUDED.state, updated_at = now()",
-                (
-                    self.service,
-                    json.dumps(
-                        {
-                            "items": self.items,
-                            "events": self.events,
-                            "data": self.data,
-                        }
-                    ),
-                ),
+                (self.service, json.dumps(snapshot, default=json_default)),
             )
             for event in self.events:
                 connection.execute(
@@ -262,7 +309,7 @@ class Store:
                         event["producer"],
                         event["aggregate"]["type"],
                         event["aggregate"]["id"],
-                        json.dumps(event["payload"]),
+                        json.dumps(event["payload"], default=json_default),
                         event["occurredAt"],
                     ),
                 )
@@ -270,7 +317,11 @@ class Store:
                 connection.execute(
                     "INSERT INTO idempotency_record(service, key, response) VALUES (%s, %s, %s::jsonb) "
                     "ON CONFLICT (service, key) DO UPDATE SET response = EXCLUDED.response",
-                    (self.service, key, json.dumps(response)),
+                    (
+                        self.service,
+                        key,
+                        json.dumps(response, default=json_default),
+                    ),
                 )
 
     def close(self) -> None:
@@ -345,13 +396,16 @@ def read_multipart(handler: BaseHTTPRequestHandler) -> dict[str, Any]:
         raise ValueError("multipart request is missing its boundary")
 
     class MultipartReader:
-        def __init__(self, stream: Any) -> None:
-            self.stream, self.buffer = stream, b""
+        def __init__(self, stream: Any, remaining: int) -> None:
+            self.stream, self.buffer, self.remaining = stream, b"", remaining
 
         def fill(self) -> None:
-            chunk = self.stream.read(8 * 1024 * 1024)
+            if self.remaining <= 0:
+                raise ValueError("multipart request ended unexpectedly")
+            chunk = self.stream.read(min(8 * 1024 * 1024, self.remaining))
             if not chunk:
                 raise ValueError("multipart request ended unexpectedly")
+            self.remaining -= len(chunk)
             self.buffer += chunk
 
         def read(self, size: int) -> bytes:
@@ -380,7 +434,7 @@ def read_multipart(handler: BaseHTTPRequestHandler) -> dict[str, Any]:
                     self.buffer = self.buffer[-keep:]
                 self.fill()
 
-    reader = MultipartReader(handler.rfile)
+    reader = MultipartReader(handler.rfile, length)
     if reader.readline() != f"--{boundary}".encode("ascii"):
         raise ValueError("invalid multipart opening boundary")
     delimiter = b"\r\n--" + boundary.encode("ascii")
@@ -400,8 +454,16 @@ def read_multipart(handler: BaseHTTPRequestHandler) -> dict[str, Any]:
         if not field_name:
             raise ValueError("multipart part is missing its field name")
         if filename or field_name == "file":
+            spool_dir = (
+                os.environ.get("MYOTA_UPLOAD_SPOOL_DIR", "").strip() or None
+            )
+            if spool_dir:
+                Path(spool_dir).mkdir(parents=True, exist_ok=True)
             temporary = tempfile.NamedTemporaryFile(
-                prefix="myota-geodata-upload-", suffix=".part", delete=False
+                prefix="myota-geodata-upload-",
+                suffix=".part",
+                dir=spool_dir,
+                delete=False,
             )
             try:
                 with temporary:
@@ -436,12 +498,44 @@ def read_multipart(handler: BaseHTTPRequestHandler) -> dict[str, Any]:
     return result
 
 
+def read_bounded_raw_upload(
+    handler: BaseHTTPRequestHandler, max_bytes: int
+) -> dict[str, str]:
+    """Stream one bounded binary upload part to reconstructible temp storage."""
+    length = _request_length(handler)
+    if length <= 0 or length > max_bytes:
+        raise ValueError(
+            f"upload part must be between 1 and {max_bytes} bytes"
+        )
+    temporary = tempfile.NamedTemporaryFile(
+        prefix="myota-geodata-part-", suffix=".part", delete=False
+    )
+    try:
+        remaining = length
+        with temporary:
+            while remaining:
+                chunk = handler.rfile.read(min(1024 * 1024, remaining))
+                if not chunk:
+                    raise ValueError("upload part ended unexpectedly")
+                temporary.write(chunk)
+                remaining -= len(chunk)
+        return {"_uploadPath": temporary.name}
+    except Exception:
+        os.unlink(temporary.name)
+        raise
+
+
 class JsonHandler(BaseHTTPRequestHandler):
     service = "myota-service"
     routes: dict[
         tuple[str, str], Callable[["JsonHandler", dict[str, str]], Any]
     ] = {}
     store = Store()
+    deprecated_routes: set[tuple[str, str]] = set()
+
+    @classmethod
+    def metrics_extra(cls) -> dict[str, float]:
+        return {}
 
     def log_message(self, format: str, *args: Any) -> None:
         return
@@ -450,26 +544,81 @@ class JsonHandler(BaseHTTPRequestHandler):
         return self.headers.get("X-Request-ID") or new_id()
 
     def _send(self, status: int, payload: Any) -> None:
+        route = getattr(self, "current_route", None)
+        route_name = (
+            route[1]
+            if route
+            else getattr(self, "path", "unknown").split("?", 1)[0]
+        )
+        METRICS.inc(
+            "myota_http_requests_total",
+            {
+                "service": self.service,
+                "method": getattr(self, "command", "UNKNOWN"),
+                "route": route_name,
+                "status": status,
+            },
+        )
+        request_telemetry = getattr(self, "_otel_request", None)
+        if request_telemetry:
+            request_telemetry.finish(status, route_name)
+        if route in self.deprecated_routes:
+            METRICS.inc(
+                "myota_legacy_route_requests_total",
+                {
+                    "service": self.service,
+                    "method": route[0],
+                    "route": route[1],
+                },
+            )
         data = (
             b""
             if status == 204
-            else json.dumps(payload, separators=(",", ":")).encode("utf-8")
+            else json.dumps(
+                payload, separators=(",", ":"), default=json_default
+            ).encode("utf-8")
         )
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(data)))
-        self.send_header("X-Request-ID", self.request_id)
-        self.send_header("X-Correlation-ID", self.correlation_id)
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header(
-            "Access-Control-Allow-Headers",
-            "Content-Type, Authorization, Idempotency-Key, X-Request-ID, X-Correlation-ID",
-        )
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("API-Version", "v1")
-        self.end_headers()
-        if data:
-            self.wfile.write(data)
+        try:
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("X-Request-ID", self.request_id)
+            self.send_header("X-Correlation-ID", self.correlation_id)
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header(
+                "Access-Control-Allow-Headers",
+                "Content-Type, Authorization, Idempotency-Key, If-Match, X-Request-ID, X-Correlation-ID",
+            )
+            self.send_header(
+                "Access-Control-Allow-Methods",
+                "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+            )
+            if getattr(self, "current_route", None) in self.deprecated_routes:
+                self.send_header("Deprecation", "true")
+                self.send_header(
+                    "Sunset",
+                    os.environ.get(
+                        "MYOTA_LEGACY_ROUTE_SUNSET", "2027-04-01T00:00:00Z"
+                    ),
+                )
+            self.send_header("API-Version", "v1")
+            if isinstance(payload, dict) and isinstance(
+                payload.get("version"), int
+            ):
+                self.send_header("ETag", f'"{payload["version"]}"')
+            self.end_headers()
+            if data:
+                self.wfile.write(data)
+        except OSError as exc:
+            # Browser fetch cancellation, navigation, and proxy timeouts can
+            # close the socket before a response is fully written. There is
+            # no second response to send, so do not turn that into a traceback.
+            if exc.errno not in {
+                errno.EPIPE,
+                errno.ECONNRESET,
+                errno.ESHUTDOWN,
+            }:
+                raise
 
     def _error(self, status: int, code: str, detail: str) -> None:
         self._send(
@@ -485,6 +634,20 @@ class JsonHandler(BaseHTTPRequestHandler):
             },
         )
 
+    def _send_metrics(self) -> None:
+        data = METRICS.render(type(self).metrics_extra()).encode("utf-8")
+        request_telemetry = getattr(self, "_otel_request", None)
+        if request_telemetry:
+            request_telemetry.finish(200, "/metrics")
+        self.send_response(200)
+        self.send_header(
+            "Content-Type", "text/plain; version=0.0.4; charset=utf-8"
+        )
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(data)
+
     def do_OPTIONS(self) -> None:
         self.request_id, self.correlation_id = (
             self._request_id(),
@@ -498,11 +661,33 @@ class JsonHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         self._dispatch("POST")
 
+    def do_PUT(self) -> None:
+        self._dispatch("PUT")
+
+    def do_PATCH(self) -> None:
+        self._dispatch("PATCH")
+
+    def do_DELETE(self) -> None:
+        self._dispatch("DELETE")
+
     def _dispatch(self, method: str) -> None:
         self.request_id, self.correlation_id = (
             self._request_id(),
             self.headers.get("X-Correlation-ID") or new_id(),
         )
+        self.command = method
+        try:
+            request_body_size = max(
+                0, int(self.headers.get("Content-Length", "0"))
+            )
+        except ValueError:
+            request_body_size = 0
+        self._otel_request = telemetry_for(self.service).start_request(
+            method, self.path.split("?", 1)[0], request_body_size
+        )
+        if self.path.split("?", 1)[0] == "/metrics":
+            self._send_metrics()
+            return
         if self.path == "/healthz":
             self._send(
                 200,
@@ -534,15 +719,26 @@ class JsonHandler(BaseHTTPRequestHandler):
                     break
             if matched:
                 try:
-                    if method == "POST":
+                    self.current_route = (method, pattern)
+                    if method in {"POST", "PUT", "PATCH", "DELETE"}:
                         content_type = self.headers.get("Content-Type", "")
-                        body = (
-                            read_multipart(self)
-                            if content_type.lower().startswith(
-                                "multipart/form-data"
+                        if content_type.lower().startswith(
+                            "multipart/form-data"
+                        ):
+                            body = read_multipart(self)
+                        elif self.current_route == (
+                            "POST",
+                            "/v1/geodata/import-uploads/{uploadId}/parts/{partNumber}",
+                        ):
+                            part_limit = int(
+                                os.environ.get(
+                                    "MYOTA_UPLOAD_PART_MAX_BYTES",
+                                    str(16 * 1024 * 1024),
+                                )
                             )
-                            else read_json(self)
-                        )
+                            body = read_bounded_raw_upload(self, part_limit)
+                        else:
+                            body = read_json(self)
                     else:
                         body = {}
                     result = fn(
@@ -557,6 +753,10 @@ class JsonHandler(BaseHTTPRequestHandler):
                             "Authorization": self.headers.get(
                                 "Authorization", ""
                             ),
+                            "If-Match": self.headers.get("If-Match", ""),
+                            "X-Part-SHA256": self.headers.get(
+                                "X-Part-SHA256", ""
+                            ),
                             "User-Agent": self.headers.get("User-Agent", ""),
                             "Remote-Addr": self.client_address[0],
                             "_http": "1",
@@ -567,11 +767,13 @@ class JsonHandler(BaseHTTPRequestHandler):
                         if isinstance(result, dict)
                         else 200
                     )
-                    if method == "POST":
+                    if method in {"POST", "PUT", "PATCH", "DELETE"}:
                         self.store.persist()
                     self._send(status, result)
                 except ValueError as exc:
-                    self._error(400, "invalid_request", str(exc))
+                    status = getattr(exc, "status_code", 400)
+                    code = "conflict" if status == 409 else "invalid_request"
+                    self._error(status, code, str(exc))
                 except KeyError as exc:
                     self._error(404, "not_found", str(exc))
                 except PermissionError as exc:

@@ -2,32 +2,202 @@ image:
   repository: ghcr.io/myota-platform/myota-service
   tag: latest
   pullPolicy: IfNotPresent
+imageRollout:
+  # Updated by the image-digest-sync workflow; changing a digest annotation
+  # changes each Deployment's pod template and triggers a rolling restart.
+  digests:
+    identity: ""
+    programmes: ""
+    geodata: ""
+    activity: ""
+    operations: ""
+    gateway: ""
+    adminWeb: ""
+    platform: ""
 gateway:
   imageRepository: ghcr.io/myota-platform/myota-gateway
+  imageTag: ""
   serviceType: ClusterIP
   port: 8080
+  proxyUploadTimeoutSeconds: 3600
+adminWeb:
+  enabled: true
+  imageRepository: ghcr.io/myota-platform/myota-admin-web
+  imageTag: ""
+  serviceType: ClusterIP
+  port: 8080
+  servicePort: 8090
+  gatewayUpstream: myota-gateway:8080
+ingress:
+  enabled: false
+  # Use "traefik" for Traefik's IngressRoute CRD, or "kubernetes" for a
+  # standard networking.k8s.io/v1 Ingress resource.
+  provider: kubernetes
+  className: traefik
+  entryPoints:
+    - websecure
+  # Public API gateway hostname; independently configurable per environment.
+  host: api.myota.top
+  # Administration UI hostname; independently configurable per environment.
+  adminHost: admin.myota.top
+  annotations: {}
+  tls:
+    enabled: false
+    secretName: myota-api-tls
+    certResolver: ""
+  adminTls:
+    enabled: false
+    secretName: ""
+    certResolver: ""
 services:
-  identity: {port: 8001}
-  programmes: {port: 8002}
-  geodata: {port: 8003}
-  activity: {port: 8004}
-geodata:
-  existingSecret: myota-geodata
-  apiKey: bigdatacloud-api-key
-  localityLanguage: en
+  operations:
+    imageRepository: ghcr.io/myota-platform/myota-operations-service
+    imageTag: ""
+    port: 8005
+    replicas: 1
+    pollSeconds: 30
+    historyDays: 7
+  identity:
+    imageRepository: ghcr.io/myota-platform/myota-identity-service
+    imageTag: ""
+    port: 8001
+  programmes:
+    imageRepository: ghcr.io/myota-platform/myota-programme-service
+    imageTag: ""
+    port: 8002
+  geodata:
+    imageRepository: ghcr.io/myota-platform/myota-geodata-service
+    imageTag: ""
+    port: 8003
+    importWorkers: 1
+  activity:
+    imageRepository: ghcr.io/myota-platform/myota-activity-service
+    imageTag: ""
+    port: 8004
+    # Internal cluster URL used by geodata for deletion-impact checks.
+    internalUrl: http://myota-activity:8004
+    replicas: 3
+    dbPoolMax: 12
+    httpMaxWorkers: 64
+activityWorkers:
+  enabled: true
+  replicas: 2
+  dbPoolMax: 4
+  pollSeconds: 1
+activityNotifications:
+  enabled: true
+  replicas: 1
+activityAdifRetention:
+  enabled: true
+  schedule: "47 3 * * *"
+  retentionDays: 15
+  batchSize: 500
+geodataImportProcessing:
+  enabled: true
+  replicas: 1
+  maxAckPending: 4
+  maxDeliveries: 100
+geodataImportRetention:
+  enabled: true
+  schedule: "17 3 * * *"
+  retentionDays: 30
+  batchSize: 100
+objectStorage:
+  endpoint: http://myota-seaweedfs:8333
+  publicEndpoint: ""
+  awardAssetBucket: myota-award-assets
+  awardSignatureBucket: myota-award-signatures
+  certificateBucket: myota-certificates
+  adifBucket: myota-adif
+  geodataImportBucket: myota-geodata-imports
+  existingSecret: myota-s3-auth
+  accessKeyKey: access-key
+  secretKeyKey: secret-key
+seaweedfs:
+  enabled: false
+  image: chrislusf/seaweedfs:latest
+  storageSize: 20Gi
+  storageClassName: ""
+geodataPipeline:
+  enabled: true
+  locationEnrichment:
+    enabled: true
+    existingSecret: myota-geodata-enrichment
+    apiKeyKey: api-key
+    language: en
+  maxImportFeatures: 5000
+  maxCoordinates: 50000
+  maxBodyBytes: "1073741824"
+  maxUploadBytes: "1073741824"
+  tileCacheTtlSeconds: 60
+  importer:
+    enabled: false
+    schedule: "0 * * * *"
+    image: ghcr.io/myota-platform/myota-service:latest
+geodataLoadTestCleanup:
+  # Production load-test writes are never enabled by default. Set enabled and
+  # allowProductionCleanup only for a planned run with a dedicated admin.
+  enabled: false
+  allowProductionCleanup: false
 postgres:
-  host: postgis
+  enabled: false
+  image: postgres:16-alpine
+  postgisImage: postgis/postgis:16-3.4
+  coreStorageSize: 10Gi
+  activityStorageSize: 50Gi
+  geoStorageSize: 100Gi
+  storageClassName: ""
+  resources: {}
+  coreHost: myota-core-postgres
+  corePort: 5432
+  activityHost: myota-activity-postgres
+  activityPort: 5432
+  geoHost: myota-geo-postgis
+  geoPort: 5432
   coreDatabase: myota_core
+  activityDatabase: myota_activity
   geoDatabase: myota_geo
   existingSecret: myota-postgres
+migrations:
+  waitImage: postgres:16-alpine
+  waitTimeoutSeconds: 1800
 auth:
   environment: production
   existingSecret: myota-auth
   maintenanceEnabled: true
+  accessTokenSeconds: 1800
 nats:
   image: nats:2.10-alpine
   url: nats://myota-nats:4222
+  persistence:
+    enabled: true
+    storageSize: 8Gi
+    storageClassName: ""
 outbox:
   enabled: true
   maxAttempts: 12
+observability:
+  enabled: true
+  storageClassName: ""
+  otelCollector:
+    image: otel/opentelemetry-collector-contrib:0.135.0
+    servicePort: 4317
+    metricsPort: 8889
+  tempo:
+    image: grafana/tempo:2.6.1
+    servicePort: 3200
+    storageSize: 10Gi
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    servicePort: 9090
+    storageSize: 10Gi
+    retention: 15d
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    servicePort: 9093
+    storageSize: 1Gi
+  grafana:
+    image: grafana/grafana:11.2.2
+    servicePort: 3000
+    storageSize: 1Gi
 resources: {}
