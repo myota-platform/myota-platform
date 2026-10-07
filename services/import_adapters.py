@@ -6,6 +6,7 @@ remain policy owned by the programme/geodata review workflow.
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from geodata_pipeline import normalize_geometry
@@ -16,6 +17,11 @@ OSM_REQUIRED_TAGS = (
     "leisure=nature_reserve",
     "boundary=protected_area",
     "landuse=recreation_ground",
+    "highway=path",
+    "highway=footway",
+    "highway=track",
+    "highway=bridleway",
+    "route=hiking",
 )
 GOVERNMENT_GIS_FORMATS = (
     "GEOJSON",
@@ -24,18 +30,146 @@ GOVERNMENT_GIS_FORMATS = (
     "ARCGIS_FEATURESERVER",
 )
 
+# GIS providers use a surprisingly wide range of field names for the human-readable
+# feature name. Keep the aliases here, at the adapter boundary, so every importer
+# produces the same canonical ``properties.name`` value for preprocessing.
+NAME_PROPERTY_ALIASES = (
+    "name",
+    "official_name",
+    "site_name",
+    "park_name",
+    "reserve_name",
+    "trail_name",
+    "local_name",
+    "nombre",
+    "denominacion",
+    "designation",
+    "title",
+    "label",
+)
+_NAME_KEY_TOKENS = ("name", "nombre", "denom", "designation", "title", "label")
+_NON_NAME_KEY_TOKENS = (
+    "code",
+    "id",
+    "type",
+    "area",
+    "hect",
+    "lat",
+    "lon",
+    "lng",
+    "region",
+    "country",
+    "province",
+    "county",
+    "municip",
+    "city",
+    "state",
+    "admin",
+    "source",
+    "ref",
+    "url",
+    "license",
+)
+_EMPTY_NAME_VALUES = {
+    "",
+    "-",
+    "--",
+    "n/a",
+    "na",
+    "none",
+    "null",
+    "unknown",
+    "unnamed",
+}
+
+
+def _normalise_property_key(value: Any) -> str:
+    return re.sub(r"[^a-z0-9]+", "", str(value).casefold())
+
+
+def _name_value(value: Any) -> str | None:
+    if not isinstance(value, str):
+        return None
+    cleaned = " ".join(value.split())
+    if cleaned.casefold() in _EMPTY_NAME_VALUES:
+        return None
+    # A source attribute containing a whole document is not a useful display name.
+    return cleaned[:300] if cleaned else None
+
+
+def infer_feature_name(properties: dict[str, Any]) -> str | None:
+    """Find a display name without treating source codes as names.
+
+    Explicit aliases win over heuristic matches. Nested OSM ``tags`` are inspected
+    as well, while the caller retains every original source property unchanged.
+    """
+    pairs = list(properties.items())
+    tags = properties.get("tags")
+    if isinstance(tags, dict):
+        pairs.extend(tags.items())
+
+    by_key: dict[str, list[Any]] = {}
+    for key, value in pairs:
+        by_key.setdefault(_normalise_property_key(key), []).append(value)
+
+    for alias in NAME_PROPERTY_ALIASES:
+        for value in by_key.get(_normalise_property_key(alias), []):
+            candidate = _name_value(value)
+            if candidate:
+                return candidate
+
+    for key, value in pairs:
+        normalized_key = _normalise_property_key(key)
+        if not any(token in normalized_key for token in _NAME_KEY_TOKENS):
+            continue
+        if any(token in normalized_key for token in _NON_NAME_KEY_TOKENS):
+            continue
+        candidate = _name_value(value)
+        if candidate:
+            return candidate
+    return None
+
+
+def ensure_feature_name(properties: dict[str, Any]) -> dict[str, Any]:
+    """Populate canonical ``name`` while preserving source attributes."""
+    if not _name_value(properties.get("name")):
+        inferred = infer_feature_name(properties)
+        if inferred:
+            properties["name"] = inferred
+    return properties
+
 
 class Adapter:
     code = "BASE"
 
     def normalize(self, feature: dict[str, Any]) -> dict[str, Any]:
-        properties = dict(feature.get("properties") or {})
+        is_way_record = str(feature.get("type") or "").casefold() == "way"
+        properties = dict(
+            feature.get("properties") or feature.get("tags") or {}
+        )
+        if is_way_record:
+            properties.setdefault("featureType", "way")
+            if feature.get("id") is not None:
+                properties.setdefault("id", feature["id"])
+        ensure_feature_name(properties)
+        raw_geometry = feature.get("geometry")
+        if (
+            not raw_geometry
+            and is_way_record
+            and feature.get("coordinates") is not None
+        ):
+            raw_geometry = {
+                "type": "LineString",
+                "coordinates": feature["coordinates"],
+            }
         geometry = (
             normalize_geometry(
-                feature.get("geometry"),
-                feature.get("crs") or properties.get("crs"),
+                raw_geometry,
+                feature.get("crs")
+                or feature.get("spatialReference")
+                or properties.get("crs"),
             )
-            if feature.get("geometry")
+            if raw_geometry
             else None
         )
         return {
@@ -121,7 +255,10 @@ class GovernmentGISAdapter(Adapter):
                 }
         normalized = (
             normalize_geometry(
-                geometry, feature.get("crs") or properties.get("crs")
+                geometry,
+                feature.get("crs")
+                or feature.get("spatialReference")
+                or properties.get("crs"),
             )
             if geometry
             else None
@@ -136,6 +273,7 @@ class GovernmentGISAdapter(Adapter):
         properties.setdefault(
             "sourceRecordType", "local-government GIS feature"
         )
+        ensure_feature_name(properties)
         return {
             "type": "Feature",
             "geometry": normalized,

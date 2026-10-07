@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import sys
 from http.server import ThreadingHTTPServer
+from common import BoundedThreadingHTTPServer
 
 service = os.environ.get("SERVICE", "").lower()
 if service == "identity":
@@ -14,9 +15,9 @@ elif service == "programmes":
 
     port, handler, seed = 8002, ProgrammeHandler, seed_service
 elif service == "geodata":
-    from geodata import GeoHandler, seed as seed_service
+    from geodata import GeoHandler
 
-    port, handler, seed = 8003, GeoHandler, seed_service
+    port, handler, seed = 8003, GeoHandler, GeoHandler.store.hydrate
 elif service == "activity":
     from activity import ActivityHandler
 
@@ -30,13 +31,18 @@ else:
 seed()
 if service == "geodata":
     # Requeue imports abandoned by the previous geodata instance only after
-    # durable state and seed data have been hydrated.
+    # durable geodata state has been hydrated.
     handler.recover_import_runs()
 if service == "identity":
     bootstrap_admin()
 handler.store.persist()
 print(f"{service}-service listening on :{port}")
-server = ThreadingHTTPServer(("0.0.0.0", port), handler)
+server_class = (
+    BoundedThreadingHTTPServer
+    if service == "activity"
+    else ThreadingHTTPServer
+)
+server = server_class(("0.0.0.0", port), handler)
 try:
     server.serve_forever()
 except KeyboardInterrupt:

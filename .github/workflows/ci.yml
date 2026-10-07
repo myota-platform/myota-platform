@@ -5,6 +5,8 @@ jobs:
     uses: myota-platform/.github/.github/workflows/python-quality.yml@main
   test:
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: services
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

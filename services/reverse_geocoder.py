@@ -48,11 +48,14 @@ LOCATION_FIELDS = (
     "countryCode",
     "region",
     "regionCode",
+    "subdivision",
+    "subdivisionCode",
     "province",
     "provinceCode",
     "county",
     "countyCode",
     "city",
+    "municipality",
     "locality",
 )
 
@@ -150,6 +153,7 @@ def normalize_response(payload: dict[str, Any]) -> dict[str, Any]:
         "county": county_name,
         "countyCode": value(county_entry, "isoCode"),
         "city": city_name,
+        "municipality": city_name,
         "locality": payload.get("locality"),
         "geocodeProvider": "BIGDATACLOUD",
         "geocodeStatus": "ENRICHED",
@@ -228,15 +232,49 @@ class ReverseGeocoder:
 GEOCODER = ReverseGeocoder()
 
 
+def _sync_location_snapshot(entity: dict[str, Any]) -> None:
+    entity["location"] = {
+        field: entity.get(field) for field in LOCATION_FIELDS
+    }
+
+
+def apply_location_result(
+    entity: dict[str, Any], result: dict[str, Any]
+) -> dict[str, Any]:
+    """Merge provider data without overwriting explicitly managed fields."""
+    manual_fields = set(entity.get("manualLocationFields") or [])
+    for field in LOCATION_FIELDS:
+        if field in result and field not in manual_fields:
+            entity[field] = result[field]
+    for field in (
+        "geocodeProvider",
+        "geocodeStatus",
+        "geocodeLookupSource",
+        "geocodeError",
+        "geocodedAt",
+    ):
+        if field in result:
+            entity[field] = result[field]
+    entity["manualLocationFields"] = sorted(manual_fields)
+    _sync_location_snapshot(entity)
+    return entity
+
+
 def enrich_entity_location(
     entity: dict[str, Any], *, force: bool = False
 ) -> dict[str, Any]:
-    """Enrich an entity from its centroid while keeping provider provenance."""
+    """Enrich an entity from its centroid while keeping provider provenance.
+
+    ``force`` is reserved for an explicit refresh after automatic values have
+    been released. Normal imports, geometry changes, and metadata edits reuse
+    an existing successful provider result and do not issue another request.
+    """
     if (
         not force
         and entity.get("geocodeStatus") == "ENRICHED"
         and entity.get("countryCode")
     ):
+        _sync_location_snapshot(entity)
         return entity
     centroid = entity.get("centroid") or {}
     try:
@@ -249,23 +287,7 @@ def enrich_entity_location(
             "geocodeStatus": "SKIPPED_NO_CENTROID",
             "geocodedAt": now(),
         }
-    for field in LOCATION_FIELDS:
-        if field in result:
-            entity[field] = result[field]
-    for field in (
-        "subdivision",
-        "subdivisionCode",
-        "geocodeProvider",
-        "geocodeStatus",
-        "geocodeLookupSource",
-        "geocodeError",
-        "geocodedAt",
-    ):
-        if field in result:
-            entity[field] = result[field]
-    entity["location"] = {
-        field: entity.get(field) for field in LOCATION_FIELDS
-    }
+    apply_location_result(entity, result)
     provenance = entity.setdefault("provenance", {})
     provenance["reverseGeocoding"] = {
         key: value for key, value in result.items() if key != "geocodePayload"
