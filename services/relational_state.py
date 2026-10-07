@@ -42,6 +42,8 @@ RUN_FIELDS = {
     "lastError": "last_error",
     "processedAt": "processed_at",
     "processedBy": "processed_by",
+    "cancellationRequestedAt": "cancellation_requested_at",
+    "cancellationRequestedBy": "cancellation_requested_by",
 }
 CANDIDATE_FIELDS = {
     "importRunId": "import_run_id",
@@ -281,6 +283,19 @@ class RowRepository:
                 if canonical(value) == scope.original.get(identity):
                     scope.loaded.pop(identity)
                     scope.original.pop(identity, None)
+
+    def reload(self, kind: str, key: str) -> dict[str, Any]:
+        """Replace a cancelled job's pending projection with its locked row."""
+        with self.connection() as connection:
+            latest = self.read(connection, kind, key, lock=True)
+        if latest is None:
+            raise KeyError(key)
+        identity = (kind, key)
+        value = self.scope.loaded.setdefault(identity, {})
+        value.clear()
+        value.update(latest)
+        self.scope.original[identity] = copy.deepcopy(latest)
+        return value
 
     def _write(
         self, connection: Any, kind: str, key: str, value: dict[str, Any]

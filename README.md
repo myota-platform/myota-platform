@@ -15,6 +15,13 @@ Production/local deployment is maintained in `myota-deploy`; identity,
 programmes, geodata, activity and the read-only operations status service are
 separate runtime components.
 
+The integration copies include durable pull delivery for Activity notifications
+and transactional geodata cancellation/finalization. The notification worker
+can overlap during rollouts and drains on SIGTERM; cancelled imports discard
+stale preprocessing projections under a row lock. See the
+[operations runbook](https://github.com/myota-platform/myota-docs/blob/main/docs/operations.md#activity-notification-consumer-rollouts)
+for rollout and retry behavior.
+
 ## What works now
 
 - Geodata Phase 1 uses database-authoritative rows, revision conflicts, atomic
