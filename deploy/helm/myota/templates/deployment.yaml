@@ -168,6 +168,8 @@ spec:
       annotations:
         rollout.myota.dev/image-digest: {{ .Values.imageRollout.digests.activity | default "untracked" | quote }}
     spec:
+      # Stop fetching on SIGTERM; finish the current notice and drain NATS.
+      terminationGracePeriodSeconds: 60
       initContainers:
         {{ include "myota.waitForSchema" (dict "root" . "databaseUrlKey" "activity-database-url") | nindent 8 }}
       containers:
