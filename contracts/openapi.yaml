@@ -520,6 +520,56 @@ paths:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/GeoImportUpload' } } }
       responses: { '202': { description: Upload stored and import queued } }
+  /v1/geodata/import-uploads:
+    post:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Create a restart-safe resumable geodata upload
+      description: Creates an owner-bound upload session backed by SeaweedFS S3 multipart storage. Upload in bounded parts, then explicitly complete. Abandoned sessions expire after 24 hours.
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/GeoImportUploadSessionCreate' } } }
+      responses:
+        '201': { description: Upload session created, content: { application/json: { schema: { $ref: '#/components/schemas/GeoImportUploadSession' } } } }
+        '400': { description: Invalid metadata or size }
+        '403': { description: geodata.import scope required }
+  /v1/geodata/import-uploads/{uploadId}:
+    get:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Inspect an owned upload session and its received parts
+      parameters: [{ in: path, name: uploadId, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Current upload progress, content: { application/json: { schema: { $ref: '#/components/schemas/GeoImportUploadSessionProgress' } } } }, '404': { description: Session not found for this user } }
+    delete:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Abort an owned incomplete upload session
+      parameters: [{ in: path, name: uploadId, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Multipart parts aborted and session closed } }
+  /v1/geodata/import-uploads/{uploadId}/parts/{partNumber}:
+    post:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Upload or retry one bounded binary part
+      parameters:
+        - { in: path, name: uploadId, required: true, schema: { type: string, format: uuid } }
+        - { in: path, name: partNumber, required: true, schema: { type: integer, minimum: 1, maximum: 10000 } }
+        - { in: header, name: X-Part-SHA256, required: false, schema: { type: string, pattern: '^[a-fA-F0-9]{64}$' } }
+      requestBody:
+        required: true
+        content: { application/octet-stream: { schema: { type: string, format: binary } } }
+      responses: { '200': { description: Part stored idempotently }, '400': { description: Part too large or checksum mismatch }, '404': { description: Session not found } }
+  /v1/geodata/import-uploads/{uploadId}/complete:
+    post:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Verify and complete an upload, then durably enqueue preprocessing
+      parameters: [{ in: path, name: uploadId, required: true, schema: { type: string, format: uuid } }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, additionalProperties: false } } }
+      responses: { '202': { description: Object verified and import run created; preprocessing is asynchronous } }
   /v1/geodata/location-options:
     get:
       tags: [Geodata]
@@ -1842,6 +1892,34 @@ components:
         source: { type: object }
         filename: { type: string }
         contentBase64: { type: string, format: byte }
+    GeoImportUploadSessionCreate:
+      type: object
+      required: [adapter, source, entityTypes, filename, expectedSize]
+      properties:
+        adapter: { type: string, enum: [PARKSERVE_US, OSM, GOVERNMENT_GIS, MANUAL] }
+        format: { type: string, enum: [GEOJSON, KML, GPX, WFS, SHAPEFILE, SHP, ARCGIS_FEATURESERVER, OSM_PBF, PARKSERVE_US] }
+        entityTypes: { type: array, minItems: 1, uniqueItems: true, items: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,63}$' } }
+        filename: { type: string, minLength: 1 }
+        expectedSize: { type: integer, minimum: 1, maximum: 1073741824 }
+        sha256: { type: string, pattern: '^[a-fA-F0-9]{64}$' }
+        source: { type: object }
+    GeoImportUploadSession:
+      type: object
+      required: [uploadId, status, partSizeBytes, expiresInSeconds]
+      properties:
+        uploadId: { type: string, format: uuid }
+        status: { type: string, enum: [UPLOADING, COMPLETING, COMPLETED, ABORTED, EXPIRED, FAILED] }
+        partSizeBytes: { type: integer }
+        expiresInSeconds: { type: integer }
+    GeoImportUploadSessionProgress:
+      type: object
+      required: [uploadId, status, filename, expectedSize, parts]
+      properties:
+        uploadId: { type: string, format: uuid }
+        status: { type: string }
+        filename: { type: string }
+        expectedSize: { type: integer }
+        parts: { type: array, items: { type: object, required: [partNumber, sizeBytes, sha256], properties: { partNumber: { type: integer }, sizeBytes: { type: integer }, sha256: { type: string } } } }
     GeoImportObjectReference:
       type: object
       required: [adapter, source, entityTypes, filename]
