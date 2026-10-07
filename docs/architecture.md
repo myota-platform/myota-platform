@@ -1,8 +1,13 @@
 # MyOTA platform architecture
 
+These are integration-bootstrap notes. The current cross-repository
+[architecture](https://github.com/myota-platform/myota-docs/blob/main/docs/architecture.md)
+and [scaling delivery checklist](https://github.com/myota-platform/myota-docs/blob/main/docs/geodata-horizontal-scaling-roadmap.md)
+are maintained in `myota-docs`.
+
 ## Scope
 
-MyOTA is an Outdoor Activation Platform. A programme is configuration and policy data consumed by platform capabilities. MPOTA is only sample seed data; future programmes use the same APIs without cloning a codebase. The platform does not copy, inherit or silently normalize another programme's charter, rules, minimum QSOs, award logic or eligibility policy. Those are programme-owned inputs, versioned and auditable as configuration or programme code.
+MyOTA is an Outdoor Activation Platform. A programme is configuration and policy data consumed by platform capabilities. MPOTA is only an optional programme-configuration example; geodata seed entities are no longer replayed. Future programmes use the same APIs without cloning a codebase. The platform does not copy, inherit or silently normalize another programme's charter, rules, minimum QSOs, award logic or eligibility policy. Those are programme-owned inputs, versioned and auditable as configuration or programme code.
 
 ## Service boundaries
 
@@ -13,27 +18,42 @@ flowchart LR
   G --> P[Programme service\nconfiguration, rules, themes]
   G --> Geo[Geodata service\nPostGIS, imports, review]
   G --> A[Activity service\nactivations, QSOs, awards]
+  G --> Ops[Operations service\nread-only JetStream status]
   I -. events .-> Bus[(Event broker / outbox)]
   P -. events .-> Bus
   Geo -. events .-> Bus
   A -. events .-> Bus
   I --> C[(myota_core)]
   P --> C
-  A --> C
+  Ops --> C
+  Ops -. metadata .-> Bus
+  A --> ADB[(myota_activity\nPostgreSQL)]
   Geo --> D[(myota_geo\nPostGIS)]
   Admin[QGIS / browser map editor] --> Geo
+  Bus --> Worker[Geodata-owned durable workers]
+  Worker --> D
 ```
 
 Each service owns its database tables and publishes events. No service reads another service's tables. The gateway/ingress is a routing boundary, not a domain owner.
+
+Only `myota_geo` requires PostGIS; core and activity are separate plain
+PostgreSQL containers. Geodata uses authoritative row repositories,
+revision/If-Match conflicts and atomic audit/outbox changes. Migration 016
+archives the old service snapshot and fences obsolete writers. API and worker
+rollout must follow the [migration procedure](https://github.com/myota-platform/myota-docs/blob/main/docs/geodata-phase1-relational-authority.md#migration-and-rollout).
 
 ## Geodata lifecycle
 
 ```mermaid
 flowchart TD
   S[Authoritative/imported source] --> R[Adapter + import run]
-  R --> C[CANDIDATE]
+  R --> Pre[Durable pre-processing records]
+  Pre --> Validate[Administrator selection and confirmation]
+  Validate --> Queue[NATS promotion job]
+  Queue --> C[CANDIDATE]
+  Queue -->|Authorized direct approval| A[APPROVED]
   Q[Community proposal] --> C
-  C -->|approver scope + review| A[APPROVED]
+  C -->|approver scope + review| A
   C -->|approver decision| X[REJECTED]
   A --> M[Public map + activation eligibility]
 ```

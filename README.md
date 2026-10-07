@@ -44,16 +44,27 @@ python3 -m unittest discover -s tests -v
 python3 services/dev_server.py
 ```
 
-Open <http://127.0.0.1:8080>. The Compose stack starts the four services on
-ports 8001–8004 and proxies the browser API calls. Use the dependency-free
+Open <http://127.0.0.1:8080> for the test harness. For the current durable
+stack, run Compose from sibling `myota-deploy`; its admin UI is on port 8090,
+domain APIs on 8001–8004 and read-only operations API on 8005. Use the dependency-free
 `dev_server.py` process only for tests; it is not a durable runtime unless
 database URLs and `MYOTA_REQUIRE_DURABILITY=1` are supplied explicitly.
 
-For a containerized PostGIS environment, use `docker compose up --build` after starting Colima. The image uses the same service code with `SERVICE=identity|programmes|geodata|activity`.
+For the complete durable environment, start Colima and follow the
+[deployment README](https://github.com/myota-platform/myota-deploy#run-the-vertical-slice).
+It runs three database containers, SeaweedFS, JetStream, independent domain
+workers and the Vue UI. This repository retains integration mirrors, not the
+authoritative domain implementations or operational deployment instructions.
 
 ## Architecture
 
-Read [`docs/architecture.md`](docs/architecture.md), [`docs/adr/0001-storage-topology.md`](docs/adr/0001-storage-topology.md), and [`docs/repository-map.md`](docs/repository-map.md). The current bootstrap is kept together to make the vertical slice easy to run; the repository map defines the justified GitHub split once the MyOTA organization is available.
+Read the current [architecture](https://github.com/myota-platform/myota-docs/blob/main/docs/architecture.md),
+[storage topology ADR](https://github.com/myota-platform/myota-docs/blob/main/docs/adr/0001-storage-topology.md)
+and [12-repository ownership map](https://github.com/myota-platform/myota-docs/blob/main/docs/repository-map.md).
+The [latest scaling delivery and evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/geodata-horizontal-scaling-roadmap.md#latest-delivery-and-evidence--7-october-2026)
+distinguishes verified database authority from open restart, memory, load and
+canary gates. Local bootstrap docs are integration notes; `myota-docs` remains
+the cross-repository architecture and roadmap authority.
 
 ## Source project
 

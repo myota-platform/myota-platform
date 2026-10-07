@@ -1,17 +1,19 @@
-# Proposed MyOTA repositories
+# MyOTA repository ownership
 
-The following split is justified and intentionally small:
+The organization has twelve repositories. The authoritative
+[current repository map](https://github.com/myota-platform/myota-docs/blob/main/docs/repository-map.md)
+lists all services, frontends, contracts, deployment, documentation, integration
+mirrors and the `.github` organization profile. The split is implemented, not
+a proposal awaiting organization creation.
 
-| Repository | Owns | Initial source here |
-|---|---|---|
-| `myota-contracts` | OpenAPI, event schemas, compatibility rules, generated client release | `contracts/` |
-| `myota-identity-service` | accounts, callsigns, auth claims, OIDC mappings | `services/identity.py`, core migrations |
-| `myota-programme-service` | programmes, shared entity-category master data and programme assignments, rules, themes | `services/programmes.py`, core migrations |
-| `myota-geodata-service` | PostGIS, import adapters, provenance, conflation, review, shared entity-category assignments | `services/geodata.py`, geo migrations |
-| `myota-activity-service` | activations, QSOs, award calculations | `services/activity.py`, core migrations |
-| `myota-web` | universal programme UI and generated API client | `web/` |
-| `myota-deploy` | Helm charts, environments, migrations, observability | `deploy/`, `compose.yaml` |
-| `myota-docs` | architecture, ADRs, operator and migration docs | `docs/` |
-| `myota-platform` | runnable integration bootstrap, local vertical slice and cross-service smoke tests | current bootstrap repository |
+`myota-platform` owns integration tests and synchronized runtime, contract and
+migration mirrors. Domain source belongs to the service repositories;
+`myota-deploy` owns Compose/Helm/Fleet orchestration. Mirror migrations must
+match their owning service's ordered files byte for byte and are applied to
+`myota_core`, `myota_activity` or `myota_geo` according to ownership.
 
-The bootstrap repository is a temporary integration workspace; it is not a reason to create many more repositories. Once the MyOTA organization is available, each row can be created from the corresponding paths and wired together by pinned contract versions.
+Geodata workers own preprocessing, promotion and confirmed entity deletion.
+The operations service only inspects broker metadata and keeps sampled history
+in its own core table. It does not become a shared domain-worker service.
+See the [scaling delivery and evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/geodata-horizontal-scaling-roadmap.md#latest-delivery-and-evidence--7-october-2026)
+for the latest boundaries, verification and open gates.
