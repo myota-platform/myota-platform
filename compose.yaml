@@ -212,6 +212,7 @@ services:
   activity-notifications:
     build: .
     restart: unless-stopped
+    stop_grace_period: 60s
     command: ["python3", "services/activity_notification_consumer.py"]
     environment:
       ACTIVITY_DATABASE_URL: postgresql://myota:myota-dev-only@activity-db:5432/myota_activity

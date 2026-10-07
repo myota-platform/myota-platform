@@ -178,6 +178,7 @@ services:
     depends_on: {migrations: {condition: service_completed_successfully}, activity-db: {condition: service_started}}
   activity-notifications:
     image: ghcr.io/myota-platform/myota-activity-service:latest
+    stop_grace_period: 60s
     command: ["python3", "activity_notification_consumer.py"]
     environment:
       ACTIVITY_DATABASE_URL: postgresql://myota:myota-dev-only@activity-db:5432/myota_activity
