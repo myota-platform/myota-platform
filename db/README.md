@@ -13,8 +13,10 @@ independent for each database target. Cross-service references use opaque IDs
 and events, never foreign keys across databases.
 
 Core `002_operations.sql` mirrors the operations service's `001_operations.sql`.
-Geo `016_relational_authority.sql` mirrors the geodata service migration and
-adds row authority, revisions, indexed audit and an obsolete-writer fence.
+Geo `017_import_cancellation.sql` is the current migration head. It mirrors
+the geodata service migration and adds durable cancellation metadata plus
+retention indexing for cancelled runs. All shared geo migrations mirror the
+geodata service-owned schema.
 Synchronize service-owned migration sources before modifying the runner; see
 the [Phase 1 migration procedure](https://github.com/myota-platform/myota-docs/blob/main/docs/geodata-phase1-relational-authority.md).
 

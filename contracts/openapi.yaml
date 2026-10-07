@@ -419,6 +419,23 @@ paths:
           description: Import status, processing counts, source manifest, and errors
           content: { application/json: { schema: { $ref: '#/components/schemas/GeoImportRun' } } }
         '404': { description: Import run not found }
+  /v1/geodata/imports/{runId}/cancellation:
+    put:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Cancel a queued upload or request cancellation of active preprocessing
+      description: Idempotently creates the cancellation resource for an import run. QUEUED and UPLOAD_PENDING runs become CANCELLED immediately; PROCESSING runs become CANCELLING and stop at a worker checkpoint. Preprocessed runs cannot be cancelled because review begins at that point. Cancellation removes staged records and temporary source bytes.
+      parameters:
+        - { in: path, name: runId, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Import cancelled, or cancellation was already complete
+          content: { application/json: { schema: { $ref: '#/components/schemas/GeoImportRun' } } }
+        '202':
+          description: Cancellation requested; the worker will stop at a safe checkpoint
+          content: { application/json: { schema: { $ref: '#/components/schemas/GeoImportRun' } } }
+        '400': { description: Import has passed the preprocessing stage or cannot be cancelled }
+        '404': { description: Import run not found }
   /v1/geodata/imports/{runId}/candidates:
     get:
       tags: [Geodata]
@@ -2059,7 +2076,7 @@ components:
         entityType: { type: string, description: Primary compatibility category code }
         entityTypes: { type: array, items: { type: string } }
         source: { type: object, additionalProperties: true }
-        status: { type: string, enum: [QUEUED, PROCESSING, PREPROCESSED, PREPROCESSED_WITH_ERRORS, COMPLETED, COMPLETED_WITH_ERRORS, FAILED, PROCESSED] }
+        status: { type: string, enum: [UPLOAD_PENDING, QUEUED, PROCESSING, CANCELLING, CANCELLED, PREPROCESSED, PREPROCESSED_WITH_ERRORS, COMPLETED, COMPLETED_WITH_ERRORS, FAILED, PROCESSED] }
         queuedAt: { type: string, format: date-time }
         startedAt: { type: string, format: date-time, nullable: true }
         completedAt: { type: string, format: date-time, nullable: true }
@@ -2070,6 +2087,8 @@ components:
         candidateCounts: { type: object, additionalProperties: { type: integer } }
         processedAt: { type: string, format: date-time, nullable: true }
         processedBy: { type: string, nullable: true }
+        cancellationRequestedAt: { type: string, format: date-time, nullable: true }
+        cancellationRequestedBy: { type: string, nullable: true }
     GeoImportCandidate:
       type: object
       required: [id, importRunId, ordinal, name, geometry, validationStatus]

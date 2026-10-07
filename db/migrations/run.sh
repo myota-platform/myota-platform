@@ -123,7 +123,8 @@ for migration in \
   013_import_retention.sql \
   014_resumable_uploads.sql \
   015_jetstream_worker_dispatch.sql \
-  016_relational_authority.sql; do
+  016_relational_authority.sql \
+  017_import_cancellation.sql; do
   psql_target "$GEO_HOST" "$GEO_PORT" "$GEO_DATABASE" \
     -f "$MIGRATION_FILES_DIR/geo/$migration"
 done
