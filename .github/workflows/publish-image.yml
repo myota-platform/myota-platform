@@ -7,6 +7,7 @@ on:
       - "Dockerfile"
       - "requirements.txt"
       - "services/**"
+      - "db/migrations/**"
       - ".github/workflows/publish-image.yml"
   workflow_dispatch:
 
