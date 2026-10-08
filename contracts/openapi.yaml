@@ -1327,6 +1327,23 @@ paths:
       summary: Get entity review, geometry, and lifecycle audit context
       parameters: [{ $ref: '#/components/parameters/EntityId' }]
       responses: { '200': { description: Entity audit history } }
+  /v1/geodata/entities/{entityId}/location-enrichment-requests:
+    post:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Queue reverse-geocoding for missing entity location metadata
+      description: Creates an auditable asynchronous request for the entity's current geometry. Provider values never overwrite manually managed location fields. A stale geometry result is discarded.
+      operationId: postGeodataEntityLocationEnrichmentRequest
+      parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }, { $ref: '#/components/parameters/IfMatch' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/LocationEnrichmentRequest' } } }
+      responses:
+        '202':
+          description: Reverse-geocoding request committed to the durable geodata outbox
+          content: { application/json: { schema: { $ref: '#/components/schemas/LocationEnrichmentReceipt' } } }
+        '403': { description: GIS location-management permission required }
+        '409': { description: Location metadata is complete or the entity version is stale }
   /v1/geodata/bbox:
     get:
       tags: [Geodata]
@@ -2230,8 +2247,11 @@ components:
         locality: { type: string, nullable: true }
         manualLocationFields: { type: array, items: { type: string }, description: Fields explicitly maintained by an administrator }
         geocodeProvider: { type: string, nullable: true }
-        geocodeStatus: { type: string, enum: [ENRICHED, FAILED, NOT_CONFIGURED, SKIPPED_NO_CENTROID], nullable: true }
+        geocodeStatus: { type: string, enum: [ENRICHED, SOURCE_DATA, FAILED, NOT_CONFIGURED, SKIPPED_NO_CENTROID], nullable: true }
         geocodedAt: { type: string, format: date-time, nullable: true }
+        locationEnrichmentStatus: { type: string, enum: [QUEUED, COMPLETED, FAILED], nullable: true, readOnly: true }
+        locationEnrichmentRequestedAt: { type: string, format: date-time, nullable: true, readOnly: true }
+        locationEnrichmentCompletedAt: { type: string, format: date-time, nullable: true, readOnly: true }
         provenance: { type: object, additionalProperties: true }
     GeodataEntityMetadataPatch:
       type: object
@@ -2243,6 +2263,21 @@ components:
         location: { $ref: '#/components/schemas/LocationMetadata' }
         manualFields: { type: array, items: { type: string } }
         note: { type: string }
+    LocationEnrichmentRequest:
+      type: object
+      required: [editorId]
+      additionalProperties: false
+      properties:
+        editorId: { type: string }
+    LocationEnrichmentReceipt:
+      type: object
+      required: [entityId, requestId, status, missingFields, queued]
+      properties:
+        entityId: { type: string, format: uuid }
+        requestId: { type: string, format: uuid }
+        status: { type: string, enum: [QUEUED] }
+        missingFields: { type: array, items: { type: string } }
+        queued: { type: boolean, const: true }
     GeodataEntityCategoriesPut:
       type: object
       required: [entityTypes, editorId]
