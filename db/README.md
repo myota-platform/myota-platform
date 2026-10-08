@@ -13,10 +13,15 @@ independent for each database target. Cross-service references use opaque IDs
 and events, never foreign keys across databases.
 
 Core `002_operations.sql` mirrors the operations service's `001_operations.sql`.
-Geo `018_import_lookup_indexes.sql` is the current migration head. It mirrors
-the geodata service migration and adds indexed run-scoped candidate replay and
-entity source-reference lookups. All shared geo migrations mirror the
-geodata service-owned schema.
+Geo `019_maidenhead_locators.sql` is the current migration head. It mirrors
+the geodata service migration and adds automatically calculated Maidenhead
+coverage arrays. All shared geo migrations mirror the geodata service-owned
+schema.
+
+The migration runner discovers numbered `NNN_*.sql` files separately in each
+domain directory and applies them in lexical order. Add a new numbered file to
+the owning migration directory and synchronized copies; do not maintain a
+second filename list in the runner.
 Synchronize service-owned migration sources before modifying the runner; see
 the [Phase 1 migration procedure](https://github.com/myota-platform/myota-docs/blob/main/docs/geodata-phase1-relational-authority.md).
 

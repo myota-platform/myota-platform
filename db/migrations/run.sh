@@ -59,6 +59,22 @@ wait_for_db() {
   done
 }
 
+apply_migrations() {
+  local host="$1" port="$2" database="$3" domain="$4"
+  local migration_file
+  local migration_directory="$MIGRATION_FILES_DIR/$domain"
+  local migration_files=("$migration_directory"/[0-9][0-9][0-9]_*.sql)
+
+  if [[ ! -f "${migration_files[0]}" ]]; then
+    echo "No numbered SQL migrations found in $migration_directory" >&2
+    return 1
+  fi
+
+  for migration_file in "${migration_files[@]}"; do
+    psql_target "$host" "$port" "$database" -f "$migration_file"
+  done
+}
+
 wait_for_db "$CORE_HOST" "$CORE_PORT" "$CORE_DATABASE"
 wait_for_db "$ACTIVITY_HOST" "$ACTIVITY_PORT" "$ACTIVITY_DATABASE"
 wait_for_db "$GEO_HOST" "$GEO_PORT" "$GEO_DATABASE"
@@ -93,24 +109,10 @@ for target in \
   "
 done
 
-psql_target "$CORE_HOST" "$CORE_PORT" "$CORE_DATABASE" \
-  -f "$MIGRATION_FILES_DIR/core/001_core.sql"
-psql_target "$CORE_HOST" "$CORE_PORT" "$CORE_DATABASE" \
-  -f "$MIGRATION_FILES_DIR/core/002_operations.sql"
-
-psql_target "$ACTIVITY_HOST" "$ACTIVITY_PORT" "$ACTIVITY_DATABASE" \
-  -f "$MIGRATION_FILES_DIR/activity/001_activity_relational.sql"
-psql_target "$ACTIVITY_HOST" "$ACTIVITY_PORT" "$ACTIVITY_DATABASE" \
-  -f "$MIGRATION_FILES_DIR/activity/002_activity_entity_deletion.sql"
-psql_target "$ACTIVITY_HOST" "$ACTIVITY_PORT" "$ACTIVITY_DATABASE" \
-  -f "$MIGRATION_FILES_DIR/activity/003_adif_source_retention.sql"
-psql_target "$ACTIVITY_HOST" "$ACTIVITY_PORT" "$ACTIVITY_DATABASE" \
-  -f "$MIGRATION_FILES_DIR/activity/004_adif_failed_source_retention.sql"
-
-for migration_file in "$MIGRATION_FILES_DIR"/geo/[0-9][0-9][0-9]_*.sql; do
-  psql_target "$GEO_HOST" "$GEO_PORT" "$GEO_DATABASE" \
-    -f "$migration_file"
-done
+apply_migrations "$CORE_HOST" "$CORE_PORT" "$CORE_DATABASE" core
+apply_migrations \
+  "$ACTIVITY_HOST" "$ACTIVITY_PORT" "$ACTIVITY_DATABASE" activity
+apply_migrations "$GEO_HOST" "$GEO_PORT" "$GEO_DATABASE" geo
 
 # Preserve local development data during the first split. Activity is copied
 # from the existing core database and geodata from the legacy myota_geo
