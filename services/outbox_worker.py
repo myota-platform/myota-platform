@@ -14,7 +14,13 @@ import sys
 
 import psycopg
 from nats.aio.client import Client as NATS
-from nats.js.api import RetentionPolicy, StorageType, StreamConfig
+from nats.js.api import (
+    AckPolicy,
+    ConsumerConfig,
+    RetentionPolicy,
+    StorageType,
+    StreamConfig,
+)
 from outbox_routing import event_envelope, event_subject
 
 
@@ -22,40 +28,133 @@ DB_URL = os.environ["OUTBOX_DATABASE_URL"]
 NATS_URL = os.environ.get("NATS_URL", "nats://nats:4222")
 MAX_ATTEMPTS = int(os.environ.get("OUTBOX_MAX_ATTEMPTS", "12"))
 WORKER_NAME = os.environ.get("OUTBOX_WORKER", "myota-outbox")
+STREAM_NAME = "MYOTA_EVENTS"
+STREAM_SUBJECTS = ("myota.events.>", "myota.geodata.>")
+STREAM_MAX_AGE_SECONDS = 30 * 24 * 60 * 60
+
+
+def required_consumers() -> tuple[ConsumerConfig, ...]:
+    """Describe every durable interest before enabling interest retention."""
+    geodata_options = {
+        "ack_policy": AckPolicy.EXPLICIT,
+        "ack_wait": int(
+            os.environ.get("GEODATA_WORKER_ACK_WAIT_SECONDS", "120")
+        ),
+        "max_deliver": int(
+            os.environ.get("GEODATA_WORKER_MAX_DELIVERIES", "100")
+        ),
+        "max_ack_pending": int(
+            os.environ.get("GEODATA_WORKER_MAX_ACK_PENDING", "1")
+        ),
+    }
+    return (
+        ConsumerConfig(
+            durable_name="activity-notifications-pull-v1",
+            filter_subject="myota.events.>",
+            ack_policy=AckPolicy.EXPLICIT,
+            ack_wait=60,
+            max_deliver=10,
+            max_ack_pending=64,
+        ),
+        ConsumerConfig(
+            durable_name="geodata-entity-deletion-v1",
+            filter_subject="myota.geodata.entity.delete.v1",
+            **geodata_options,
+        ),
+        ConsumerConfig(
+            durable_name="geodata-preprocessing-v1",
+            filter_subject="myota.geodata.import.preprocess.v1",
+            **geodata_options,
+        ),
+        ConsumerConfig(
+            durable_name="geodata-import-processing-v2",
+            filter_subject="myota.geodata.import.process.v1",
+            **geodata_options,
+        ),
+        ConsumerConfig(
+            durable_name="geodata-location-enrichment-v1",
+            filter_subject="myota.geodata.entity.location-enrichment.v1",
+            **geodata_options,
+        ),
+    )
+
+
+async def ensure_consumer(js, desired: ConsumerConfig) -> None:
+    """Provision and validate a durable filter before publishing can begin."""
+    durable = desired.durable_name
+    try:
+        info = await js.consumer_info(STREAM_NAME, durable)
+    except Exception:
+        try:
+            await js.add_consumer(STREAM_NAME, desired)
+        except Exception:
+            # Concurrent outbox relays may create the same durable together.
+            pass
+        info = await js.consumer_info(STREAM_NAME, durable)
+
+    actual = info.config
+    if actual.filter_subject != desired.filter_subject:
+        raise RuntimeError(
+            f"JetStream durable {durable} has unexpected subject filter"
+        )
+    if actual.ack_policy != AckPolicy.EXPLICIT:
+        raise RuntimeError(
+            f"JetStream durable {durable} must use explicit acknowledgements"
+        )
 
 
 async def ensure_stream(nc: NATS) -> None:
     js = nc.jetstream()
     try:
-        stream = await js.stream_info("MYOTA_EVENTS")
+        stream = await js.stream_info(STREAM_NAME)
     except Exception:
         try:
             stream = await js.add_stream(
                 StreamConfig(
-                    name="MYOTA_EVENTS",
-                    subjects=["myota.events.>", "myota.geodata.>"],
+                    name=STREAM_NAME,
+                    subjects=list(STREAM_SUBJECTS),
                     retention=RetentionPolicy.LIMITS,
                     storage=StorageType.FILE,
-                    max_age=30 * 24 * 60 * 60,
+                    max_age=STREAM_MAX_AGE_SECONDS,
                 )
             )
         except Exception:
             # Two relays can start concurrently; the winner creates the stream.
-            stream = await js.stream_info("MYOTA_EVENTS")
+            stream = await js.stream_info(STREAM_NAME)
 
     subjects = set(stream.config.subjects or [])
-    required_subjects = {"myota.events.>", "myota.geodata.>"}
+    required_subjects = set(STREAM_SUBJECTS)
     if not required_subjects.issubset(subjects):
         stream.config.subjects = sorted(subjects | required_subjects)
         try:
             await js.update_stream(stream.config)
         except Exception:
-            # Multiple outbox replicas can add the same subjects at startup.
-            stream = await js.stream_info("MYOTA_EVENTS")
+            stream = await js.stream_info(STREAM_NAME)
             if not required_subjects.issubset(
                 set(stream.config.subjects or [])
             ):
                 raise
+
+    # Interest retention can discard a message immediately when no durable
+    # consumer matches its subject. Register every queue before enabling it.
+    for consumer in required_consumers():
+        await ensure_consumer(js, consumer)
+
+    stream = await js.stream_info(STREAM_NAME)
+    retention = getattr(
+        stream.config.retention, "value", stream.config.retention
+    )
+    if str(retention).lower() == RetentionPolicy.INTEREST.value:
+        return
+    if str(retention).lower() != RetentionPolicy.LIMITS.value:
+        raise RuntimeError(
+            f"unsupported {STREAM_NAME} retention policy: {retention}"
+        )
+
+    # Limits -> Interest is a supported live transition; it immediately
+    # reclaims messages already acked by all matching durable consumers.
+    stream.config.retention = RetentionPolicy.INTEREST
+    await js.update_stream(stream.config)
 
 
 def claim() -> dict | None:

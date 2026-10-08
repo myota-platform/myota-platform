@@ -22,6 +22,13 @@ stale preprocessing projections under a row lock. See the
 [operations runbook](https://github.com/myota-platform/myota-docs/blob/main/docs/operations.md#activity-notification-consumer-rollouts)
 for rollout and retry behavior.
 
+The synchronized outbox relay provisions the supported durable consumers
+before publishing and configures `MYOTA_EVENTS` for Interest retention. A
+message remains until every matching consumer acknowledges it, then is removed;
+the 30-day maximum age is only a safety bound for a stalled backlog. Keep
+consumer filters and explicit geodata queue subjects synchronized with the
+[event contract](contracts/events.md).
+
 ## What works now
 
 - Geodata Phase 1 uses database-authoritative rows, revision conflicts, atomic

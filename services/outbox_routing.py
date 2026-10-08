@@ -2,14 +2,21 @@
 
 from __future__ import annotations
 
+GEODATA_QUEUE_SUBJECTS = frozenset(
+    {
+        "myota.geodata.entity.delete.v1",
+        "myota.geodata.entity.location-enrichment.v1",
+        "myota.geodata.import.preprocess.v1",
+        "myota.geodata.import.process.v1",
+    }
+)
+
 
 def event_subject(event: dict) -> str:
-    """Route explicit domain work while retaining generic event routing."""
+    """Route only provisioned work queues; keep domain events on the bus."""
     subject = (event.get("payload") or {}).get("natsSubject")
     if subject:
-        if not isinstance(subject, str) or not subject.startswith(
-            "myota.geodata."
-        ):
+        if subject not in GEODATA_QUEUE_SUBJECTS:
             raise ValueError("unsupported explicit outbox subject")
         return subject
     return "myota.events." + event["eventType"].replace(".", "_")
