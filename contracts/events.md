@@ -1,6 +1,6 @@
 # MyOTA event contract
 
-Services persist versioned events in a transactional outbox in their owned database. Outbox workers publish to the durable `MYOTA_EVENTS` NATS JetStream stream; domain-owned consumers use durable identities, explicit acknowledgements, database checkpoints and recoverable leases. No accepted production work relies on an API process's event list or executor queue.
+Services persist versioned events in a transactional outbox in their owned database. Outbox workers publish the complete event envelope—including its aggregate identity—to the durable `MYOTA_EVENTS` NATS JetStream stream; domain-owned consumers use durable identities, explicit acknowledgements, database checkpoints and recoverable leases. For queued geodata work, `payload.natsSubject` selects the consumer subject and the stream captures `myota.geodata.>` as well as generic `myota.events.>` events. No accepted production work relies on an API process's event list or executor queue.
 
 ```json
 {

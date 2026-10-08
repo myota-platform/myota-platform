@@ -15,6 +15,7 @@ import sys
 import psycopg
 from nats.aio.client import Client as NATS
 from nats.js.api import RetentionPolicy, StorageType, StreamConfig
+from outbox_routing import event_envelope, event_subject
 
 
 DB_URL = os.environ["OUTBOX_DATABASE_URL"]
@@ -26,13 +27,13 @@ WORKER_NAME = os.environ.get("OUTBOX_WORKER", "myota-outbox")
 async def ensure_stream(nc: NATS) -> None:
     js = nc.jetstream()
     try:
-        await js.stream_info("MYOTA_EVENTS")
+        stream = await js.stream_info("MYOTA_EVENTS")
     except Exception:
         try:
-            await js.add_stream(
+            stream = await js.add_stream(
                 StreamConfig(
                     name="MYOTA_EVENTS",
-                    subjects=["myota.events.>"],
+                    subjects=["myota.events.>", "myota.geodata.>"],
                     retention=RetentionPolicy.LIMITS,
                     storage=StorageType.FILE,
                     max_age=30 * 24 * 60 * 60,
@@ -40,7 +41,21 @@ async def ensure_stream(nc: NATS) -> None:
             )
         except Exception:
             # Two relays can start concurrently; the winner creates the stream.
-            await js.stream_info("MYOTA_EVENTS")
+            stream = await js.stream_info("MYOTA_EVENTS")
+
+    subjects = set(stream.config.subjects or [])
+    required_subjects = {"myota.events.>", "myota.geodata.>"}
+    if not required_subjects.issubset(subjects):
+        stream.config.subjects = sorted(subjects | required_subjects)
+        try:
+            await js.update_stream(stream.config)
+        except Exception:
+            # Multiple outbox replicas can add the same subjects at startup.
+            stream = await js.stream_info("MYOTA_EVENTS")
+            if not required_subjects.issubset(
+                set(stream.config.subjects or [])
+            ):
+                raise
 
 
 def claim() -> dict | None:
@@ -53,16 +68,13 @@ def claim() -> dict | None:
             )
             UPDATE outbox_event e SET attempts = e.attempts + 1
             FROM next_event n WHERE e.event_id = n.event_id
-            RETURNING e.event_id, e.event_type, e.payload, e.attempts""")
+            RETURNING e.event_id, e.event_type, e.producer,
+              e.aggregate_type, e.aggregate_id, e.payload,
+              e.occurred_at, e.attempts""")
             row = cur.fetchone()
             if not row:
                 return None
-            return {
-                "eventId": str(row[0]),
-                "eventType": row[1],
-                "payload": row[2],
-                "attempts": row[3],
-            }
+            return event_envelope(row)
 
 
 def mark_published(event_id: str) -> None:
@@ -116,9 +128,7 @@ async def main() -> None:
                 await asyncio.sleep(1)
                 continue
             try:
-                subject = "myota.events." + event["eventType"].replace(
-                    ".", "_"
-                )
+                subject = event_subject(event)
                 await js.publish(
                     subject,
                     json.dumps(event).encode(),
