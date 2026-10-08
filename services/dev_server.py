@@ -40,6 +40,46 @@ SERVICES = {
 }
 
 
+def _matches_route(pattern: str, path: str) -> bool:
+    expected = pattern.strip("/").split("/")
+    actual = path.strip("/").split("/")
+    return len(expected) == len(actual) and all(
+        wanted == got or (wanted.startswith("{") and wanted.endswith("}"))
+        for wanted, got in zip(expected, actual)
+    )
+
+
+def route_template(method: str, path: str) -> str:
+    """Return a stable API route label without path identifiers."""
+    path = urlsplit(path).path
+    if path in {"/", "/healthz", "/metrics"}:
+        return path
+    if path.startswith("/assets/"):
+        return "/assets/{assetPath}"
+
+    matched_prefix = None
+    route_patterns = []
+    for prefix, (_, _, handler) in SERVICES.items():
+        if not path.startswith(prefix):
+            continue
+        matched_prefix = prefix.rstrip("/")
+        for route_method, pattern in getattr(handler, "routes", {}):
+            if method == route_method or method == "OPTIONS":
+                route_patterns.append(pattern)
+            elif _matches_route(pattern, path):
+                # Keep a recognized resource template for unsupported methods
+                # too, rather than falling back to a raw identifier-bearing URI.
+                route_patterns.append(pattern)
+        break
+
+    for pattern in route_patterns:
+        if _matches_route(pattern, path):
+            return pattern
+    if matched_prefix:
+        return f"{matched_prefix}/{{unmatched}}"
+    return "/unmatched"
+
+
 class GatewayHandler(BaseHTTPRequestHandler):
     def log_message(self, format: str, *args: object) -> None:
         return
@@ -221,13 +261,15 @@ class GatewayHandler(BaseHTTPRequestHandler):
             "myota_gateway_requests_total",
             {
                 "method": self.command,
-                "route": self.path.split("?", 1)[0],
+                "route": route_template(self.command, self.path),
                 "status": status,
             },
         )
         request_telemetry = getattr(self, "_otel_request", None)
         if request_telemetry:
-            request_telemetry.finish(status, self.path.split("?", 1)[0])
+            request_telemetry.finish(
+                status, route_template(self.command, self.path)
+            )
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(data)))
@@ -250,7 +292,7 @@ class GatewayHandler(BaseHTTPRequestHandler):
 
     def _begin_request(self) -> None:
         self._otel_request = telemetry_for("myota-gateway").start_request(
-            self.command, self.path.split("?", 1)[0]
+            self.command, route_template(self.command, self.path)
         )
 
 
