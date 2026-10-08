@@ -107,27 +107,9 @@ psql_target "$ACTIVITY_HOST" "$ACTIVITY_PORT" "$ACTIVITY_DATABASE" \
 psql_target "$ACTIVITY_HOST" "$ACTIVITY_PORT" "$ACTIVITY_DATABASE" \
   -f "$MIGRATION_FILES_DIR/activity/004_adif_failed_source_retention.sql"
 
-for migration in \
-  001_geodata.sql \
-  002_qgis_views.sql \
-  003_production_pipeline.sql \
-  004_location_enrichment.sql \
-  005_location_manual_precedence.sql \
-  006_unscoped_imports.sql \
-  007_relational_entity_persistence.sql \
-  008_entity_category_assignments.sql \
-  009_candidate_lifecycle.sql \
-  010_import_preprocessing.sql \
-  011_import_recovery.sql \
-  012_import_finalization.sql \
-  013_import_retention.sql \
-  014_resumable_uploads.sql \
-  015_jetstream_worker_dispatch.sql \
-  016_relational_authority.sql \
-  017_import_cancellation.sql \
-  018_import_lookup_indexes.sql; do
+for migration_file in "$MIGRATION_FILES_DIR"/geo/[0-9][0-9][0-9]_*.sql; do
   psql_target "$GEO_HOST" "$GEO_PORT" "$GEO_DATABASE" \
-    -f "$MIGRATION_FILES_DIR/geo/$migration"
+    -f "$migration_file"
 done
 
 # Preserve local development data during the first split. Activity is copied
