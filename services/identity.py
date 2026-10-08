@@ -518,8 +518,16 @@ class IdentityHandler(JsonHandler):
         body = p["_body"]
         require(body, "email", "password")
         key = f"login:{body['email'].strip().casefold()}:{p.get('Remote-Addr', 'unknown')}"
-        IdentityHandler._rate_limit(key)
         account = IdentityHandler._account_for_email(body["email"])
+        is_global_operator = bool(
+            account
+            and any(
+                role.get("role") == "GLOBAL_OPERATOR"
+                for role in IdentityHandler._roles(account["id"])
+            )
+        )
+        if not is_global_operator:
+            IdentityHandler._rate_limit(key)
         credential = (
             IdentityHandler._credentials(account["id"]) if account else {}
         )

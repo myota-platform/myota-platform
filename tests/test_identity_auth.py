@@ -65,6 +65,23 @@ class IdentityAuthTests(unittest.TestCase):
                 None, {"_body": {"refreshToken": refreshed["refreshToken"]}}
             )
 
+    def test_global_operator_bypasses_login_attempt_throttle(self) -> None:
+        for _ in range(12):
+            result = self.call(
+                IdentityHandler.login,
+                {
+                    "email": "demo@example.test",
+                    "password": "DemoOperator!ChangeMe2026",
+                    "Remote-Addr": "192.0.2.10",
+                },
+            )
+            self.assertTrue(result["accessToken"])
+
+        self.assertNotIn(
+            "login:demo@example.test:192.0.2.10",
+            IdentityHandler._bucket("rateLimits"),
+        )
+
     def test_recovery_and_callsign_evidence_lifecycle(self) -> None:
         account = self.call(
             IdentityHandler.register,
