@@ -1720,6 +1720,69 @@ paths:
                   total: { type: integer }
                   nextPage: { type: [integer, 'null'] }
         '403': { description: Missing or insufficient administrator authentication }
+  /v1/operations/observability-session:
+    get:
+      operationId: getObservabilitySession
+      tags: [Operations]
+      security: [{ bearerAuth: [] }]
+      summary: Resolve the current authenticated Grafana identity and role
+      description: Checks the live identity API session. GLOBAL_OPERATOR and GLOBAL_ADMIN map to Editor; authorized observability readers map to Viewer. The trusted proxy overwrites incoming identity headers.
+      responses:
+        '200':
+          description: Current per-account Grafana identity; response headers are consumed by the Admin UI auth proxy
+          headers:
+            X-MyOTA-Grafana-User: { schema: { type: string } }
+            X-MyOTA-Grafana-Name: { schema: { type: string } }
+            X-MyOTA-Grafana-Email: { schema: { type: string } }
+            X-MyOTA-Grafana-Role: { schema: { type: string, enum: [Editor, Viewer] } }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [username, displayName, email, role]
+                properties:
+                  username: { type: string }
+                  displayName: { type: string }
+                  email: { type: string }
+                  role: { type: string, enum: [Editor, Viewer] }
+        '403': { description: Missing or insufficient administrator authentication }
+  /v1/operations/object-storage:
+    get:
+      operationId: getObjectStorageStatus
+      tags: [Operations]
+      security: [{ bearerAuth: [] }]
+      summary: Get the latest SeaweedFS storage status sample
+      description: Read-only health and native exporter metrics. Missing gauges are null; buckets are only those reported by the exporter, not a complete S3 inventory.
+      responses:
+        '200':
+          description: Latest storage sample with explicit partial, unavailable and stale state
+          content: { application/json: { schema: { $ref: '#/components/schemas/ObjectStorageSnapshot' } } }
+        '403': { description: Missing or insufficient administrator authentication }
+        '503': { description: No storage sample recorded yet }
+  /v1/operations/object-storage/snapshots:
+    get:
+      operationId: listObjectStorageSnapshots
+      tags: [Operations]
+      security: [{ bearerAuth: [] }]
+      summary: List persistent SeaweedFS status history
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - { in: query, name: pageSize, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+      responses:
+        '200':
+          description: Paged storage snapshots newest first; seven-day retention by default
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, page, pageSize, total, nextPage]
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/ObjectStorageSnapshot' } }
+                  page: { type: integer }
+                  pageSize: { type: integer }
+                  total: { type: integer }
+                  nextPage: { type: [integer, 'null'] }
+        '403': { description: Missing or insufficient administrator authentication }
 components:
   securitySchemes:
     bearerAuth:
@@ -1834,6 +1897,62 @@ components:
         historyRetentionDays: { type: integer }
         errors: { type: array, items: { type: string } }
         streams: { type: array, items: { $ref: '#/components/schemas/JetStreamStream' } }
+    ObjectStorageSnapshot:
+      type: object
+      required: [id, capturedAt, status, errors, buckets, volumes, requests, summary, pollSeconds, historyRetentionDays]
+      properties:
+        id: { type: string }
+        capturedAt: { type: string, format: date-time }
+        sampledAt: { type: string, format: date-time }
+        status: { type: string, enum: [HEALTHY, PARTIAL, UNAVAILABLE] }
+        stale: { type: boolean }
+        version: { type: [string, 'null'] }
+        s3Healthy: { type: boolean }
+        metricsHealthy: { type: boolean }
+        bucketsTruncated: { type: boolean }
+        pollSeconds: { type: integer }
+        historyRetentionDays: { type: integer }
+        errors: { type: array, items: { type: string } }
+        summary:
+          type: object
+          required: [reportedBuckets, objects, logicalBytes, physicalBytes, activeUploads, activeUploadBytes]
+          properties:
+            reportedBuckets: { type: integer }
+            objects: { type: [number, 'null'] }
+            logicalBytes: { type: [number, 'null'] }
+            physicalBytes: { type: [number, 'null'] }
+            activeUploads: { type: [number, 'null'] }
+            activeUploadBytes: { type: [number, 'null'] }
+        buckets:
+          type: array
+          items:
+            type: object
+            required: [name, objects, logicalBytes, physicalBytes, readOnly]
+            properties:
+              name: { type: string }
+              objects: { type: [number, 'null'] }
+              logicalBytes: { type: [number, 'null'] }
+              physicalBytes: { type: [number, 'null'] }
+              readOnly: { type: [boolean, 'null'] }
+        volumes:
+          type: array
+          description: Filesystem resource gauges reported by SeaweedFS; these can describe a shared host filesystem rather than the PVC quota.
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              totalBytes: { type: [number, 'null'] }
+              usedBytes: { type: [number, 'null'] }
+              availableBytes: { type: [number, 'null'] }
+        requests:
+          type: array
+          description: Cumulative S3 request counters since exporter process start; these may reset on restart.
+          items:
+            type: object
+            properties:
+              operation: { type: string }
+              code: { type: string }
+              count: { type: number }
     Account:
       type: object
       required: [id, displayName, participationType, status]

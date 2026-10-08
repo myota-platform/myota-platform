@@ -31,6 +31,11 @@ consumer filters and explicit geodata queue subjects synchronized with the
 
 ## What works now
 
+- Operations integration includes read-only SeaweedFS samples/history and
+  live Identity API validation for per-user Grafana roles. GLOBAL_OPERATOR
+  and GLOBAL_ADMIN map to Editor; other authorized readers remain Viewer.
+  Service-owned storage migration 002 is mirrored as core migration 003.
+
 - Geodata Phase 1 uses database-authoritative rows, revision conflicts, atomic
   audit/outbox writes, and a durable deletion consumer. Migration 016 fences
   old writers; new API/consumer images wait for it before accepting work.

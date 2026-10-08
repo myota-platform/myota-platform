@@ -285,6 +285,11 @@ class GatewayHandler(BaseHTTPRequestHandler):
                     "sunset",
                     "api-version",
                     "etag",
+                    "cache-control",
+                    "x-myota-grafana-user",
+                    "x-myota-grafana-name",
+                    "x-myota-grafana-email",
+                    "x-myota-grafana-role",
                 }:
                     self.send_header(name, value)
         self.end_headers()

@@ -8,6 +8,9 @@ import logging
 import os
 import threading
 import time
+import unicodedata
+import urllib.error
+import urllib.request
 from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import parse_qs, urlparse
@@ -21,10 +24,55 @@ from common import (
 )
 from jetstream_observability import _value, collect_stream_metrics
 from metrics import METRICS
+from storage_observability import storage_snapshot
 
 LOG = logging.getLogger("myota.operations")
 POLL_SECONDS = max(10, int(os.environ.get("OPERATIONS_POLL_SECONDS", "30")))
 HISTORY_DAYS = max(1, int(os.environ.get("OPERATIONS_HISTORY_DAYS", "7")))
+SNAPSHOT_TABLES = {
+    "jetstream": "operations_jetstream_snapshot",
+    "object-storage": "operations_storage_snapshot",
+}
+
+
+def grafana_identity(account: dict[str, Any]) -> dict[str, str]:
+    roles = {
+        role.get("role") if isinstance(role, dict) else role
+        for role in account.get("roles") or []
+    }
+    granted = set(account.get("scopes") or [])
+    if not roles.intersection({"GLOBAL_OPERATOR", "GLOBAL_ADMIN"}) and not (
+        granted.intersection({"*", "observability.view", "operations.read"})
+    ):
+        raise PermissionError("Platform observability permission is required")
+    return {
+        "username": "myota:" + account["id"],
+        "displayName": account.get("displayName") or account["id"],
+        "email": account.get("email") or "",
+        "role": "Editor"
+        if roles.intersection({"GLOBAL_OPERATOR", "GLOBAL_ADMIN"})
+        else "Viewer",
+    }
+
+
+def current_identity(params: dict[str, Any]) -> dict[str, Any]:
+    authorize(params)
+    identity_url = os.environ.get("MYOTA_IDENTITY_URL", "http://identity:8001")
+    request = urllib.request.Request(
+        identity_url.rstrip("/") + "/v1/identity/me",
+        headers={"Authorization": params["Authorization"]},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=5) as response:
+            return json.loads(response.read(65536))
+    except urllib.error.HTTPError as error:
+        if error.code in {401, 403}:
+            raise PermissionError(
+                "Administrator session is no longer valid"
+            ) from None
+        raise RuntimeError("Identity service unavailable") from None
+    except (OSError, ValueError):
+        raise RuntimeError("Identity service unavailable") from None
 
 
 def authorize(params: dict[str, Any]) -> None:
@@ -190,12 +238,53 @@ class OperationsHandler(JsonHandler):
     service = "operations-service"
     store = OperationsStore("operations", "CORE_DATABASE_URL")
 
+    def _send(self, status, payload):
+        self._grafana_headers = {}
+        if status == 200 and getattr(self, "current_route", None) == (
+            "GET",
+            "/v1/operations/observability-session",
+        ):
+            for field, suffix in (
+                ("username", "User"),
+                ("displayName", "Name"),
+                ("email", "Email"),
+                ("role", "Role"),
+            ):
+                value = (
+                    str(payload[field]).replace("\r", " ").replace("\n", " ")
+                )
+                self._grafana_headers["X-MyOTA-Grafana-" + suffix] = (
+                    unicodedata.normalize("NFKD", value)
+                    .encode("ascii", "ignore")
+                    .decode()
+                )
+        super()._send(status, payload)
+
+    def end_headers(self):
+        for name, value in getattr(self, "_grafana_headers", {}).items():
+            self.send_header(name, value)
+        self.send_header("Cache-Control", "no-store")
+        super().end_headers()
+
+    @staticmethod
+    def observability_session(_, params):
+        return grafana_identity(current_identity(params))
+
     @staticmethod
     def latest(_, params):
+        return OperationsHandler.latest_sample("jetstream", params)
+
+    @staticmethod
+    def storage_latest(_, params):
+        return OperationsHandler.latest_sample("object-storage", params)
+
+    @staticmethod
+    def latest_sample(kind, params):
         authorize(params)
+        table = SNAPSHOT_TABLES[kind]
         with OperationsHandler.store.transaction() as connection:
             row = connection.execute(
-                "SELECT id,captured_at,payload FROM operations_jetstream_snapshot "
+                f"SELECT id,captured_at,payload FROM {table} "
                 "ORDER BY captured_at DESC,id DESC LIMIT 1"
             ).fetchone()
         if not row:
@@ -203,7 +292,7 @@ class OperationsHandler(JsonHandler):
                 "_status": 503,
                 "status": "UNAVAILABLE",
                 "streams": [],
-                "errors": ["No broker sample has been recorded yet"],
+                "errors": ["No operational sample has been recorded yet"],
             }
         return {
             **row[2],
@@ -215,7 +304,16 @@ class OperationsHandler(JsonHandler):
 
     @staticmethod
     def history(_, params):
+        return OperationsHandler.history_samples("jetstream", params)
+
+    @staticmethod
+    def storage_history(_, params):
+        return OperationsHandler.history_samples("object-storage", params)
+
+    @staticmethod
+    def history_samples(kind, params):
         authorize(params)
+        table = SNAPSHOT_TABLES[kind]
         query = parse_qs(urlparse(params.get("_path", "")).query)
         try:
             page = max(1, int(query.get("page", ["1"])[0]))
@@ -224,10 +322,10 @@ class OperationsHandler(JsonHandler):
             raise ValueError("page and pageSize must be integers") from error
         with OperationsHandler.store.transaction() as connection:
             total = connection.execute(
-                "SELECT count(*) FROM operations_jetstream_snapshot"
+                f"SELECT count(*) FROM {table}"
             ).fetchone()[0]
             rows = connection.execute(
-                "SELECT id,captured_at,payload FROM operations_jetstream_snapshot "
+                f"SELECT id,captured_at,payload FROM {table} "
                 "ORDER BY captured_at DESC,id DESC LIMIT %s OFFSET %s",
                 (size, (page - 1) * size),
             ).fetchall()
@@ -244,15 +342,25 @@ class OperationsHandler(JsonHandler):
 
 
 OperationsHandler.routes = {
+    (
+        "GET",
+        "/v1/operations/observability-session",
+    ): OperationsHandler.observability_session,
+    ("GET", "/v1/operations/object-storage"): OperationsHandler.storage_latest,
+    (
+        "GET",
+        "/v1/operations/object-storage/snapshots",
+    ): OperationsHandler.storage_history,
     ("GET", "/v1/operations/jetstream"): OperationsHandler.latest,
     ("GET", "/v1/operations/jetstream/snapshots"): OperationsHandler.history,
 }
 
 
-def record_snapshot(snapshot: dict[str, Any]) -> None:
+def record_snapshot(snapshot: dict[str, Any], kind: str = "jetstream") -> None:
+    table = SNAPSHOT_TABLES[kind]
     with OperationsHandler.store.transaction() as connection:
         connection.execute(
-            "INSERT INTO operations_jetstream_snapshot(capture_slot,status,payload) "
+            f"INSERT INTO {table}(capture_slot,status,payload) "
             "VALUES (%s,%s,%s::jsonb) ON CONFLICT (capture_slot) DO NOTHING",
             (
                 int(time.time() // POLL_SECONDS),
@@ -261,15 +369,17 @@ def record_snapshot(snapshot: dict[str, Any]) -> None:
             ),
         )
         connection.execute(
-            "DELETE FROM operations_jetstream_snapshot WHERE captured_at < "
+            f"DELETE FROM {table} WHERE captured_at < "
             "now() - make_interval(days => %s)",
             (HISTORY_DAYS,),
         )
     METRICS.set_gauge(
-        "myota_operations_jetstream_up", snapshot["status"] == "HEALTHY"
+        f"myota_operations_{kind.replace('-', '_')}_up",
+        snapshot["status"] == "HEALTHY",
     )
     METRICS.set_gauge(
-        "myota_operations_jetstream_last_sample_timestamp_seconds", time.time()
+        f"myota_operations_{kind.replace('-', '_')}_last_sample_timestamp_seconds",
+        time.time(),
     )
 
 
@@ -307,6 +417,20 @@ async def poll_broker(stop: threading.Event) -> None:
         await asyncio.to_thread(stop.wait, POLL_SECONDS)
 
 
+def poll_storage(stop: threading.Event) -> None:
+    while not stop.is_set():
+        snapshot = {
+            **storage_snapshot(),
+            "pollSeconds": POLL_SECONDS,
+            "historyRetentionDays": HISTORY_DAYS,
+        }
+        try:
+            record_snapshot(snapshot, "object-storage")
+        except Exception:
+            LOG.exception("Unable to persist storage status history")
+        stop.wait(POLL_SECONDS)
+
+
 def main():
     if not OperationsHandler.store.durable:
         raise RuntimeError("CORE_DATABASE_URL is required")
@@ -318,6 +442,10 @@ def main():
         daemon=True,
     )
     worker.start()
+    storage_worker = threading.Thread(
+        target=poll_storage, args=(stop,), name="storage-sampler", daemon=True
+    )
+    storage_worker.start()
     try:
         BoundedThreadingHTTPServer(
             ("0.0.0.0", 8005), OperationsHandler
@@ -325,6 +453,7 @@ def main():
     finally:
         stop.set()
         worker.join(timeout=25)
+        storage_worker.join(timeout=15)
         OperationsHandler.store.close()
 
 
