@@ -2201,6 +2201,18 @@ components:
             sourceRef: { type: string, nullable: true }
         geometry: { type: object, additionalProperties: true, description: GeoJSON geometry. Ways use type LineString; the import API also accepts the non-standard geometry type alias way and normalizes it to LineString. }
         centroid: { type: object, additionalProperties: true }
+        maidenheadGridSquares4:
+          type: array
+          readOnly: true
+          uniqueItems: true
+          items: { type: string, pattern: '^[A-R]{2}[0-9]{2}$' }
+          description: Sorted grid squares at four-character Maidenhead precision intersected by the entity geometry.
+        maidenheadLocators6:
+          type: array
+          readOnly: true
+          uniqueItems: true
+          items: { type: string, pattern: '^[A-R]{2}[0-9]{2}[a-x]{2}$' }
+          description: Sorted locators at six-character Maidenhead precision intersected by the entity geometry.
         continent: { type: string, nullable: true }
         continentCode: { type: string, nullable: true, description: ISO-style continent code from the geocoder }
         country: { type: string, nullable: true }
