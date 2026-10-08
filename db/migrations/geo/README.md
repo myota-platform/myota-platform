@@ -47,6 +47,8 @@ ordered SQL files define the `myota_geo` database:
 17. `017_import_cancellation.sql` adds durable cancellation metadata for
     queued uploads and active preprocessing, and includes cancelled runs in
     stale-import retention indexing.
+18. `018_import_lookup_indexes.sql` adds a source-reference index; candidate
+    replay uses the existing `(import_run_id, ordinal)` index.
 
 `myota-platform/db/migrations/geo/` and
 `myota-deploy/db/migrations/geo/` are synchronized copies used by the
