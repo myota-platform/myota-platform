@@ -54,6 +54,7 @@ preserve local data between restarts.
 ## Run the vertical slice
 
 ```bash
+python3 -m pip install -r requirements.txt
 python3 -m unittest discover -s tests -v
 python3 services/dev_server.py
 ```
