@@ -48,7 +48,7 @@ consumer filters and explicit geodata queue subjects synchronized with the
   old writers; new API/consumer images wait for it before accepting work.
 - The admin UI's **NATS / JetStream** page uses authenticated operations APIs
   for real broker queues, consumers and seven days of sampled history.
-  See the [status service guide](https://github.com/myota-platform/myota-docs/blob/main/docs/jetstream-admin-status.md).
+  See the [status service guide](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/jetstream-admin-status.md).
 - Amateur-radio-aware identity: operator/SWL participation, multiple callsigns, one primary callsign, lifecycle and verification fields.
 - Shared entity-category catalogue used by imports and review, with programme assignment and programme-owned rules handled separately.
 - Geodata lifecycle: adapter/import run or community proposal → pre-processing → administrator validation → CANDIDATE or APPROVED; normal review then permits CANDIDATE → APPROVED or REJECTED, and approved entities may only be RETIRED.
