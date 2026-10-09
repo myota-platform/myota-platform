@@ -4,11 +4,13 @@ import os
 import sys
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "services"))
 
 from jetstream_topology import desired_topology, topology_from_environment
+from provision_jetstream import consumer_config, validate_consumer
 
 
 CAPACITY = {
@@ -60,6 +62,37 @@ class JetStreamTopologyTests(unittest.TestCase):
                 for item in consumers
             )
         )
+
+    def test_consumer_drift_checks_delivery_and_replay_safety_settings(self):
+        with patch.dict(os.environ, CAPACITY, clear=True):
+            _, consumers = desired_topology()
+        consumer = consumers[0]
+        desired = consumer_config(consumer)
+        actual = SimpleNamespace(config=desired)
+        validate_consumer(actual, desired, consumer.stream)
+
+        server_normalized = consumer_config(consumer)
+        server_normalized.mem_storage = None
+        server_normalized.headers_only = None
+        validate_consumer(
+            SimpleNamespace(config=server_normalized),
+            desired,
+            consumer.stream,
+        )
+
+        drifted = consumer_config(consumer)
+        drifted.max_waiting += 1
+        with self.assertRaisesRegex(RuntimeError, "max_waiting"):
+            validate_consumer(
+                SimpleNamespace(config=drifted), desired, consumer.stream
+            )
+
+        drifted = consumer_config(consumer)
+        drifted.headers_only = True
+        with self.assertRaisesRegex(RuntimeError, "headers_only"):
+            validate_consumer(
+                SimpleNamespace(config=drifted), desired, consumer.stream
+            )
 
 
 if __name__ == "__main__":

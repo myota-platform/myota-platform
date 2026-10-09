@@ -7,7 +7,7 @@ capacity values in the NATS migration plan are closed.
 `services/jetstream_topology.py` is the side-effect-free ADR-0008 topology
 definition. `services/provision_jetstream.py` is the single create-only
 provisioner. It creates the three target streams and ten work durables, validates
-all configured limits and consumer delivery settings, and fails on drift. It
+all configured limits and correctness-sensitive consumer delivery settings, and fails on drift. It
 never edits or deletes an existing stream or consumer. In particular, it cannot
 convert the current shared `MYOTA_EVENTS` stream from Interest to Limits; that
 stream also contains legacy Geodata work and requires a separately reviewed

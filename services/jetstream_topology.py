@@ -34,6 +34,7 @@ class Consumer:
     ack_wait_seconds: int
     max_deliveries: int
     max_ack_pending: int
+    max_waiting: int
 
 
 ACTIVITY_WORK = (
@@ -43,12 +44,14 @@ ACTIVITY_WORK = (
         120,
         8,
         4,
+        4,
     ),
     (
         "activity-adif-import-v1",
         "myota.work.activity.adif-import.v1",
         300,
         8,
+        1,
         1,
     ),
     (
@@ -57,6 +60,7 @@ ACTIVITY_WORK = (
         120,
         8,
         2,
+        2,
     ),
     (
         "activity-award-evaluation-v1",
@@ -64,13 +68,22 @@ ACTIVITY_WORK = (
         120,
         8,
         2,
+        2,
     ),
-    ("activity-pdf-render-v1", "myota.work.activity.pdf-render.v1", 300, 8, 1),
+    (
+        "activity-pdf-render-v1",
+        "myota.work.activity.pdf-render.v1",
+        300,
+        8,
+        1,
+        1,
+    ),
     (
         "activity-statistics-rebuild-v1",
         "myota.work.activity.statistics-rebuild.v1",
         300,
         8,
+        1,
         1,
     ),
 )
@@ -81,12 +94,14 @@ GEODATA_WORK = (
         300,
         100,
         1,
+        1,
     ),
     (
         "geodata-import-promotion-v1",
         "myota.work.geodata.import-promotion.v1",
         300,
         100,
+        1,
         1,
     ),
     (
@@ -95,12 +110,14 @@ GEODATA_WORK = (
         120,
         100,
         1,
+        1,
     ),
     (
         "geodata-location-enrichment-v1",
         "myota.work.geodata.location-enrichment.v1",
         120,
         8,
+        4,
         4,
     ),
 )
@@ -151,12 +168,20 @@ def desired_topology() -> tuple[tuple[Stream, ...], tuple[Consumer, ...]]:
         ),
     )
     consumers = tuple(
-        Consumer(stream, durable, subject, ack_wait, max_deliver, max_pending)
+        Consumer(
+            stream,
+            durable,
+            subject,
+            ack_wait,
+            max_deliver,
+            max_pending,
+            max_waiting,
+        )
         for stream, definitions in (
             ("MYOTA_ACTIVITY_WORK", ACTIVITY_WORK),
             ("MYOTA_GEODATA_WORK", GEODATA_WORK),
         )
-        for durable, subject, ack_wait, max_deliver, max_pending in definitions
+        for durable, subject, ack_wait, max_deliver, max_pending, max_waiting in definitions
     )
     validate_topology(streams, consumers)
     return streams, consumers
@@ -224,6 +249,7 @@ def validate_topology(
                 consumer.ack_wait_seconds,
                 consumer.max_deliveries,
                 consumer.max_ack_pending,
+                consumer.max_waiting,
             )
             <= 0
         ):

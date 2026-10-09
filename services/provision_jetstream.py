@@ -18,6 +18,7 @@ from nats.js.api import (
     DeliverPolicy,
     DiscardPolicy,
     RetentionPolicy,
+    ReplayPolicy,
     StorageType,
     StreamConfig,
 )
@@ -52,6 +53,11 @@ def consumer_config(consumer: Consumer) -> ConsumerConfig:
         ack_wait=consumer.ack_wait_seconds,
         max_deliver=consumer.max_deliveries,
         max_ack_pending=consumer.max_ack_pending,
+        max_waiting=consumer.max_waiting,
+        replay_policy=ReplayPolicy.INSTANT,
+        num_replicas=0,
+        mem_storage=False,
+        headers_only=False,
     )
 
 
@@ -92,6 +98,28 @@ def validate_consumer(actual, desired: ConsumerConfig, stream: str) -> None:
         "ack_wait": (config.ack_wait, desired.ack_wait),
         "max_deliver": (config.max_deliver, desired.max_deliver),
         "max_ack_pending": (config.max_ack_pending, desired.max_ack_pending),
+        "max_waiting": (config.max_waiting, desired.max_waiting),
+        "replay_policy": (
+            _value(config.replay_policy),
+            _value(desired.replay_policy),
+        ),
+        "num_replicas": (config.num_replicas, desired.num_replicas),
+        # The server may omit false-valued optional fields in its info reply.
+        # Treat omitted and false as the same effective delivery behavior.
+        "mem_storage": (bool(config.mem_storage), bool(desired.mem_storage)),
+        "headers_only": (
+            bool(config.headers_only),
+            bool(desired.headers_only),
+        ),
+        "deliver_subject": (
+            config.deliver_subject or None,
+            desired.deliver_subject,
+        ),
+        "deliver_group": (config.deliver_group or None, desired.deliver_group),
+        "filter_subjects": (
+            config.filter_subjects or None,
+            desired.filter_subjects,
+        ),
     }
     drift = [key for key, pair in fields.items() if pair[0] != pair[1]]
     if drift:
