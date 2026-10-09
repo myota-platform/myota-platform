@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/myota-platform/myota-contracts/contracts/schemas/work-command.schema.json",
+  "title": "MyOTA immutable work command envelope v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["envelopeVersion", "workId", "workType", "createdAt", "producer", "payload"],
+  "properties": {
+    "envelopeVersion": { "const": 1 },
+    "workId": { "type": "string", "format": "uuid" },
+    "workType": { "type": "string", "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+\\.v[1-9][0-9]*$" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "producer": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "aggregate": { "type": "object" },
+    "correlationId": { "type": "string", "maxLength": 200 },
+    "causationId": { "type": "string", "maxLength": 200 },
+    "payload": { "type": "object", "description": "Work payloads carry stable database/object identifiers, not unbounded content." }
+  }
+}
