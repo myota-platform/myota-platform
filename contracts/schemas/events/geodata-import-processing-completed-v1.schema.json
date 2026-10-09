@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/myota-platform/myota-contracts/contracts/schemas/events/geodata-import-processing-completed-v1.schema.json",
+  "title": "geodata.import.processing.completed.v1 envelope v1",
+  "allOf": [
+    {
+      "$ref": "../event-envelope.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventType": {
+          "const": "geodata.import.processing.completed.v1"
+        }
+      }
+    }
+  ]
+}

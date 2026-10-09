@@ -22,12 +22,15 @@ stale preprocessing projections under a row lock. See the
 [operations runbook](https://github.com/myota-platform/myota-docs/blob/main/docs/operations.md#activity-notification-consumer-rollouts)
 for rollout and retry behavior.
 
-The synchronized outbox relay provisions the supported durable consumers
-before publishing and configures `MYOTA_EVENTS` for Interest retention. A
-message remains until every matching consumer acknowledges it, then is removed;
-the 30-day maximum age is only a safety bound for a stalled backlog. Keep
-consumer filters and explicit geodata queue subjects synchronized with the
-[event contract](contracts/events.md).
+The synchronized outbox relay currently provisions the supported legacy durable
+consumers before publishing and leaves deployed `MYOTA_EVENTS` on Interest
+retention. The selected migration to bounded Limits facts plus separate Activity
+and Geodata WorkQueue streams is not deployed. Phase 1 contract and create-only
+provisioner preparation is underway; finite limits have no production values
+until capacity evidence is closed. See the [event registry](contracts/event-registry.json),
+[migration plan](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/nats-event-migration-plan.md),
+and [Phase 1 evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase1-contract-topology-2026-10-09.md).
+The deployment mirror contains the matching [explicit provisioning guide](deploy/docs/jetstream-topology.md).
 
 ## What works now
 

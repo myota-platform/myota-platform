@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/myota-platform/myota-contracts/contracts/schemas/events/identity-callsign-evidence-submitted-v1.schema.json",
+  "title": "identity.callsign.evidence-submitted.v1 envelope v1",
+  "allOf": [
+    {
+      "$ref": "../event-envelope.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventType": {
+          "const": "identity.callsign.evidence-submitted.v1"
+        }
+      }
+    }
+  ]
+}

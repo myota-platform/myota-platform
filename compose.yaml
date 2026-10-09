@@ -269,6 +269,26 @@ services:
     command: ["-js", "-sd", "/data"]
     volumes: ["nats-data:/data"]
     ports: ["4222:4222"]
+  nats-provisioner:
+    profiles: ["nats-topology"]
+    build: .
+    restart: "no"
+    command: ["python3", "services/provision_jetstream.py"]
+    environment:
+      NATS_URL: nats://nats:4222
+      NATS_TOPOLOGY_APPLY: "${NATS_TOPOLOGY_APPLY:-0}"
+      NATS_EVENTS_MAX_BYTES: "${NATS_EVENTS_MAX_BYTES:-}"
+      NATS_EVENTS_MAX_MESSAGES: "${NATS_EVENTS_MAX_MESSAGES:-}"
+      NATS_EVENTS_MAX_MESSAGE_BYTES: "${NATS_EVENTS_MAX_MESSAGE_BYTES:-}"
+      NATS_ACTIVITY_WORK_MAX_AGE_SECONDS: "${NATS_ACTIVITY_WORK_MAX_AGE_SECONDS:-}"
+      NATS_ACTIVITY_WORK_MAX_BYTES: "${NATS_ACTIVITY_WORK_MAX_BYTES:-}"
+      NATS_ACTIVITY_WORK_MAX_MESSAGES: "${NATS_ACTIVITY_WORK_MAX_MESSAGES:-}"
+      NATS_ACTIVITY_WORK_MAX_MESSAGE_BYTES: "${NATS_ACTIVITY_WORK_MAX_MESSAGE_BYTES:-}"
+      NATS_GEODATA_WORK_MAX_AGE_SECONDS: "${NATS_GEODATA_WORK_MAX_AGE_SECONDS:-}"
+      NATS_GEODATA_WORK_MAX_BYTES: "${NATS_GEODATA_WORK_MAX_BYTES:-}"
+      NATS_GEODATA_WORK_MAX_MESSAGES: "${NATS_GEODATA_WORK_MAX_MESSAGES:-}"
+      NATS_GEODATA_WORK_MAX_MESSAGE_BYTES: "${NATS_GEODATA_WORK_MAX_MESSAGE_BYTES:-}"
+    depends_on: [nats]
   seaweedfs:
     image: chrislusf/seaweedfs:latest@sha256:ce9e796f1fe6f06968f4c04bdaf8f678dad9c8acdfef3d244133d71bfa6bf882
     restart: unless-stopped

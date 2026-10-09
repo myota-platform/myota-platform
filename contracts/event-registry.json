@@ -1,0 +1,851 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "registryVersion": 1,
+  "status": "phase-1-contract-baseline; payload fields remain subject to owner evidence",
+  "factStream": "MYOTA_EVENTS",
+  "factSubjectPrefix": "myota.events.",
+  "activityWorkStream": "MYOTA_ACTIVITY_WORK",
+  "activityWorkSubjectPrefix": "myota.work.activity.",
+  "geodataWorkStream": "MYOTA_GEODATA_WORK",
+  "geodataWorkSubjectPrefix": "myota.work.geodata.",
+  "events": [
+    {
+      "eventType": "activity.activation.closed.v1",
+      "owner": "activity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.activity.activation.closed.v1",
+      "schema": "schemas/events/activity-activation-closed-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "activity.activation.created.v1",
+      "owner": "activity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.activity.activation.created.v1",
+      "schema": "schemas/events/activity-activation-created-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "activity.adif.queued.v1",
+      "owner": "activity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.activity.adif.queued.v1",
+      "schema": "schemas/events/activity-adif-queued-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "activity.entity.cascade-deleted.v1",
+      "owner": "activity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.activity.entity.cascade-deleted.v1",
+      "schema": "schemas/events/activity-entity-cascade-deleted-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "activity.qso.recorded.v1",
+      "owner": "activity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.activity.qso.recorded.v1",
+      "schema": "schemas/events/activity-qso-recorded-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "awards.definition.published.v1",
+      "owner": "activity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.awards.definition.published.v1",
+      "schema": "schemas/events/awards-definition-published-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "awards.definition.saved.v1",
+      "owner": "activity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.awards.definition.saved.v1",
+      "schema": "schemas/events/awards-definition-saved-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "awards.issued.v1",
+      "owner": "activity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.awards.issued.v1",
+      "schema": "schemas/events/awards-issued-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "awards.rendered.v1",
+      "owner": "activity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.awards.rendered.v1",
+      "schema": "schemas/events/awards-rendered-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "awards.request.created.v1",
+      "owner": "activity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.awards.request.created.v1",
+      "schema": "schemas/events/awards-request-created-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "geodata.conflation.resolved.v1",
+      "owner": "geodata-service",
+      "class": "domain-fact",
+      "subject": "myota.events.geodata.conflation.resolved.v1",
+      "schema": "schemas/events/geodata-conflation-resolved-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "geodata.entity-deletion-job.completed.v1",
+      "owner": "geodata-service",
+      "class": "domain-fact",
+      "subject": "myota.events.geodata.entity-deletion-job.completed.v1",
+      "schema": "schemas/events/geodata-entity-deletion-job-completed-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "geodata.entity-deletion-job.created.v1",
+      "owner": "geodata-service",
+      "class": "domain-fact",
+      "subject": "myota.events.geodata.entity-deletion-job.created.v1",
+      "schema": "schemas/events/geodata-entity-deletion-job-created-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "geodata.entity-deletion-job.failed.v1",
+      "owner": "geodata-service",
+      "class": "domain-fact",
+      "subject": "myota.events.geodata.entity-deletion-job.failed.v1",
+      "schema": "schemas/events/geodata-entity-deletion-job-failed-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "geodata.entity.candidate.created.v1",
+      "owner": "geodata-service",
+      "class": "domain-fact",
+      "subject": "myota.events.geodata.entity.candidate.created.v1",
+      "schema": "schemas/events/geodata-entity-candidate-created-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "geodata.entity.deleted.v1",
+      "owner": "geodata-service",
+      "class": "domain-fact",
+      "subject": "myota.events.geodata.entity.deleted.v1",
+      "schema": "schemas/events/geodata-entity-deleted-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "geodata.entity.entity-type-changed.v1",
+      "owner": "geodata-service",
+      "class": "domain-fact",
+      "subject": "myota.events.geodata.entity.entity-type-changed.v1",
+      "schema": "schemas/events/geodata-entity-entity-type-changed-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "geodata.entity.geometry-type-changed.v1",
+      "owner": "geodata-service",
+      "class": "domain-fact",
+      "subject": "myota.events.geodata.entity.geometry-type-changed.v1",
+      "schema": "schemas/events/geodata-entity-geometry-type-changed-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "geodata.entity.geometry-updated.v1",
+      "owner": "geodata-service",
+      "class": "domain-fact",
+      "subject": "myota.events.geodata.entity.geometry-updated.v1",
+      "schema": "schemas/events/geodata-entity-geometry-updated-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "geodata.entity.import-approved.v1",
+      "owner": "geodata-service",
+      "class": "domain-fact",
+      "subject": "myota.events.geodata.entity.import-approved.v1",
+      "schema": "schemas/events/geodata-entity-import-approved-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "geodata.entity.import-updated.v1",
+      "owner": "geodata-service",
+      "class": "domain-fact",
+      "subject": "myota.events.geodata.entity.import-updated.v1",
+      "schema": "schemas/events/geodata-entity-import-updated-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "geodata.entity.location-enriched.v1",
+      "owner": "geodata-service",
+      "class": "domain-fact",
+      "subject": "myota.events.geodata.entity.location-enriched.v1",
+      "schema": "schemas/events/geodata-entity-location-enriched-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "geodata.entity.location-updated.v1",
+      "owner": "geodata-service",
+      "class": "domain-fact",
+      "subject": "myota.events.geodata.entity.location-updated.v1",
+      "schema": "schemas/events/geodata-entity-location-updated-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "geodata.entity.name-changed.v1",
+      "owner": "geodata-service",
+      "class": "domain-fact",
+      "subject": "myota.events.geodata.entity.name-changed.v1",
+      "schema": "schemas/events/geodata-entity-name-changed-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "geodata.entity.reviewed.v1",
+      "owner": "geodata-service",
+      "class": "domain-fact",
+      "subject": "myota.events.geodata.entity.reviewed.v1",
+      "schema": "schemas/events/geodata-entity-reviewed-v1.schema.json",
+      "consumerGroups": [
+        "activity-notifications-v1"
+      ],
+      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "geodata.entity.source-disappeared.v1",
+      "owner": "geodata-service",
+      "class": "domain-fact",
+      "subject": "myota.events.geodata.entity.source-disappeared.v1",
+      "schema": "schemas/events/geodata-entity-source-disappeared-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "geodata.entity.status-changed.v1",
+      "owner": "geodata-service",
+      "class": "domain-fact",
+      "subject": "myota.events.geodata.entity.status-changed.v1",
+      "schema": "schemas/events/geodata-entity-status-changed-v1.schema.json",
+      "consumerGroups": [
+        "activity-notifications-v1"
+      ],
+      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "geodata.import.cancellation-requested.v1",
+      "owner": "geodata-service",
+      "class": "domain-fact",
+      "subject": "myota.events.geodata.import.cancellation-requested.v1",
+      "schema": "schemas/events/geodata-import-cancellation-requested-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "geodata.import.cancelled.v1",
+      "owner": "geodata-service",
+      "class": "domain-fact",
+      "subject": "myota.events.geodata.import.cancelled.v1",
+      "schema": "schemas/events/geodata-import-cancelled-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "geodata.import.candidates.rejected.v1",
+      "owner": "geodata-service",
+      "class": "domain-fact",
+      "subject": "myota.events.geodata.import.candidates.rejected.v1",
+      "schema": "schemas/events/geodata-import-candidates-rejected-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "geodata.import.candidates.validated.v1",
+      "owner": "geodata-service",
+      "class": "domain-fact",
+      "subject": "myota.events.geodata.import.candidates.validated.v1",
+      "schema": "schemas/events/geodata-import-candidates-validated-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "geodata.import.failed.v1",
+      "owner": "geodata-service",
+      "class": "domain-fact",
+      "subject": "myota.events.geodata.import.failed.v1",
+      "schema": "schemas/events/geodata-import-failed-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "geodata.import.preprocessed.v1",
+      "owner": "geodata-service",
+      "class": "domain-fact",
+      "subject": "myota.events.geodata.import.preprocessed.v1",
+      "schema": "schemas/events/geodata-import-preprocessed-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "geodata.import.processed.v1",
+      "owner": "geodata-service",
+      "class": "domain-fact",
+      "subject": "myota.events.geodata.import.processed.v1",
+      "schema": "schemas/events/geodata-import-processed-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "geodata.import.processing.completed.v1",
+      "owner": "geodata-service",
+      "class": "domain-fact",
+      "subject": "myota.events.geodata.import.processing.completed.v1",
+      "schema": "schemas/events/geodata-import-processing-completed-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "geodata.loadtest.cleaned.v1",
+      "owner": "geodata-service",
+      "class": "domain-fact",
+      "subject": "myota.events.geodata.loadtest.cleaned.v1",
+      "schema": "schemas/events/geodata-loadtest-cleaned-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "geodata.refresh-schedule.created.v1",
+      "owner": "geodata-service",
+      "class": "domain-fact",
+      "subject": "myota.events.geodata.refresh-schedule.created.v1",
+      "schema": "schemas/events/geodata-refresh-schedule-created-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "identity.account.admin-updated.v1",
+      "owner": "identity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.identity.account.admin-updated.v1",
+      "schema": "schemas/events/identity-account-admin-updated-v1.schema.json",
+      "consumerGroups": [
+        "activity-notifications-v1"
+      ],
+      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "identity.account.created.v1",
+      "owner": "identity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.identity.account.created.v1",
+      "schema": "schemas/events/identity-account-created-v1.schema.json",
+      "consumerGroups": [
+        "activity-notifications-v1"
+      ],
+      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "identity.account.deactivated.v1",
+      "owner": "identity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.identity.account.deactivated.v1",
+      "schema": "schemas/events/identity-account-deactivated-v1.schema.json",
+      "consumerGroups": [
+        "activity-notifications-v1"
+      ],
+      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "identity.bootstrap-admin.created.v1",
+      "owner": "identity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.identity.bootstrap-admin.created.v1",
+      "schema": "schemas/events/identity-bootstrap-admin-created-v1.schema.json",
+      "consumerGroups": [
+        "activity-notifications-v1"
+      ],
+      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "identity.callsign.added.v1",
+      "owner": "identity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.identity.callsign.added.v1",
+      "schema": "schemas/events/identity-callsign-added-v1.schema.json",
+      "consumerGroups": [
+        "activity-notifications-v1"
+      ],
+      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "identity.callsign.evidence-submitted.v1",
+      "owner": "identity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.identity.callsign.evidence-submitted.v1",
+      "schema": "schemas/events/identity-callsign-evidence-submitted-v1.schema.json",
+      "consumerGroups": [
+        "activity-notifications-v1"
+      ],
+      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "identity.callsign.primary-changed.v1",
+      "owner": "identity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.identity.callsign.primary-changed.v1",
+      "schema": "schemas/events/identity-callsign-primary-changed-v1.schema.json",
+      "consumerGroups": [
+        "activity-notifications-v1"
+      ],
+      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "identity.callsign.retired.v1",
+      "owner": "identity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.identity.callsign.retired.v1",
+      "schema": "schemas/events/identity-callsign-retired-v1.schema.json",
+      "consumerGroups": [
+        "activity-notifications-v1"
+      ],
+      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "identity.callsign.verified.v1",
+      "owner": "identity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.identity.callsign.verified.v1",
+      "schema": "schemas/events/identity-callsign-verified-v1.schema.json",
+      "consumerGroups": [
+        "activity-notifications-v1"
+      ],
+      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "identity.login.failed.v1",
+      "owner": "identity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.identity.login.failed.v1",
+      "schema": "schemas/events/identity-login-failed-v1.schema.json",
+      "consumerGroups": [
+        "activity-notifications-v1"
+      ],
+      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "identity.login.succeeded.v1",
+      "owner": "identity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.identity.login.succeeded.v1",
+      "schema": "schemas/events/identity-login-succeeded-v1.schema.json",
+      "consumerGroups": [
+        "activity-notifications-v1"
+      ],
+      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "identity.oidc.mapping.updated.v1",
+      "owner": "identity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.identity.oidc.mapping.updated.v1",
+      "schema": "schemas/events/identity-oidc-mapping-updated-v1.schema.json",
+      "consumerGroups": [
+        "activity-notifications-v1"
+      ],
+      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "identity.recovery.completed.v1",
+      "owner": "identity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.identity.recovery.completed.v1",
+      "schema": "schemas/events/identity-recovery-completed-v1.schema.json",
+      "consumerGroups": [
+        "activity-notifications-v1"
+      ],
+      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "identity.recovery.requested.v1",
+      "owner": "identity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.identity.recovery.requested.v1",
+      "schema": "schemas/events/identity-recovery-requested-v1.schema.json",
+      "consumerGroups": [
+        "activity-notifications-v1"
+      ],
+      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "identity.role-definition.created.v1",
+      "owner": "identity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.identity.role-definition.created.v1",
+      "schema": "schemas/events/identity-role-definition-created-v1.schema.json",
+      "consumerGroups": [
+        "activity-notifications-v1"
+      ],
+      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "identity.role-definition.updated.v1",
+      "owner": "identity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.identity.role-definition.updated.v1",
+      "schema": "schemas/events/identity-role-definition-updated-v1.schema.json",
+      "consumerGroups": [
+        "activity-notifications-v1"
+      ],
+      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "identity.role.assigned.v1",
+      "owner": "identity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.identity.role.assigned.v1",
+      "schema": "schemas/events/identity-role-assigned-v1.schema.json",
+      "consumerGroups": [
+        "activity-notifications-v1"
+      ],
+      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "identity.roles.replaced.v1",
+      "owner": "identity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.identity.roles.replaced.v1",
+      "schema": "schemas/events/identity-roles-replaced-v1.schema.json",
+      "consumerGroups": [
+        "activity-notifications-v1"
+      ],
+      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "identity.service-token.issued.v1",
+      "owner": "identity-service",
+      "class": "domain-fact",
+      "subject": "myota.events.identity.service-token.issued.v1",
+      "schema": "schemas/events/identity-service-token-issued-v1.schema.json",
+      "consumerGroups": [
+        "activity-notifications-v1"
+      ],
+      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "programme.archived.v1",
+      "owner": "programme-service",
+      "class": "domain-fact",
+      "subject": "myota.events.programme.archived.v1",
+      "schema": "schemas/events/programme-archived-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "programme.content.published.v1",
+      "owner": "programme-service",
+      "class": "domain-fact",
+      "subject": "myota.events.programme.content.published.v1",
+      "schema": "schemas/events/programme-content-published-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "programme.content.reviewed.v1",
+      "owner": "programme-service",
+      "class": "domain-fact",
+      "subject": "myota.events.programme.content.reviewed.v1",
+      "schema": "schemas/events/programme-content-reviewed-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "programme.content.saved.v1",
+      "owner": "programme-service",
+      "class": "domain-fact",
+      "subject": "myota.events.programme.content.saved.v1",
+      "schema": "schemas/events/programme-content-saved-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "programme.content.submitted.v1",
+      "owner": "programme-service",
+      "class": "domain-fact",
+      "subject": "myota.events.programme.content.submitted.v1",
+      "schema": "schemas/events/programme-content-submitted-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "programme.created.v1",
+      "owner": "programme-service",
+      "class": "domain-fact",
+      "subject": "myota.events.programme.created.v1",
+      "schema": "schemas/events/programme-created-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "programme.entity-type.assigned.v1",
+      "owner": "programme-service",
+      "class": "domain-fact",
+      "subject": "myota.events.programme.entity-type.assigned.v1",
+      "schema": "schemas/events/programme-entity-type-assigned-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "programme.entity-type.catalog-saved.v1",
+      "owner": "programme-service",
+      "class": "domain-fact",
+      "subject": "myota.events.programme.entity-type.catalog-saved.v1",
+      "schema": "schemas/events/programme-entity-type-catalog-saved-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "programme.entity-type.unassigned.v1",
+      "owner": "programme-service",
+      "class": "domain-fact",
+      "subject": "myota.events.programme.entity-type.unassigned.v1",
+      "schema": "schemas/events/programme-entity-type-unassigned-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "programme.policy-draft.published.v1",
+      "owner": "programme-service",
+      "class": "domain-fact",
+      "subject": "myota.events.programme.policy-draft.published.v1",
+      "schema": "schemas/events/programme-policy-draft-published-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "programme.policy-draft.saved.v1",
+      "owner": "programme-service",
+      "class": "domain-fact",
+      "subject": "myota.events.programme.policy-draft.saved.v1",
+      "schema": "schemas/events/programme-policy-draft-saved-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    },
+    {
+      "eventType": "programme.updated.v1",
+      "owner": "programme-service",
+      "class": "domain-fact",
+      "subject": "myota.events.programme.updated.v1",
+      "schema": "schemas/events/programme-updated-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "pending-owner-schema-review"
+    }
+  ],
+  "work": [
+    {
+      "workType": "activity.qso-ingestion.v1",
+      "owner": "activity-service",
+      "class": "work-command",
+      "subject": "myota.work.activity.qso-ingestion.v1",
+      "stream": "MYOTA_ACTIVITY_WORK",
+      "durable": "activity-qso-ingestion-v1",
+      "schema": "schemas/work-command.schema.json",
+      "payloadEvidence": "pending-activity-idempotency-and-payload-review"
+    },
+    {
+      "workType": "activity.adif-import.v1",
+      "owner": "activity-service",
+      "class": "work-command",
+      "subject": "myota.work.activity.adif-import.v1",
+      "stream": "MYOTA_ACTIVITY_WORK",
+      "durable": "activity-adif-import-v1",
+      "schema": "schemas/work-command.schema.json",
+      "payloadEvidence": "pending-activity-idempotency-and-payload-review"
+    },
+    {
+      "workType": "activity.award-recalculate.v1",
+      "owner": "activity-service",
+      "class": "work-command",
+      "subject": "myota.work.activity.award-recalculate.v1",
+      "stream": "MYOTA_ACTIVITY_WORK",
+      "durable": "activity-award-recalculate-v1",
+      "schema": "schemas/work-command.schema.json",
+      "payloadEvidence": "pending-activity-idempotency-and-payload-review"
+    },
+    {
+      "workType": "activity.award-evaluation.v1",
+      "owner": "activity-service",
+      "class": "work-command",
+      "subject": "myota.work.activity.award-evaluation.v1",
+      "stream": "MYOTA_ACTIVITY_WORK",
+      "durable": "activity-award-evaluation-v1",
+      "schema": "schemas/work-command.schema.json",
+      "payloadEvidence": "pending-activity-idempotency-and-payload-review"
+    },
+    {
+      "workType": "activity.pdf-render.v1",
+      "owner": "activity-service",
+      "class": "work-command",
+      "subject": "myota.work.activity.pdf-render.v1",
+      "stream": "MYOTA_ACTIVITY_WORK",
+      "durable": "activity-pdf-render-v1",
+      "schema": "schemas/work-command.schema.json",
+      "payloadEvidence": "pending-activity-idempotency-and-payload-review"
+    },
+    {
+      "workType": "activity.statistics-rebuild.v1",
+      "owner": "activity-service",
+      "class": "work-command",
+      "subject": "myota.work.activity.statistics-rebuild.v1",
+      "stream": "MYOTA_ACTIVITY_WORK",
+      "durable": "activity-statistics-rebuild-v1",
+      "schema": "schemas/work-command.schema.json",
+      "payloadEvidence": "pending-activity-idempotency-and-payload-review"
+    },
+    {
+      "workType": "geodata.import-preprocess.v1",
+      "owner": "geodata-service",
+      "class": "work-command",
+      "subject": "myota.work.geodata.import-preprocess.v1",
+      "stream": "MYOTA_GEODATA_WORK",
+      "durable": "geodata-preprocessing-v1",
+      "schema": "schemas/work-command.schema.json",
+      "payloadEvidence": "pending-geodata-recovery-and-payload-review",
+      "sourceEventTypes": [
+        "geodata.import.queued.v1",
+        "geodata.import.recovered.v1"
+      ]
+    },
+    {
+      "workType": "geodata.import-promotion.v1",
+      "owner": "geodata-service",
+      "class": "work-command",
+      "subject": "myota.work.geodata.import-promotion.v1",
+      "stream": "MYOTA_GEODATA_WORK",
+      "durable": "geodata-import-promotion-v1",
+      "schema": "schemas/work-command.schema.json",
+      "payloadEvidence": "pending-geodata-recovery-and-payload-review",
+      "sourceEventTypes": [
+        "geodata.import.processing.queued.v1",
+        "geodata.import.processing.recovered.v1"
+      ]
+    },
+    {
+      "workType": "geodata.entity-delete.v1",
+      "owner": "geodata-service",
+      "class": "work-command",
+      "subject": "myota.work.geodata.entity-delete.v1",
+      "stream": "MYOTA_GEODATA_WORK",
+      "durable": "geodata-entity-deletion-v1",
+      "schema": "schemas/work-command.schema.json",
+      "payloadEvidence": "pending-geodata-recovery-and-payload-review",
+      "sourceEventTypes": [
+        "geodata.entity-deletion-job.queued.v1"
+      ]
+    },
+    {
+      "workType": "geodata.location-enrichment.v1",
+      "owner": "geodata-service",
+      "class": "work-command",
+      "subject": "myota.work.geodata.location-enrichment.v1",
+      "stream": "MYOTA_GEODATA_WORK",
+      "durable": "geodata-location-enrichment-v1",
+      "schema": "schemas/work-command.schema.json",
+      "payloadEvidence": "pending-geodata-recovery-and-payload-review",
+      "sourceEventTypes": [
+        "geodata.entity.location-enrichment-requested.v1"
+      ]
+    }
+  ]
+}

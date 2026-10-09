@@ -1,18 +1,62 @@
 # MyOTA event contract
 
-Services persist versioned events in a transactional outbox in their owned database. Outbox workers publish the complete event envelope—including its aggregate identity—to the file-backed `MYOTA_EVENTS` NATS JetStream stream. The stream uses Interest retention: an event remains while any matching durable consumer has not acknowledged it and is removed after all such consumers acknowledge it. Outbox startup provisions and validates every supported durable filter before publishing; an explicit geodata work subject without a provisioned consumer is rejected. Consumers use explicit acknowledgements, database checkpoints and recoverable leases. The existing 30-day maximum age remains a safety bound for unconsumed backlog, not a replay window for acknowledged events. JetStream is not the event archive; durable domain state and outbox/dead-letter records remain in service-owned PostgreSQL. No accepted production work relies on an API process's event list or executor queue.
+## Current behavior
+
+Services persist versioned events in transactional outboxes in their owned
+databases. The current shared relay publishes to a file-backed `MYOTA_EVENTS`
+stream with Interest retention. That stream currently mixes committed facts and
+Geodata work subjects. The relay currently provisions consumers itself and can
+change stream retention at startup. The shared envelope has no `envelopeVersion`
+and includes a relay `attempts` field; the subject helper currently replaces
+dots in event types with underscores. These are current-state observations, not
+the selected target contract. See the [Phase 0 inventory](../../myota-docs/docs/operations/messaging/nats-event-migration-inventory.md)
+for repository evidence.
+
+## Selected target contract (Phase 1 implementation in progress)
+
+The [machine-readable registry](event-registry.json) enumerates the Phase 0
+event facts and selected work commands. Per-event schemas are under
+[`schemas/`](schemas/). They currently enforce the immutable outer envelope and
+event identity; payload shapes are deliberately marked as pending owner review
+where source evidence does not establish a stable field contract. This registry
+is not yet a complete payload compatibility gate.
+
+Target domain events use `envelopeVersion: 1`, a stable UUID `eventId`, dotted
+`eventType` with its `.vN` suffix, UTC `occurredAt`, producer, aggregate identity,
+optional trusted `correlationId` and `causationId`, and payload. `attempts` and
+other mutable relay state are excluded. Publish with `Nats-Msg-Id: eventId`.
+The target subject is `myota.events.<eventType>` with dots preserved. Version
+compatibility is governed by the event type's major version independently of
+the envelope version. Unknown subject or envelope versions must fail before the
+outbox row is marked published, and the failure must remain visible and
+recoverable from the owning database.
+
+Work commands have a distinct envelope with stable `workId` and `workType` and
+use the disjoint `myota.work.activity.*` or `myota.work.geodata.*` namespaces.
+They carry bounded identifiers and metadata, never large source documents or
+blobs. The shared registry declares one competing durable per selected job kind.
+PostgreSQL remains the source of truth; JetStream is a bounded delivery/replay
+window, not a permanent event archive. The ADR-0008 target is not yet the live
+deployment.
 
 ```json
 {
+  "envelopeVersion": 1,
   "eventId": "uuid",
   "eventType": "geodata.entity.reviewed.v1",
   "occurredAt": "2026-01-01T00:00:00Z",
   "producer": "geodata-service",
   "aggregate": { "type": "entity", "id": "uuid" },
-  "correlationId": "uuid",
+  "correlationId": "trusted-request-or-parent-id",
+  "causationId": "optional-parent-event-or-work-id",
   "payload": {}
 }
 ```
+
+The JSON above illustrates the target envelope and is not a claim that all
+current producers emit it. `payload` fields for each event are defined in the
+per-event schema once reviewed by the owning service; the current registry
+marks unresolved payload contracts explicitly.
 
 Important events include `identity.account.created.v1`, `identity.callsign.verified.v1`, `programme.created.v1`, `geodata.import.queued.v1`, `geodata.import.cancellation-requested.v1`, `geodata.import.cancelled.v1`, `geodata.import.preprocessed.v1`, `geodata.import.candidates.validated.v1`, `geodata.import.processing.queued.v1`, `geodata.import.processing.completed.v1`, `geodata.import.processed.v1`, `geodata.entity.candidate.created.v1`, `geodata.entity.reviewed.v1`, `geodata.entity.location-enrichment-requested.v1`, `geodata.entity.location-enriched.v1`, `activity.activation.created.v1`, `activity.qso.recorded.v1`, `awards.definition.saved.v1`, `awards.definition.published.v1`, `awards.request.created.v1`, `awards.issued.v1`, and `awards.rendered.v1`.
 
