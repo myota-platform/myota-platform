@@ -2,7 +2,12 @@ openapi: 3.1.0
 info:
   title: MyOTA Outdoor Activation Platform APIs
   version: 1.0.0
-  description: Service contracts for a programme-agnostic amateur-radio outdoor activation platform.
+  description: >-
+    Service contracts for a programme-agnostic amateur-radio outdoor activation platform.
+    All platform operation times, publication effective dates, QSOs, audit events,
+    logs and observability use UTC. Canonical API date-times carry Z or an explicit
+    UTC offset; timezone-bearing inputs are normalized to UTC. Legacy unqualified
+    date-times are interpreted as UTC, never the server or browser local timezone.
 servers:
   - url: http://localhost:8080
 tags:

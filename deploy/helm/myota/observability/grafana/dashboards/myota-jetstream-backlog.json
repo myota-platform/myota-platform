@@ -17,7 +17,7 @@
   "tags": ["myota", "jetstream", "broker-lag", "postgis", "opentelemetry"],
   "templating": {"list": []},
   "time": {"from": "now-1h", "to": "now"},
-  "timezone": "browser",
+  "timezone": "utc",
   "title": "MyOTA JetStream backlog and PostGIS query performance",
   "uid": "myota-jetstream-backlog",
   "version": 1

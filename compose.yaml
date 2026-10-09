@@ -374,6 +374,7 @@ services:
     profiles: [observability]
     restart: unless-stopped
     environment:
+      GF_DATE_FORMATS_DEFAULT_TIMEZONE: UTC
       GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s/observability/"
       GF_SERVER_SERVE_FROM_SUB_PATH: "true"
       GF_AUTH_ANONYMOUS_ENABLED: "false"

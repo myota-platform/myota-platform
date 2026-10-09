@@ -31,6 +31,9 @@ consumer filters and explicit geodata queue subjects synchronized with the
 
 ## What works now
 
+- Operational timestamps and publication inputs use UTC. Integration mirrors
+  normalize effective dates, and Compose/dashboard settings default to UTC.
+  See the [UTC policy](https://github.com/myota-platform/myota-docs/blob/main/docs/utc-time-policy.md).
 - Activity/award integration mirrors the activity-owned handler, repository
   boundary and certificate renderer. Authenticated PNG/JPEG content and bounded
   mock PDF previews use the existing activity/gateway paths and port, not a new

@@ -13,7 +13,7 @@
   "tags":["myota","real-data","opentelemetry","api","slo"],
   "templating":{"list":[{"current":{"selected":true,"text":"All","value":"$__all"},"datasource":{"type":"prometheus","uid":"myota-prometheus"},"includeAll":true,"label":"Service","multi":true,"name":"service","options":[],"query":"label_values(myota_http_server_requests_total, service_name)","refresh":2,"sort":1,"type":"query"}]},
   "time":{"from":"now-6h","to":"now"},
-  "timezone":"browser",
+  "timezone": "utc",
   "title":"MyOTA API performance",
   "uid":"myota-api-performance",
   "version":1

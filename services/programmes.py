@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from http.server import ThreadingHTTPServer
 from typing import Any
 from urllib.parse import parse_qs, urlparse
@@ -13,6 +14,14 @@ from common import (
     require,
     verify_token,
 )
+
+
+def _utc_timestamp(value: str) -> str:
+    """Normalize effective dates; legacy unqualified values mean UTC."""
+    parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 class ProgrammeHandler(JsonHandler):
@@ -233,6 +242,7 @@ class ProgrammeHandler(JsonHandler):
         ProgrammeHandler._authorize_admin(p, p["slug"])
         body = p["_body"]
         require(body, "effectiveFrom", "publisherId")
+        body = {**body, "effectiveFrom": _utc_timestamp(body["effectiveFrom"])}
         content = ProgrammeHandler._content_bucket()[p["contentId"]]
         if (
             content["programmeSlug"] != p["slug"]
@@ -351,7 +361,9 @@ class ProgrammeHandler(JsonHandler):
             "type": body["type"],
             "name": body["name"],
             "schema": body["schema"],
-            "effectiveFrom": body.get("effectiveFrom"),
+            "effectiveFrom": _utc_timestamp(body["effectiveFrom"])
+            if body.get("effectiveFrom")
+            else None,
             "updatedAt": now(),
         }
         ProgrammeHandler._policy_bucket()[draft_id] = record
@@ -418,6 +430,7 @@ class ProgrammeHandler(JsonHandler):
         ProgrammeHandler._authorize_admin(p, p["slug"])
         body = p["_body"]
         require(body, "effectiveFrom", "publisherId")
+        body = {**body, "effectiveFrom": _utc_timestamp(body["effectiveFrom"])}
         draft = ProgrammeHandler._policy_bucket()[p["draftId"]]
         if (
             draft["programmeSlug"] != p["slug"]

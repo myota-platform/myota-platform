@@ -22,7 +22,7 @@
   "tags": ["myota", "geodata", "capacity", "opentelemetry", "real-data"],
   "templating": {"list": []},
   "time": {"from": "now-1h", "to": "now"},
-  "timezone": "browser",
+  "timezone": "utc",
   "title": "MyOTA Geodata capacity baseline",
   "uid": "myota-geodata-capacity",
   "version": 1
