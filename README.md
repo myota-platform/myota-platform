@@ -31,6 +31,10 @@ consumer filters and explicit geodata queue subjects synchronized with the
 
 ## What works now
 
+- Activity/award integration mirrors the activity-owned handler, repository
+  boundary and certificate renderer. Authenticated PNG/JPEG content and bounded
+  mock PDF previews use the existing activity/gateway paths and port, not a new
+  service. See the [designer guide](https://github.com/myota-platform/myota-docs/blob/main/docs/programme-and-award-design.md).
 - Operations integration includes read-only SeaweedFS samples/history and
   live Identity API validation for per-user Grafana roles. GLOBAL_OPERATOR
   and GLOBAL_ADMIN map to Editor; other authorized readers remain Viewer.

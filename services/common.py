@@ -722,7 +722,9 @@ class JsonHandler(BaseHTTPRequestHandler):
                     self.current_route = (method, pattern)
                     if method in {"POST", "PUT", "PATCH", "DELETE"}:
                         content_type = self.headers.get("Content-Type", "")
-                        if content_type.lower().startswith(
+                        if hasattr(self, "read_request_body"):
+                            body = self.read_request_body()
+                        elif content_type.lower().startswith(
                             "multipart/form-data"
                         ):
                             body = read_multipart(self)
