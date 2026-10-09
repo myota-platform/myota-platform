@@ -84,7 +84,10 @@ def validate_consumer(actual, desired: ConsumerConfig, stream: str) -> None:
     config = actual.config
     fields = {
         "filter_subject": (config.filter_subject, desired.filter_subject),
-        "deliver_policy": (_value(config.deliver_policy), _value(desired.deliver_policy)),
+        "deliver_policy": (
+            _value(config.deliver_policy),
+            _value(desired.deliver_policy),
+        ),
         "ack_policy": (_value(config.ack_policy), _value(desired.ack_policy)),
         "ack_wait": (config.ack_wait, desired.ack_wait),
         "max_deliver": (config.max_deliver, desired.max_deliver),

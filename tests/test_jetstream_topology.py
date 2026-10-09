@@ -45,9 +45,21 @@ class JetStreamTopologyTests(unittest.TestCase):
             ["MYOTA_EVENTS", "MYOTA_ACTIVITY_WORK", "MYOTA_GEODATA_WORK"],
         )
         self.assertEqual(len(consumers), 10)
-        self.assertTrue(all(stream.max_bytes > 0 and stream.max_messages > 0 for stream in streams))
-        self.assertEqual(len({(item.stream, item.filter_subject) for item in consumers}), 10)
-        self.assertFalse(any(item.filter_subject.startswith("myota.events.") for item in consumers))
+        self.assertTrue(
+            all(
+                stream.max_bytes > 0 and stream.max_messages > 0
+                for stream in streams
+            )
+        )
+        self.assertEqual(
+            len({(item.stream, item.filter_subject) for item in consumers}), 10
+        )
+        self.assertFalse(
+            any(
+                item.filter_subject.startswith("myota.events.")
+                for item in consumers
+            )
+        )
 
 
 if __name__ == "__main__":
