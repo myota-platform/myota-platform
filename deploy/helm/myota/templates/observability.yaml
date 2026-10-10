@@ -141,6 +141,8 @@ metadata:
   name: {{ include "myota.fullname" (dict "name" "prometheus") }}
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels: {app.kubernetes.io/name: {{ include "myota.name" . }}, app.kubernetes.io/component: prometheus}
   template:
