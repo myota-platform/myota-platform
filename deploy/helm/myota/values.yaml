@@ -228,8 +228,8 @@ nats:
     storageClassName: ""
   # Explicit caps fit below the 8 GiB local-path PVC, which has no enforced quota.
   jetstream:
-    maxFileStoreBytes: 7516192768
-    maxMemoryStoreBytes: 1073741824
+    maxFileStoreBytes: "7516192768"
+    maxMemoryStoreBytes: "1073741824"
 jetstreamProvisioner:
   # Remains disabled until the Phase 2 compatibility and cutover gates pass.
   # When enabled on an upgrade, Helm waits for this fail-closed pre-upgrade
