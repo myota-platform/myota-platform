@@ -571,7 +571,9 @@
       "subject": "myota.geodata.import.preprocess.v1",
       "workType": "geodata.import-preprocess.v1",
       "workIdField": "importRunId",
-      "payloadFields": ["importRunId"],
+      "payloadFields": [
+        "importRunId"
+      ],
       "producers": [
         "geodata"
       ]
@@ -580,7 +582,9 @@
       "subject": "myota.geodata.import.preprocess.v1",
       "workType": "geodata.import-preprocess.v1",
       "workIdField": "importRunId",
-      "payloadFields": ["importRunId"],
+      "payloadFields": [
+        "importRunId"
+      ],
       "producers": [
         "geodata"
       ]
@@ -589,7 +593,9 @@
       "subject": "myota.geodata.import.process.v1",
       "workType": "geodata.import-promotion.v1",
       "workIdField": "queueId",
-      "payloadFields": ["queueId"],
+      "payloadFields": [
+        "queueId"
+      ],
       "producers": [
         "geodata"
       ]
@@ -598,7 +604,9 @@
       "subject": "myota.geodata.import.process.v1",
       "workType": "geodata.import-promotion.v1",
       "workIdField": "queueId",
-      "payloadFields": ["queueId"],
+      "payloadFields": [
+        "queueId"
+      ],
       "producers": [
         "geodata"
       ]
@@ -607,7 +615,9 @@
       "subject": "myota.geodata.entity.delete.v1",
       "workType": "geodata.entity-delete.v1",
       "workIdField": "jobId",
-      "payloadFields": ["jobId"],
+      "payloadFields": [
+        "jobId"
+      ],
       "producers": [
         "geodata"
       ]
