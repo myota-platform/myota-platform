@@ -24,10 +24,12 @@ for rollout and retry behavior.
 
 The synchronized outbox relay currently provisions the supported legacy durable
 consumers before publishing and leaves deployed `MYOTA_EVENTS` on Interest
-retention. The selected migration to bounded Limits facts plus separate Activity
-and Geodata WorkQueue streams is not deployed. Phase 1 contract and create-only
-provisioner preparation is underway; finite limits have no production values
-until capacity evidence is closed. See the [event registry](contracts/event-registry.json),
+retention. NATS remains cluster-internal through a ClusterIP service; auth/TLS is
+not required while the cluster workload boundary remains trusted. The selected
+migration to bounded Limits facts plus separate Activity and Geodata WorkQueue
+streams is not deployed. Phase 1 contract and create-only provisioner preparation
+is underway; finite limits have no production values until capacity evidence is
+closed. See the [event registry](contracts/event-registry.json),
 [migration plan](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/nats-event-migration-plan.md),
 and [Phase 1 evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase1-contract-topology-2026-10-09.md).
 The deployment mirror contains the matching [explicit provisioning guide](deploy/docs/jetstream-topology.md).
