@@ -11,8 +11,26 @@
       "properties": {
         "eventType": {
           "const": "geodata.import.failed.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "importRunId": {
+              "type": "string"
+            },
+            "error": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "importRunId",
+            "error"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-geodata-callsite",
+  "x-data-classification": "internal-operational-metadata"
 }
