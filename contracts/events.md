@@ -25,8 +25,9 @@ are derived from producer call sites in `myota-identity-service/identity.py`,
 classifications identify personal activity/QSO data, import object metadata,
 internal award configuration, and certificate details. Dynamic rule/configuration
 objects and nested award assets remain unconstrained where source code accepts
-caller-defined structures. These are source-derived evidence, not jointly approved
-producer gates. Geodata and Operations payloads remain pending.
+caller-defined structures. The delegated joint review accepted all 68 schemas as
+inventory contracts, with producer enforcement conditional on the field handling,
+projection, size, compatibility, and consumer requirements in the [review record](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase1-joint-review-2026-10-10.md).
 
 Target domain events use `envelopeVersion: 1`, a stable UUID `eventId`, dotted
 `eventType` with its `.vN` suffix, UTC `occurredAt`, producer, aggregate identity,
@@ -61,14 +62,16 @@ deployment.
 ```
 
 The JSON above illustrates the target envelope and is not a claim that all
-current producers emit it. The source-derived Identity and Programme schemas
-describe current payload shapes, including review metadata and sensitive fields;
-joint owner review is still required before they become producer enforcement.
-Geodata payload schemas are source-derived but not yet owner/privacy approved. In
-particular, `geodata.import.preprocessed.v1` currently records the producer result
-object, which includes internal `_records` and `_status` fields and may carry source
-feature data; minimize that payload before using the schema to enforce publication.
-Operations payloads remain pending. Other unresolved payload contracts remain
+current producers emit it. The delegated review conditionally accepted the
+source-derived shapes for all four producing services as inventory contracts;
+producer enforcement still requires the reviewed projection and compatibility
+gates. The schemas describe sensitive fields where currently emitted. In
+particular, `geodata.import.preprocessed.v1` records the current result object,
+which includes internal `_records` and `_status` and may carry source features.
+Keep the v1 schema source-accurate, then publish a minimal versioned summary
+before enforcement. The Phase 0 audit found no Operations event-producing call
+site, so an Operations fact schema is not required unless Operations begins
+publishing facts. Other unresolved payload contracts remain
 explicitly marked in the registry.
 
 Important events include `identity.account.created.v1`, `identity.callsign.verified.v1`, `programme.created.v1`, `geodata.import.queued.v1`, `geodata.import.cancellation-requested.v1`, `geodata.import.cancelled.v1`, `geodata.import.preprocessed.v1`, `geodata.import.candidates.validated.v1`, `geodata.import.processing.queued.v1`, `geodata.import.processing.completed.v1`, `geodata.import.processed.v1`, `geodata.entity.candidate.created.v1`, `geodata.entity.reviewed.v1`, `geodata.entity.location-enrichment-requested.v1`, `geodata.entity.location-enriched.v1`, `activity.activation.created.v1`, `activity.qso.recorded.v1`, `awards.definition.saved.v1`, `awards.definition.published.v1`, `awards.request.created.v1`, `awards.issued.v1`, and `awards.rendered.v1`.
