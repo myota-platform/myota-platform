@@ -11,8 +11,120 @@
       "properties": {
         "eventType": {
           "const": "awards.definition.published.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "programmeSlug": {
+              "type": "string"
+            },
+            "code": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "category": {
+              "type": "string"
+            },
+            "version": {
+              "type": "integer"
+            },
+            "achievementMetric": {
+              "type": "string"
+            },
+            "condition": {},
+            "levels": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": true
+              }
+            },
+            "backgroundAsset": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": true
+            },
+            "printSpec": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": true
+            },
+            "printReadiness": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": true
+            },
+            "template": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": true
+            },
+            "status": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": "string"
+            },
+            "signatureAssetId": {
+              "type": "string"
+            },
+            "managerName": {
+              "type": "string"
+            },
+            "effectiveFrom": {
+              "type": "string"
+            },
+            "publisherId": {
+              "type": "string"
+            },
+            "publishedAt": {
+              "type": "string"
+            },
+            "review": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "id",
+            "programmeSlug",
+            "code",
+            "name",
+            "category",
+            "version",
+            "condition",
+            "levels",
+            "backgroundAsset",
+            "printSpec",
+            "template",
+            "status",
+            "updatedAt",
+            "createdAt"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-activity-callsite",
+  "x-data-classification": "internal-configuration-and-personal"
 }
