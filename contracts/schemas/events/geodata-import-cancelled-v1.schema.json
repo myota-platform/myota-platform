@@ -11,8 +11,22 @@
       "properties": {
         "eventType": {
           "const": "geodata.import.cancelled.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "importRunId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "importRunId"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-geodata-callsite",
+  "x-data-classification": "internal-operational-metadata"
 }
