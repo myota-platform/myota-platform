@@ -28,17 +28,18 @@ with measured representative traffic, maximum accepted-work duration, storage
 reserve, and recovery objectives before production activation. The script
 requires NATS_TOPOLOGY_APPLY=1 and positive capacity values before connecting.
 
-The deployed broker has no configured authentication or TLS, and the selected
-out-of-band per-role credentials are not available in this workspace. The
-provisioner and application clients are therefore not least-privilege-ready for
-production. Do not pass credentials through command-line arguments or enable
-the provisioner on the deployed host before server auth/TLS, client role
-permissions, and allow/deny behavior have been tested.
+The deployed broker is unauthenticated and has no TLS, consistent with the
+accepted cluster-internal trust decision. The NATS service is ClusterIP-only on
+port 4222. The `myota` namespace has no NetworkPolicy, so any pod with network
+reachability is trusted to connect. NATS auth/TLS and runtime broker credentials
+are not required while this boundary holds. Do not expose NATS outside the
+cluster; revisit the decision before changing service exposure or admitting
+untrusted workloads.
 
 For an isolated broker only, use the disposable Compose profile with explicit
 test limits. The isolated create/idempotency/drift test passed, and focused
 topology tests plus Ruff checks passed. These checks do not qualify off-node
-backup/restore, production capacity, or authenticated access.
+backup/restore or production capacity.
 
 The current relay still provisions legacy durables and changes retention. Do
 not remove that behavior until a controlled Helm/Fleet readiness barrier has
