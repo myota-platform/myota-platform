@@ -35,23 +35,34 @@ spec:
       annotations:
         checksum/nats-config: {{ tpl (.Files.Get "observability/nats.conf") . | sha256sum | quote }}
     spec:
-      containers:
-        - name: nats
+      initContainers:
+        - name: render-nats-config
           image: {{ .Values.nats.image | quote }}
-          args: ["-c", "/etc/nats/nats.conf"]
+          command: ["/bin/sh", "-ec"]
+          args:
+            - sed "s|__NATS_SYS_PASSWORD_HASH__|${NATS_SYS_PASSWORD_HASH}|" /source/nats.conf > /rendered/nats.conf
           env:
             - name: NATS_SYS_PASSWORD_HASH
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.nats.systemAccount.existingSecret | quote }}
                   key: password-hash
+          volumeMounts:
+            - {name: config-template, mountPath: /source, readOnly: true}
+            - {name: config, mountPath: /rendered}
+      containers:
+        - name: nats
+          image: {{ .Values.nats.image | quote }}
+          args: ["-c", "/etc/nats/nats.conf"]
           ports: [{name: client, containerPort: 4222}]
           volumeMounts:
             - {name: data, mountPath: /data}
-            - {name: config, mountPath: /etc/nats}
+            - {name: config, mountPath: /etc/nats, readOnly: true}
       volumes:
-        - name: config
+        - name: config-template
           configMap: {name: myota-nats-config}
+        - name: config
+          emptyDir: {}
         - name: data
           {{- if .Values.nats.persistence.enabled }}
           persistentVolumeClaim:
