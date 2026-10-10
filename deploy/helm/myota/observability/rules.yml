@@ -1,20 +1,68 @@
 groups:
   - name: myota-observability
     rules:
-      - alert: MyOTAJetStreamStatusUnavailable
-        expr: myota_operations_jetstream_up == 0
+      - alert: MyOTANATSSurveyorUnavailable
+        expr: up{job="nats-surveyor"} == 0
         for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: NATS Surveyor metrics endpoint is unavailable
+          description: Prometheus cannot scrape the cluster-local NATS Surveyor service.
+      - alert: MyOTAServerMonitoringUnavailable
+        expr: nats_up{job="nats-surveyor"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: NATS Surveyor cannot reach the NATS server
+          description: Check NATS health, system-account credentials, and the cluster-local route.
+      - alert: MyOTAJetStreamFileStoreCapacityWarning
+        expr: |
+          (
+            max by (server_cluster) (nats_core_jetstream_filestore_used_bytes{job="nats-surveyor"})
+            /
+            clamp_min(max by (server_cluster) (nats_core_jetstream_filestore_size_bytes{job="nats-surveyor"}), 1)
+          ) >= 0.80
+        for: 10m
         labels: {severity: warning}
         annotations:
-          summary: Operational JetStream inspection is unavailable or partial
-          description: Check the operations service, broker permissions and inspection limits; this is not a zero-backlog reading.
-      - alert: MyOTAJetStreamStatusSamplesStale
-        expr: time() - myota_operations_jetstream_last_sample_timestamp_seconds > 120
-        for: 2m
+          summary: JetStream file store has reached 80% of its configured capacity
+          description: Review stream limits and the single-node storage budget before further growth.
+      - alert: MyOTAJetStreamFileStoreCapacityCritical
+        expr: |
+          (
+            max by (server_cluster) (nats_core_jetstream_filestore_used_bytes{job="nats-surveyor"})
+            /
+            clamp_min(max by (server_cluster) (nats_core_jetstream_filestore_size_bytes{job="nats-surveyor"}), 1)
+          ) >= 0.90
+        for: 10m
+        labels: {severity: critical}
+        annotations:
+          summary: JetStream file store has reached 90% of its configured capacity
+          description: Reduce retained work, enforce stream capacity, or expand the single-node storage budget.
+      - alert: MyOTAJetStreamMemoryStoreCapacityWarning
+        expr: |
+          (
+            max by (server_cluster) (nats_core_jetstream_memstore_used_bytes{job="nats-surveyor"})
+            /
+            clamp_min(max by (server_cluster) (nats_core_jetstream_memstore_size_bytes{job="nats-surveyor"}), 1)
+          ) >= 0.80
+        for: 10m
         labels: {severity: warning}
         annotations:
-          summary: JetStream status history is no longer being recorded
-          description: Check the operations sampler and its core database connection.
+          summary: JetStream memory store has reached 80% of its configured capacity
+          description: Review memory-backed stream limits against the single-node memory budget.
+      - alert: MyOTAJetStreamMemoryStoreCapacityCritical
+        expr: |
+          (
+            max by (server_cluster) (nats_core_jetstream_memstore_used_bytes{job="nats-surveyor"})
+            /
+            clamp_min(max by (server_cluster) (nats_core_jetstream_memstore_size_bytes{job="nats-surveyor"}), 1)
+          ) >= 0.90
+        for: 10m
+        labels: {severity: critical}
+        annotations:
+          summary: JetStream memory store has reached 90% of its configured capacity
+          description: Stop memory-backed growth or increase the server memory budget.
       - alert: MyOTAMetricsCollectorDown
         expr: up{job="myota-otel-collector"} == 0
         for: 2m

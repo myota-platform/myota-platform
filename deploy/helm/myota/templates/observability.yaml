@@ -1,0 +1,335 @@
+{{- if .Values.observability.enabled }}
+{{- $storage := dict "tempo" .Values.observability.tempo.storageSize "prometheus" .Values.observability.prometheus.storageSize "alertmanager" .Values.observability.alertmanager.storageSize "grafana" .Values.observability.grafana.storageSize }}
+{{- range $component, $size := $storage }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "myota.fullname" (dict "name" (printf "%s-data" $component)) }}
+  labels: {app.kubernetes.io/name: {{ include "myota.name" $ }}, app.kubernetes.io/component: {{ $component }}}
+spec:
+  accessModes: [ReadWriteOnce]
+  {{- if $.Values.observability.storageClassName }}
+  storageClassName: {{ $.Values.observability.storageClassName | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ $size | quote }}
+{{- end }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "myota.fullname" (dict "name" "observability") }}
+data:
+  otel-collector.yaml: |
+{{ tpl (.Files.Get "observability/otel-collector.yaml") . | indent 4 }}
+  tempo.yaml: |
+{{ .Files.Get "observability/tempo.yaml" | indent 4 }}
+  prometheus.yml: |
+{{ .Files.Get "observability/prometheus.yml" | indent 4 }}
+  rules.yml: |
+{{ .Files.Get "observability/rules.yml" | indent 4 }}
+  alertmanager.yml: |
+{{ .Files.Get "observability/alertmanager.yml" | indent 4 }}
+  dashboards.yml: |
+{{ .Files.Get "observability/grafana/provisioning/dashboards/dashboards.yml" | indent 4 }}
+  datasources.yml: |
+{{ .Files.Get "observability/grafana/provisioning/datasources/datasources.yml" | indent 4 }}
+  myota-operations.json: |
+{{ .Files.Get "observability/grafana/dashboards/myota-operations.json" | indent 4 }}
+  myota-api-performance.json: |
+{{ .Files.Get "observability/grafana/dashboards/myota-api-performance.json" | indent 4 }}
+  myota-geodata-capacity.json: |
+{{ .Files.Get "observability/grafana/dashboards/myota-geodata-capacity.json" | indent 4 }}
+  myota-object-storage.json: |
+{{ .Files.Get "observability/grafana/dashboards/myota-object-storage.json" | indent 4 }}
+  alert-rules.yml: |
+{{ .Files.Get "observability/grafana/provisioning/alerting/alert-rules.yml" | indent 4 }}
+  contact-points.yml: |
+{{ .Files.Get "observability/grafana/provisioning/alerting/contact-points.yml" | indent 4 }}
+  policies.yml: |
+{{ .Files.Get "observability/grafana/provisioning/alerting/policies.yml" | indent 4 }}
+{{- if .Values.observability.natsSurveyor.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "myota.fullname" (dict "name" "nats-dashboards") }}
+data:
+{{ (.Files.Glob "observability/grafana/dashboards/nats/*.json").AsConfig | indent 2 }}
+{{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "myota.fullname" (dict "name" "otel-collector") }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: {{ include "myota.name" . }}, app.kubernetes.io/component: otel-collector}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: {{ include "myota.name" . }}, app.kubernetes.io/component: otel-collector}
+      annotations:
+        checksum/config: {{ tpl (.Files.Get "observability/otel-collector.yaml") . | sha256sum | quote }}
+    spec:
+      containers:
+        - name: otel-collector
+          image: {{ .Values.observability.otelCollector.image }}
+          args: ["--config=/etc/otelcol-contrib/config.yaml"]
+          ports:
+            - {name: otlp-grpc, containerPort: 4317}
+            - {name: otlp-http, containerPort: 4318}
+            - {name: metrics, containerPort: 8889}
+          volumeMounts:
+            - {name: config, mountPath: /etc/otelcol-contrib/config.yaml, subPath: otel-collector.yaml}
+      volumes:
+        - name: config
+          configMap: {name: {{ include "myota.fullname" (dict "name" "observability") }}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "myota.fullname" (dict "name" "otel-collector") }}
+spec:
+  selector: {app.kubernetes.io/name: {{ include "myota.name" . }}, app.kubernetes.io/component: otel-collector}
+  ports:
+    - {name: otlp-grpc, port: {{ .Values.observability.otelCollector.servicePort }}, targetPort: otlp-grpc}
+    - {name: metrics, port: {{ .Values.observability.otelCollector.metricsPort }}, targetPort: metrics}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "myota.fullname" (dict "name" "tempo") }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: {{ include "myota.name" . }}, app.kubernetes.io/component: tempo}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: {{ include "myota.name" . }}, app.kubernetes.io/component: tempo}
+    spec:
+      securityContext: {fsGroup: 10001}
+      containers:
+        - name: tempo
+          image: {{ .Values.observability.tempo.image }}
+          args: ["-config.file=/etc/tempo/tempo.yaml"]
+          ports: [{name: http, containerPort: 3200}, {name: otlp, containerPort: 4317}]
+          volumeMounts:
+            - {name: config, mountPath: /etc/tempo/tempo.yaml, subPath: tempo.yaml}
+            - {name: data, mountPath: /var/tempo}
+      volumes:
+        - name: config
+          configMap: {name: {{ include "myota.fullname" (dict "name" "observability") }}}
+        - name: data
+          persistentVolumeClaim: {claimName: {{ include "myota.fullname" (dict "name" "tempo-data") }}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "myota.fullname" (dict "name" "tempo") }}
+spec:
+  selector: {app.kubernetes.io/name: {{ include "myota.name" . }}, app.kubernetes.io/component: tempo}
+  ports:
+    - {name: http, port: {{ .Values.observability.tempo.servicePort }}, targetPort: http}
+    - {name: otlp, port: 4317, targetPort: otlp}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "myota.fullname" (dict "name" "prometheus") }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: {{ include "myota.name" . }}, app.kubernetes.io/component: prometheus}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: {{ include "myota.name" . }}, app.kubernetes.io/component: prometheus}
+    spec:
+      securityContext: {fsGroup: 65534}
+      containers:
+        - name: prometheus
+          image: {{ .Values.observability.prometheus.image }}
+          args: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus", "--storage.tsdb.retention.time={{ .Values.observability.prometheus.retention }}"]
+          ports: [{name: http, containerPort: 9090}]
+          readinessProbe: {httpGet: {path: /-/ready, port: http}, initialDelaySeconds: 5, periodSeconds: 10}
+          livenessProbe: {httpGet: {path: /-/healthy, port: http}, initialDelaySeconds: 15, periodSeconds: 20}
+          volumeMounts:
+            - {name: config, mountPath: /etc/prometheus/prometheus.yml, subPath: prometheus.yml}
+            - {name: config, mountPath: /etc/prometheus/rules.yml, subPath: rules.yml}
+            - {name: data, mountPath: /prometheus}
+      volumes:
+        - name: config
+          configMap: {name: {{ include "myota.fullname" (dict "name" "observability") }}}
+        - name: data
+          persistentVolumeClaim: {claimName: {{ include "myota.fullname" (dict "name" "prometheus-data") }}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "myota.fullname" (dict "name" "prometheus") }}
+spec:
+  selector: {app.kubernetes.io/name: {{ include "myota.name" . }}, app.kubernetes.io/component: prometheus}
+  ports: [{name: http, port: {{ .Values.observability.prometheus.servicePort }}, targetPort: http}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "myota.fullname" (dict "name" "alertmanager") }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: {{ include "myota.name" . }}, app.kubernetes.io/component: alertmanager}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: {{ include "myota.name" . }}, app.kubernetes.io/component: alertmanager}
+    spec:
+      securityContext: {fsGroup: 65534}
+      containers:
+        - name: alertmanager
+          image: {{ .Values.observability.alertmanager.image }}
+          args: ["--config.file=/etc/alertmanager/alertmanager.yml", "--storage.path=/alertmanager"]
+          ports: [{name: http, containerPort: 9093}]
+          readinessProbe: {httpGet: {path: /-/ready, port: http}, initialDelaySeconds: 5, periodSeconds: 10}
+          livenessProbe: {httpGet: {path: /-/healthy, port: http}, initialDelaySeconds: 15, periodSeconds: 20}
+          volumeMounts:
+            - {name: config, mountPath: /etc/alertmanager/alertmanager.yml, subPath: alertmanager.yml}
+            - {name: data, mountPath: /alertmanager}
+      volumes:
+        - name: config
+          configMap: {name: {{ include "myota.fullname" (dict "name" "observability") }}}
+        - name: data
+          persistentVolumeClaim: {claimName: {{ include "myota.fullname" (dict "name" "alertmanager-data") }}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager
+spec:
+  selector: {app.kubernetes.io/name: {{ include "myota.name" . }}, app.kubernetes.io/component: alertmanager}
+  ports: [{name: http, port: {{ .Values.observability.alertmanager.servicePort }}, targetPort: http}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "myota.fullname" (dict "name" "grafana") }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: {{ include "myota.name" . }}, app.kubernetes.io/component: grafana}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: {{ include "myota.name" . }}, app.kubernetes.io/component: grafana}
+      # Dashboard and provisioning files are mounted with subPath. Kubernetes
+      # does not refresh those mounts when a ConfigMap changes, so roll Grafana
+      # whenever any provisioned Grafana file changes.
+      annotations:
+        checksum/grafana-config: {{ (.Files.Glob "observability/grafana/**").AsConfig | sha256sum | quote }}
+    spec:
+      securityContext: {fsGroup: 472}
+      containers:
+        - name: grafana
+          image: {{ .Values.observability.grafana.image }}
+          env:
+            - {name: GF_DATE_FORMATS_DEFAULT_TIMEZONE, value: UTC}
+            - {name: GF_SERVER_ROOT_URL, value: "%(protocol)s://%(domain)s/observability/"}
+            - {name: GF_SERVER_SERVE_FROM_SUB_PATH, value: "true"}
+            - {name: GF_AUTH_ANONYMOUS_ENABLED, value: "false"}
+            - {name: GF_AUTH_DISABLE_LOGIN_FORM, value: "true"}
+            - {name: GF_AUTH_BASIC_ENABLED, value: "false"}
+            - {name: GF_AUTH_PROXY_ENABLED, value: "true"}
+            - {name: GF_AUTH_PROXY_HEADER_NAME, value: X-WEBAUTH-USER}
+            - {name: GF_AUTH_PROXY_HEADER_PROPERTY, value: username}
+            - {name: GF_AUTH_PROXY_AUTO_SIGN_UP, value: "true"}
+            - {name: GF_AUTH_PROXY_ENABLE_LOGIN_TOKEN, value: "false"}
+            - {name: GF_AUTH_PROXY_SYNC_TTL, value: "0"}
+            - {name: GF_AUTH_PROXY_HEADERS, value: "Name:X-WEBAUTH-NAME Email:X-WEBAUTH-EMAIL Role:X-WEBAUTH-ROLE"}
+            - {name: GF_USERS_AUTO_ASSIGN_ORG_ROLE, value: Viewer}
+          ports: [{name: http, containerPort: 3000}]
+          readinessProbe: {httpGet: {path: /api/health, port: http}, initialDelaySeconds: 10, periodSeconds: 10}
+          livenessProbe: {httpGet: {path: /api/health, port: http}, initialDelaySeconds: 30, periodSeconds: 20}
+          volumeMounts:
+            - {name: config, mountPath: /etc/grafana/provisioning/dashboards/dashboards.yml, subPath: dashboards.yml}
+            - {name: config, mountPath: /etc/grafana/provisioning/datasources/datasources.yml, subPath: datasources.yml}
+            - {name: config, mountPath: /etc/grafana/provisioning/alerting/alert-rules.yml, subPath: alert-rules.yml}
+            - {name: config, mountPath: /etc/grafana/provisioning/alerting/contact-points.yml, subPath: contact-points.yml}
+            - {name: config, mountPath: /etc/grafana/provisioning/alerting/policies.yml, subPath: policies.yml}
+            - {name: config, mountPath: /etc/grafana/dashboards/myota-operations.json, subPath: myota-operations.json}
+            - {name: config, mountPath: /etc/grafana/dashboards/myota-api-performance.json, subPath: myota-api-performance.json}
+            - {name: config, mountPath: /etc/grafana/dashboards/myota-geodata-capacity.json, subPath: myota-geodata-capacity.json}
+            - {name: config, mountPath: /etc/grafana/dashboards/myota-object-storage.json, subPath: myota-object-storage.json}
+            - {name: nats-dashboards, mountPath: /etc/grafana/dashboards-nats}
+            - {name: data, mountPath: /var/lib/grafana}
+      volumes:
+        - name: config
+          configMap: {name: {{ include "myota.fullname" (dict "name" "observability") }}}
+        - name: nats-dashboards
+          configMap: {name: {{ include "myota.fullname" (dict "name" "nats-dashboards") }}}
+        - name: data
+          persistentVolumeClaim: {claimName: {{ include "myota.fullname" (dict "name" "grafana-data") }}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "myota.fullname" (dict "name" "grafana") }}
+spec:
+  selector: {app.kubernetes.io/name: {{ include "myota.name" . }}, app.kubernetes.io/component: grafana}
+  ports: [{name: http, port: {{ .Values.observability.grafana.servicePort }}, targetPort: http}]
+{{- end }}
+
+{{- if .Values.observability.natsSurveyor.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myota-nats-surveyor
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: nats-surveyor}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: nats-surveyor}
+    spec:
+      containers:
+        - name: nats-surveyor
+          image: {{ .Values.observability.natsSurveyor.image | quote }}
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--servers={{ .Values.nats.url }}"
+            - "--port={{ .Values.observability.natsSurveyor.port }}"
+            - "--jsz=all"
+            - "--jsz-leaders-only"
+            - "--jsz-filter=consumer_num_pending,consumer_num_ack_pending,consumer_num_waiting"
+            - "--accounts"
+          env:
+            - name: NATS_SURVEYOR_USER
+              value: {{ .Values.nats.systemAccount.username | quote }}
+            - name: NATS_SURVEYOR_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.observability.natsSurveyor.existingSecret | quote }}
+                  key: password
+          ports:
+            - {name: metrics, containerPort: {{ .Values.observability.natsSurveyor.port }}}
+          readinessProbe:
+            httpGet: {path: /metrics, port: metrics}
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          livenessProbe:
+            httpGet: {path: /metrics, port: metrics}
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          resources:
+{{ toYaml .Values.observability.natsSurveyor.resources | indent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myota-nats-surveyor
+spec:
+  selector: {app.kubernetes.io/name: myota, app.kubernetes.io/component: nats-surveyor}
+  ports:
+    - {name: metrics, port: {{ .Values.observability.natsSurveyor.port }}, targetPort: metrics}
+{{- end }}

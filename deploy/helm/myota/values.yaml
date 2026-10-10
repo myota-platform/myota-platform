@@ -219,6 +219,9 @@ auth:
 nats:
   image: nats:2.10-alpine
   url: nats://myota-nats:4222
+  systemAccount:
+    username: surveyor
+    existingSecret: myota-nats-surveyor-auth
   persistence:
     enabled: true
     storageSize: 8Gi
@@ -256,6 +259,19 @@ observability:
     image: otel/opentelemetry-collector-contrib:0.135.0
     servicePort: 4317
     metricsPort: 8889
+  natsSurveyor:
+    enabled: true
+    image: natsio/nats-surveyor:0.9.11
+    port: 7777
+    scrapeInterval: 15s
+    existingSecret: myota-nats-surveyor-auth
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
   tempo:
     image: grafana/tempo:2.6.1
     servicePort: 3200

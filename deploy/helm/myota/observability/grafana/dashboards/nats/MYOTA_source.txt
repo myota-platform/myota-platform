@@ -1,0 +1,1 @@
+NATS Surveyor dashboard sources are pinned to nats-io/nats-surveyor v0.9.11 (docker-compose/grafana/provisioning/dashboards). Grafana.com dashboard 16256 is adapted to the Surveyor metric names and MyOTA Prometheus datasource.
