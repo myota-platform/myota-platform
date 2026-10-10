@@ -13,6 +13,7 @@ CATALOG_PATH = Path(__file__).with_name("event_registry.json")
 CATALOG = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
 EVENTS = CATALOG["events"]
 LEGACY_WORK_ROUTES = CATALOG["legacyWorkRoutes"]
+TARGET_WORK_ROUTES = CATALOG.get("targetWorkRoutes", {})
 UUID_PATTERN = re.compile(
     r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-"
     r"[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
@@ -25,7 +26,7 @@ class OutboxContractError(ValueError):
 
 def event_subject(event: dict) -> str:
     """Route registered facts and the explicitly retained legacy work paths."""
-    event_type = event.get("eventType")
+    event_type = event.get("workType", event.get("eventType"))
     if not isinstance(event_type, str):
         raise OutboxContractError("outbox event type is required")
 
@@ -34,6 +35,7 @@ def event_subject(event: dict) -> str:
         raise OutboxContractError("outbox payload must be an object")
 
     work_route = LEGACY_WORK_ROUTES.get(event_type)
+    target_route = TARGET_WORK_ROUTES.get(event_type)
     explicit_subject = payload.get("natsSubject")
     if work_route:
         if explicit_subject != work_route["subject"]:
@@ -41,6 +43,12 @@ def event_subject(event: dict) -> str:
                 "legacy work event has an unexpected subject"
             )
         return work_route["subject"]
+    if target_route:
+        if explicit_subject is not None:
+            raise OutboxContractError(
+                "registered work subject cannot be overridden"
+            )
+        return target_route["subject"]
     if event_type not in EVENTS:
         raise OutboxContractError("unregistered outbox event type")
     if explicit_subject is not None:
@@ -73,7 +81,12 @@ def event_envelope(row: tuple) -> dict:
         _attempts,
     ) = row
     work_route = LEGACY_WORK_ROUTES.get(event_type)
-    if event_type not in EVENTS and work_route is None:
+    target_route = TARGET_WORK_ROUTES.get(event_type)
+    if (
+        event_type not in EVENTS
+        and work_route is None
+        and target_route is None
+    ):
         raise OutboxContractError("unregistered outbox event type")
     if not isinstance(payload, dict):
         raise OutboxContractError("outbox payload must be an object")
@@ -88,6 +101,8 @@ def event_envelope(row: tuple) -> dict:
     expected_producers = (
         work_route["producers"]
         if work_route
+        else target_route["producers"]
+        if target_route
         else EVENTS[event_type]["producers"]
     )
     if producer not in expected_producers:
@@ -110,8 +125,29 @@ def event_envelope(row: tuple) -> dict:
         },
         "payload": payload,
     }
-    # Work events remain on their existing consumers until the later queue
-    # migration. Domain facts can move to the selected immutable envelope now.
+    if target_route:
+        work_id = payload.get("jobId")
+        if not isinstance(work_id, str) or not UUID_PATTERN.fullmatch(work_id):
+            raise OutboxContractError("work payload must carry a UUID jobId")
+        if str(UUID(work_id)) != normalized_id and work_id != aggregate_id:
+            raise OutboxContractError("work ID must match its owning job row")
+        return {
+            "envelopeVersion": 1,
+            "workId": work_id,
+            "workType": event_type,
+            "createdAt": _utc_timestamp(occurred_at),
+            "producer": producer,
+            "aggregate": {"type": aggregate_type, "id": str(aggregate_id)},
+            "payload": payload,
+        }
+    # Legacy work messages preserve their historical envelope during migration.
     if work_route is None:
         envelope["envelopeVersion"] = 1
     return envelope
+
+
+def event_stream(event: dict) -> str:
+    """Return the registered target stream or the shared legacy fact stream."""
+    event_type = event.get("workType", event.get("eventType"))
+    route = TARGET_WORK_ROUTES.get(event_type)
+    return route["stream"] if route else "MYOTA_EVENTS"

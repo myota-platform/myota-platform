@@ -96,7 +96,8 @@ activityWorkers:
   enabled: true
   replicas: 2
   dbPoolMax: 4
-  pollSeconds: 1
+  # Keep enabled only while legacy API replicas may write jobs without an outbox.
+  legacyReconciliationEnabled: true
 activityNotifications:
   enabled: true
   replicas: 1
@@ -228,6 +229,7 @@ jetstreamProvisioner:
   # hook before updating application workloads.
   enabled: false
   confirmedMigrationGate: false
+  scope: all
   imageRepository: ""
   imageTag: ""
   capacity:

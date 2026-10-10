@@ -1,21 +1,332 @@
 {
   "timezone": "utc",
-  "annotations": {"list": []},
-  "editable": false,
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "refresh": "30s",
   "panels": [
-    {"type":"stat","title":"Users","gridPos":{"h":5,"w":4,"x":0,"y":0},"targets":[{"expr":"myota_identity_users_total{job=\"myota-otel-collector\"}","refId":"A"}]},
-    {"type":"stat","title":"Geo entities","gridPos":{"h":5,"w":4,"x":4,"y":0},"targets":[{"expr":"myota_geodata_entities_total{job=\"myota-otel-collector\"}","refId":"A"}]},
-    {"type":"stat","title":"QSOs","gridPos":{"h":5,"w":4,"x":8,"y":0},"targets":[{"expr":"myota_activity_qsos_total{job=\"myota-otel-collector\"}","refId":"A"}]},
-    {"type":"stat","title":"Programmes","gridPos":{"h":5,"w":4,"x":12,"y":0},"targets":[{"expr":"myota_programmes_total{job=\"myota-otel-collector\"}","refId":"A"}]},
-    {"type":"timeseries","title":"Entity lifecycle","gridPos":{"h":8,"w":12,"x":0,"y":5},"targets":[{"expr":"myota_geodata_entities_by_status_total{job=\"myota-otel-collector\"}","legendFormat":"{{status}}"}]},
-    {"type":"timeseries","title":"Activity QSOs and activations","gridPos":{"h":8,"w":12,"x":12,"y":5},"targets":[{"expr":"myota_activity_qsos_total{job=\"myota-otel-collector\"}","legendFormat":"valid QSOs"},{"expr":"sum(myota_activity_activations_by_status_total{job=\"myota-otel-collector\"})","legendFormat":"activations"}]},
-    {"type":"timeseries","title":"HTTP error rate","gridPos":{"h":8,"w":12,"x":0,"y":13},"targets":[{"expr":"sum by (service, status) (rate(myota_http_requests_total{job=\"myota-otel-collector\",status=~\"4..|5..\"}[5m]))","legendFormat":"{{service}} {{status}}"}]},
-    {"type":"timeseries","title":"OTel request latency p95","gridPos":{"h":8,"w":12,"x":12,"y":13},"targets":[{"expr":"histogram_quantile(0.95, sum by (le, service_name) (rate(myota_http_server_duration_milliseconds_bucket[5m])))","legendFormat":"{{service_name}}"}]}
+    {
+      "type": "stat",
+      "title": "Users",
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "myota_identity_users_total{job=\"myota-otel-collector\"}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Geo entities",
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 4,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "myota_geodata_entities_total{job=\"myota-otel-collector\"}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "QSOs",
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 8,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "myota_activity_qsos_total{job=\"myota-otel-collector\"}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Programmes",
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 12,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "myota_programmes_total{job=\"myota-otel-collector\"}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Participants",
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 16,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "myota_activity_participants_total{job=\"myota-otel-collector\"}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Award progress rows",
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 20,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "myota_activity_award_progress_total{job=\"myota-otel-collector\"}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Entity lifecycle",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 5
+      },
+      "targets": [
+        {
+          "expr": "myota_geodata_entities_by_status_total{job=\"myota-otel-collector\"}",
+          "legendFormat": "{{status}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Activity QSOs and activations",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 5
+      },
+      "targets": [
+        {
+          "expr": "myota_activity_qsos_total{job=\"myota-otel-collector\"}",
+          "legendFormat": "valid QSOs"
+        },
+        {
+          "expr": "sum(myota_activity_activations_by_status_total{job=\"myota-otel-collector\"})",
+          "legendFormat": "activations"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Import and worker state",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 13
+      },
+      "targets": [
+        {
+          "expr": "myota_geodata_import_runs_by_status_total{job=\"myota-otel-collector\"}",
+          "legendFormat": "geo imports {{status}}"
+        },
+        {
+          "expr": "myota_activity_imports_by_status_total{job=\"myota-otel-collector\"}",
+          "legendFormat": "ADIF imports {{status}}"
+        },
+        {
+          "expr": "myota_activity_jobs_queued_total{job=\"myota-otel-collector\"}",
+          "legendFormat": "queued jobs"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "HTTP error rate",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 13
+      },
+      "targets": [
+        {
+          "expr": "sum by (service, status) (rate(myota_http_requests_total{job=\"myota-otel-collector\",status=~\"4..|5..\"}[5m]))",
+          "legendFormat": "{{service}} {{status}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "OTel request rate",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 21
+      },
+      "targets": [
+        {
+          "expr": "sum by (service_name) (rate(myota_http_server_requests_total[5m]))",
+          "legendFormat": "{{service_name}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "OTel request latency p95",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 21
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, service_name) (rate(myota_http_server_duration_milliseconds_bucket[5m])))",
+          "legendFormat": "{{service_name}}"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "Activity work job state by kind",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 29
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "myota_activity_jobs_total{job=\"myota-otel-collector\",status=~\"queued|running|failed\"}",
+          "legendFormat": "{{kind}} {{status}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "Activity work oldest queue age",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 29
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "myota_activity_job_queue_age_seconds{job=\"myota-otel-collector\"}",
+          "legendFormat": "{{kind}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "Activity work average accepted-to-complete latency",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 37
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "myota_activity_job_latency_seconds_avg{job=\"myota-otel-collector\"}",
+          "legendFormat": "{{kind}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "type": "timeseries",
+      "title": "Activity work retries and unresolved dead letters",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 37
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum by (kind) (increase(myota_activity_work_retries_total{job=\"myota-otel-collector\"}[5m]))",
+          "legendFormat": "{{kind}} retries / 5m",
+          "refId": "A"
+        },
+        {
+          "expr": "myota_activity_work_dead_letters_unresolved{job=\"myota-otel-collector\"}",
+          "legendFormat": "unresolved malformed commands",
+          "refId": "B"
+        }
+      ]
+    }
   ],
   "schemaVersion": 39,
-  "tags": ["myota", "operations", "opentelemetry", "real-data"],
-  "templating": {"list": []},
-  "time": {"from": "now-6h", "to": "now"},
+  "style": "dark",
+  "tags": [
+    "myota",
+    "operations",
+    "opentelemetry",
+    "real-data"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
   "title": "MyOTA operations",
   "uid": "myota-operations"
 }

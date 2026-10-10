@@ -222,6 +222,7 @@ spec:
       annotations:
         rollout.myota.dev/image-digest: {{ .Values.imageRollout.digests.activity | default "untracked" | quote }}
     spec:
+      terminationGracePeriodSeconds: 600
       initContainers:
         {{ include "myota.waitForSchema" (dict "root" . "databaseUrlKey" "activity-database-url") | nindent 8 }}
       containers:
@@ -233,6 +234,8 @@ spec:
               valueFrom: {secretKeyRef: {name: {{ .Values.postgres.existingSecret }}, key: activity-database-url}}
             - name: MYOTA_REQUIRE_DURABILITY
               value: "1"
+            - name: NATS_URL
+              value: {{ .Values.nats.url | default "nats://myota-nats:4222" | quote }}
             - name: MYOTA_OBJECT_STORAGE_ENDPOINT
               value: {{ .Values.objectStorage.endpoint | quote }}
             - name: MYOTA_OBJECT_STORAGE_PUBLIC_ENDPOINT
@@ -247,8 +250,8 @@ spec:
               value: {{ .Values.objectStorage.certificateBucket | quote }}
             - name: MYOTA_ACTIVITY_DB_POOL_MAX
               value: {{ .Values.activityWorkers.dbPoolMax | quote }}
-            - name: MYOTA_ACTIVITY_WORKER_POLL_SECONDS
-              value: {{ .Values.activityWorkers.pollSeconds | quote }}
+            - name: ACTIVITY_LEGACY_RECONCILIATION_ENABLED
+              value: {{ .Values.activityWorkers.legacyReconciliationEnabled | quote }}
           resources: {{- toYaml .Values.resources | nindent 12 }}
 {{- end }}
 {{- if .Values.activityNotifications.enabled }}

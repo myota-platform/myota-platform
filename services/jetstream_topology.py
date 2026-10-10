@@ -136,8 +136,37 @@ def _positive_int(env_name: str) -> int:
     return value
 
 
-def desired_topology() -> tuple[tuple[Stream, ...], tuple[Consumer, ...]]:
+def desired_topology(
+    scope: str = "all",
+) -> tuple[tuple[Stream, ...], tuple[Consumer, ...]]:
     """Build finite target limits from explicitly supplied capacity evidence."""
+    activity_stream = Stream(
+        "MYOTA_ACTIVITY_WORK",
+        ("myota.work.activity.>",),
+        "workqueue",
+        _positive_int("NATS_ACTIVITY_WORK_MAX_AGE_SECONDS"),
+        _positive_int("NATS_ACTIVITY_WORK_MAX_BYTES"),
+        _positive_int("NATS_ACTIVITY_WORK_MAX_MESSAGES"),
+        _positive_int("NATS_ACTIVITY_WORK_MAX_MESSAGE_BYTES"),
+    )
+    activity_consumers = tuple(
+        Consumer(
+            "MYOTA_ACTIVITY_WORK",
+            durable,
+            subject,
+            ack_wait,
+            max_deliver,
+            max_pending,
+            max_waiting,
+        )
+        for durable, subject, ack_wait, max_deliver, max_pending, max_waiting in ACTIVITY_WORK
+    )
+    if scope == "activity-work":
+        streams, consumers = (activity_stream,), activity_consumers
+        validate_topology(streams, consumers, scope)
+        return streams, consumers
+    if scope != "all":
+        raise ValueError(f"unsupported JetStream topology scope: {scope}")
     streams = (
         Stream(
             "MYOTA_EVENTS",
@@ -148,15 +177,7 @@ def desired_topology() -> tuple[tuple[Stream, ...], tuple[Consumer, ...]]:
             _positive_int("NATS_EVENTS_MAX_MESSAGES"),
             _positive_int("NATS_EVENTS_MAX_MESSAGE_BYTES"),
         ),
-        Stream(
-            "MYOTA_ACTIVITY_WORK",
-            ("myota.work.activity.>",),
-            "workqueue",
-            _positive_int("NATS_ACTIVITY_WORK_MAX_AGE_SECONDS"),
-            _positive_int("NATS_ACTIVITY_WORK_MAX_BYTES"),
-            _positive_int("NATS_ACTIVITY_WORK_MAX_MESSAGES"),
-            _positive_int("NATS_ACTIVITY_WORK_MAX_MESSAGE_BYTES"),
-        ),
+        activity_stream,
         Stream(
             "MYOTA_GEODATA_WORK",
             ("myota.work.geodata.>",),
@@ -167,9 +188,9 @@ def desired_topology() -> tuple[tuple[Stream, ...], tuple[Consumer, ...]]:
             _positive_int("NATS_GEODATA_WORK_MAX_MESSAGE_BYTES"),
         ),
     )
-    consumers = tuple(
+    geodata_consumers = tuple(
         Consumer(
-            stream,
+            "MYOTA_GEODATA_WORK",
             durable,
             subject,
             ack_wait,
@@ -177,18 +198,17 @@ def desired_topology() -> tuple[tuple[Stream, ...], tuple[Consumer, ...]]:
             max_pending,
             max_waiting,
         )
-        for stream, definitions in (
-            ("MYOTA_ACTIVITY_WORK", ACTIVITY_WORK),
-            ("MYOTA_GEODATA_WORK", GEODATA_WORK),
-        )
-        for durable, subject, ack_wait, max_deliver, max_pending, max_waiting in definitions
+        for durable, subject, ack_wait, max_deliver, max_pending, max_waiting in GEODATA_WORK
     )
+    consumers = activity_consumers + geodata_consumers
     validate_topology(streams, consumers)
     return streams, consumers
 
 
 def validate_topology(
-    streams: tuple[Stream, ...], consumers: tuple[Consumer, ...]
+    streams: tuple[Stream, ...],
+    consumers: tuple[Consumer, ...],
+    scope: str = "all",
 ) -> None:
     names = [stream.name for stream in streams]
     if len(names) != len(set(names)):
@@ -221,7 +241,11 @@ def validate_topology(
             if subject in subject_owners:
                 raise ValueError(f"overlapping subject capture {subject}")
             subject_owners[subject] = stream.name
-    required = {"MYOTA_EVENTS", "MYOTA_ACTIVITY_WORK", "MYOTA_GEODATA_WORK"}
+    required = (
+        {"MYOTA_ACTIVITY_WORK"}
+        if scope == "activity-work"
+        else {"MYOTA_EVENTS", "MYOTA_ACTIVITY_WORK", "MYOTA_GEODATA_WORK"}
+    )
     if set(names) != required:
         raise ValueError(
             "target topology must contain exactly the three ADR-0008 streams"
@@ -266,4 +290,4 @@ def topology_from_environment() -> tuple[
         raise RuntimeError(
             "set NATS_TOPOLOGY_APPLY=1 only after Phase 0 gates and capacity review"
         )
-    return desired_topology()
+    return desired_topology(os.environ.get("NATS_TOPOLOGY_SCOPE", "all"))

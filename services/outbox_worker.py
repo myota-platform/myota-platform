@@ -22,7 +22,13 @@ from nats.js.api import (
     StorageType,
 )
 from prometheus_client import Counter, Gauge, Histogram, start_http_server
-from outbox_routing import OutboxContractError, event_envelope, event_subject
+from outbox_routing import (
+    CATALOG,
+    OutboxContractError,
+    event_envelope,
+    event_stream,
+    event_subject,
+)
 
 
 LOG = logging.getLogger("myota.outbox")
@@ -234,6 +240,62 @@ async def ensure_stream(nc: NATS) -> None:
     if stream.config.storage != StorageType.FILE:
         raise RuntimeError(f"legacy {STREAM_NAME} must use file storage")
 
+    if WORKER_NAME == "activity-outbox":
+        await validate_activity_work_topology(js)
+
+
+async def validate_activity_work_topology(js) -> None:
+    """Fail closed unless every registered Activity command has a pull durable."""
+    routes = CATALOG.get("targetWorkRoutes", {})
+    activity_routes = {
+        work_type: route
+        for work_type, route in routes.items()
+        if route["stream"] == "MYOTA_ACTIVITY_WORK"
+    }
+    if len(activity_routes) != 6:
+        raise RuntimeError(
+            "Activity work routes are incomplete in the registry"
+        )
+    try:
+        stream = await js.stream_info("MYOTA_ACTIVITY_WORK")
+    except Exception as exc:
+        raise RuntimeError("required Activity work stream is missing") from exc
+    config = stream.config
+    subjects = set(config.subjects or [])
+    if "myota.work.activity.>" not in subjects:
+        raise RuntimeError(
+            "Activity work stream lacks its exact subject coverage"
+        )
+    retention = getattr(config.retention, "value", config.retention)
+    if str(retention).lower() != RetentionPolicy.WORK_QUEUE.value:
+        raise RuntimeError("Activity work stream must use WorkQueue retention")
+    if config.storage != StorageType.FILE or config.num_replicas != 1:
+        raise RuntimeError(
+            "Activity work stream storage/replica policy drifted"
+        )
+    for route in activity_routes.values():
+        try:
+            info = await js.consumer_info(
+                "MYOTA_ACTIVITY_WORK", route["durable"]
+            )
+        except Exception as exc:
+            raise RuntimeError(
+                f"required Activity work durable {route['durable']} is missing"
+            ) from exc
+        consumer = info.config
+        if consumer.filter_subject != route["subject"]:
+            raise RuntimeError(
+                f"Activity work durable {route['durable']} has an unexpected filter"
+            )
+        if consumer.ack_policy != AckPolicy.EXPLICIT:
+            raise RuntimeError(
+                f"Activity work durable {route['durable']} must use explicit ACK"
+            )
+        if getattr(consumer, "deliver_subject", None) is not None:
+            raise RuntimeError(
+                f"Activity work durable {route['durable']} must use pull delivery"
+            )
+
 
 def claim() -> dict | None:
     """Atomically claim one pending event from this relay's own database."""
@@ -417,7 +479,8 @@ async def relay_one(js, claimed: dict) -> None:
         PUBLISH_DURATION.labels(WORKER_NAME).observe(
             asyncio.get_running_loop().time() - started
         )
-        if getattr(ack, "stream", STREAM_NAME) != STREAM_NAME:
+        expected_stream = event_stream(envelope)
+        if getattr(ack, "stream", expected_stream) != expected_stream:
             raise RuntimeError("JetStream acknowledged an unexpected stream")
     except Exception as exc:
         PUBLISH_DURATION.labels(WORKER_NAME).observe(

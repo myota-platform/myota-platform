@@ -63,6 +63,47 @@ class JetStreamTopologyTests(unittest.TestCase):
             )
         )
 
+    def test_activity_work_scope_leaves_fact_and_geodata_topology_untouched(
+        self,
+    ):
+        activity_capacity = {
+            key: value
+            for key, value in CAPACITY.items()
+            if key.startswith("NATS_ACTIVITY_WORK_")
+        }
+        with patch.dict(os.environ, activity_capacity, clear=True):
+            streams, consumers = desired_topology("activity-work")
+        self.assertEqual(
+            [stream.name for stream in streams], ["MYOTA_ACTIVITY_WORK"]
+        )
+        self.assertEqual(len(consumers), 6)
+        self.assertTrue(
+            all(item.stream == "MYOTA_ACTIVITY_WORK" for item in consumers)
+        )
+
+    def test_activity_work_scope_can_be_provisioned_without_event_cutover(
+        self,
+    ):
+        activity_capacity = {
+            key: value
+            for key, value in CAPACITY.items()
+            if key.startswith("NATS_ACTIVITY_WORK_")
+        }
+        with patch.dict(
+            os.environ,
+            {
+                **activity_capacity,
+                "NATS_TOPOLOGY_APPLY": "1",
+                "NATS_TOPOLOGY_SCOPE": "activity-work",
+            },
+            clear=True,
+        ):
+            streams, consumers = topology_from_environment()
+        self.assertEqual(
+            [stream.name for stream in streams], ["MYOTA_ACTIVITY_WORK"]
+        )
+        self.assertEqual(len(consumers), 6)
+
     def test_consumer_drift_checks_delivery_and_replay_safety_settings(self):
         with patch.dict(os.environ, CAPACITY, clear=True):
             _, consumers = desired_topology()

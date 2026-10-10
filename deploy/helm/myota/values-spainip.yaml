@@ -1,0 +1,107 @@
+# Non-secret deployment settings for the spainip.es K3s cluster.
+image:
+  tag: latest
+  pullPolicy: Always
+
+geodataPipeline:
+  locationEnrichment:
+    rolloutRevision: "2026-10-08-secret-configured"
+
+geodataLoadTestCleanup:
+  enabled: true
+  allowProductionCleanup: true
+
+# The geodata API is stateless and has a bounded Postgres connection budget.
+# Keep two pods available; CPU HPA may add at most one more pod.
+services:
+  geodata:
+    replicas: 2
+
+geodataApiAutoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 3
+
+ingress:
+  enabled: true
+  provider: traefik
+  className: traefik
+  host: api.myota.top
+  adminHost: admin.myota.top
+  entryPoints:
+    - websecure
+  annotations: {}
+  tls:
+    enabled: true
+    secretName: ""
+    certResolver: acmeresolver
+  adminTls:
+    enabled: true
+    secretName: ""
+    certResolver: acmeresolver
+
+postgres:
+  enabled: true
+  image: postgres:16-alpine
+  postgisImage: postgis/postgis:16-3.4
+  coreStorageSize: 10Gi
+  activityStorageSize: 50Gi
+  geoStorageSize: 100Gi
+  storageClassName: ""
+  coreHost: myota-core-postgres
+  corePort: 5432
+  activityHost: myota-activity-postgres
+  activityPort: 5432
+  geoHost: myota-geo-postgis
+  geoPort: 5432
+  coreDatabase: myota_core
+  activityDatabase: myota_activity
+  geoDatabase: myota_geo
+  existingSecret: myota-postgres
+
+# Phase 4 provisions only Activity's dedicated WorkQueue stream and its six
+# registered durables. It does not convert MYOTA_EVENTS or change Geodata work.
+jetstreamProvisioner:
+  enabled: true
+  confirmedMigrationGate: true
+  scope: activity-work
+  capacity:
+    activityWorkMaxAgeSeconds: "2592000"
+    activityWorkMaxBytes: "1073741824"
+    activityWorkMaxMessages: "250000"
+    activityWorkMaxMessageBytes: "1048576"
+
+objectStorage:
+  endpoint: http://myota-seaweedfs:8333
+  publicEndpoint: ""
+  existingSecret: myota-s3-auth
+
+seaweedfs:
+  enabled: true
+  storageSize: 100Gi
+  storageClassName: ""
+
+nats:
+  persistence:
+    enabled: true
+    storageSize: 8Gi
+    storageClassName: ""
+
+auth:
+  environment: production
+  existingSecret: myota-auth
+  maintenanceEnabled: true
+  accessTokenSeconds: 1800
+
+observability:
+  enabled: true
+  storageClassName: ""
+  prometheus:
+    storageSize: 10Gi
+    retention: 15d
+  alertmanager:
+    storageSize: 1Gi
+  grafana:
+    storageSize: 1Gi
+  tempo:
+    storageSize: 10Gi

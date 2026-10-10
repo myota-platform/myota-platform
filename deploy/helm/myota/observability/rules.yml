@@ -68,6 +68,34 @@ groups:
         annotations:
           summary: MyOTA activity queue backlog is high
           description: More than 100 activity jobs have been queued for 10 minutes.
+      - alert: MyOTAActivityWorkQueueOldestAge
+        expr: max(myota_activity_job_queue_age_seconds{job="myota-otel-collector"}) > 300
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: An Activity work command is waiting too long
+          description: Inspect Activity work durable pending state, the owning job row, and outbox relay backlog.
+      - alert: MyOTAActivityWorkFailedJobs
+        expr: sum(myota_activity_jobs_total{job="myota-otel-collector",status="failed"}) > 0
+        for: 1m
+        labels: {severity: warning}
+        annotations:
+          summary: An Activity work command reached its retry limit
+          description: Inspect the Activity job record and redrive it only after the failure cause is understood.
+      - alert: MyOTAActivityWorkRetriesSustained
+        expr: sum by (kind) (increase(myota_activity_work_retries_total{job="myota-otel-collector"}[5m])) > 0
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: Activity work is retrying continuously
+          description: Inspect the matching job's bounded error class, consumer durable, database health, and outbox backlog.
+      - alert: MyOTAActivityWorkDeadLetter
+        expr: myota_activity_work_dead_letters_unresolved{job="myota-otel-collector"} > 0
+        for: 1m
+        labels: {severity: warning}
+        annotations:
+          summary: An Activity work envelope was rejected
+          description: Inspect the bounded dead-letter metadata and recover through the owning job record.
       - alert: MyOTAActivityDatabaseMetricsUnavailable
         expr: myota_activity_metrics_database_unavailable{job="myota-otel-collector"} > 0
         for: 2m

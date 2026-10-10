@@ -14,7 +14,12 @@ os.environ.setdefault(
 )
 sys.path.insert(0, str(Path(__file__).parents[1] / "services"))
 
-from outbox_routing import OutboxContractError, event_envelope, event_subject
+from outbox_routing import (
+    OutboxContractError,
+    event_envelope,
+    event_stream,
+    event_subject,
+)
 from outbox_worker import relay_one, retry_delay
 
 
@@ -91,6 +96,31 @@ class OutboxContractTests(unittest.TestCase):
         )
         self.assertEqual(event_subject(work), "myota.geodata.entity.delete.v1")
         self.assertNotIn("envelopeVersion", work)
+        self.assertNotIn("attempts", work)
+
+    def test_activity_work_command_uses_registered_stream_and_small_envelope(
+        self,
+    ):
+        work = event_envelope(
+            (
+                EVENT_ID,
+                "activity.qso-ingestion.v1",
+                "activity-service",
+                "activity_job",
+                EVENT_ID,
+                {"jobId": EVENT_ID},
+                OCCURRED_AT,
+                1,
+            )
+        )
+        self.assertEqual(
+            event_subject(work), "myota.work.activity.qso-ingestion.v1"
+        )
+        self.assertEqual(event_stream(work), "MYOTA_ACTIVITY_WORK")
+        self.assertEqual(work["workId"], EVENT_ID)
+        self.assertEqual(work["workType"], "activity.qso-ingestion.v1")
+        self.assertEqual(work["payload"], {"jobId": EVENT_ID})
+        self.assertNotIn("eventId", work)
         self.assertNotIn("attempts", work)
 
     def test_unknown_event_and_subject_override_are_rejected(self):

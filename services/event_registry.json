@@ -609,5 +609,99 @@
         "geodata"
       ]
     }
+  },
+  "targetWorkRoutes": {
+    "activity.qso-ingestion.v1": {
+      "subject": "myota.work.activity.qso-ingestion.v1",
+      "stream": "MYOTA_ACTIVITY_WORK",
+      "durable": "activity-qso-ingestion-v1",
+      "producers": [
+        "activity",
+        "activity-service",
+        "awards"
+      ]
+    },
+    "activity.adif-import.v1": {
+      "subject": "myota.work.activity.adif-import.v1",
+      "stream": "MYOTA_ACTIVITY_WORK",
+      "durable": "activity-adif-import-v1",
+      "producers": [
+        "activity",
+        "activity-service",
+        "awards"
+      ]
+    },
+    "activity.award-recalculate.v1": {
+      "subject": "myota.work.activity.award-recalculate.v1",
+      "stream": "MYOTA_ACTIVITY_WORK",
+      "durable": "activity-award-recalculate-v1",
+      "producers": [
+        "activity",
+        "activity-service",
+        "awards"
+      ]
+    },
+    "activity.award-evaluation.v1": {
+      "subject": "myota.work.activity.award-evaluation.v1",
+      "stream": "MYOTA_ACTIVITY_WORK",
+      "durable": "activity-award-evaluation-v1",
+      "producers": [
+        "activity",
+        "activity-service",
+        "awards"
+      ]
+    },
+    "activity.pdf-render.v1": {
+      "subject": "myota.work.activity.pdf-render.v1",
+      "stream": "MYOTA_ACTIVITY_WORK",
+      "durable": "activity-pdf-render-v1",
+      "producers": [
+        "activity",
+        "activity-service",
+        "awards"
+      ]
+    },
+    "activity.statistics-rebuild.v1": {
+      "subject": "myota.work.activity.statistics-rebuild.v1",
+      "stream": "MYOTA_ACTIVITY_WORK",
+      "durable": "activity-statistics-rebuild-v1",
+      "producers": [
+        "activity",
+        "activity-service",
+        "awards"
+      ]
+    },
+    "geodata.import-preprocess.v1": {
+      "subject": "myota.work.geodata.import-preprocess.v1",
+      "stream": "MYOTA_GEODATA_WORK",
+      "durable": "geodata-preprocessing-v1",
+      "producers": [
+        "geodata"
+      ]
+    },
+    "geodata.import-promotion.v1": {
+      "subject": "myota.work.geodata.import-promotion.v1",
+      "stream": "MYOTA_GEODATA_WORK",
+      "durable": "geodata-import-promotion-v1",
+      "producers": [
+        "geodata"
+      ]
+    },
+    "geodata.entity-delete.v1": {
+      "subject": "myota.work.geodata.entity-delete.v1",
+      "stream": "MYOTA_GEODATA_WORK",
+      "durable": "geodata-entity-deletion-v1",
+      "producers": [
+        "geodata"
+      ]
+    },
+    "geodata.location-enrichment.v1": {
+      "subject": "myota.work.geodata.location-enrichment.v1",
+      "stream": "MYOTA_GEODATA_WORK",
+      "durable": "geodata-location-enrichment-v1",
+      "producers": [
+        "geodata"
+      ]
+    }
   }
 }

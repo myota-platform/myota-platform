@@ -31,7 +31,9 @@ spec:
               value: {{ .Values.nats.url | quote }}
             - name: NATS_TOPOLOGY_APPLY
               value: "1"
-{{- range $name, $value := dict
+            - name: NATS_TOPOLOGY_SCOPE
+              value: {{ .Values.jetstreamProvisioner.scope | quote }}
+{{- $capacityEnv := dict
   "NATS_EVENTS_MAX_BYTES" $capacity.eventsMaxBytes
   "NATS_EVENTS_MAX_MESSAGES" $capacity.eventsMaxMessages
   "NATS_EVENTS_MAX_MESSAGE_BYTES" $capacity.eventsMaxMessageBytes
@@ -44,6 +46,15 @@ spec:
   "NATS_GEODATA_WORK_MAX_MESSAGES" $capacity.geodataWorkMaxMessages
   "NATS_GEODATA_WORK_MAX_MESSAGE_BYTES" $capacity.geodataWorkMaxMessageBytes
 }}
+{{- if eq .Values.jetstreamProvisioner.scope "activity-work" }}
+{{- $capacityEnv = dict
+  "NATS_ACTIVITY_WORK_MAX_AGE_SECONDS" $capacity.activityWorkMaxAgeSeconds
+  "NATS_ACTIVITY_WORK_MAX_BYTES" $capacity.activityWorkMaxBytes
+  "NATS_ACTIVITY_WORK_MAX_MESSAGES" $capacity.activityWorkMaxMessages
+  "NATS_ACTIVITY_WORK_MAX_MESSAGE_BYTES" $capacity.activityWorkMaxMessageBytes
+}}
+{{- end }}
+{{- range $name, $value := $capacityEnv }}
             - name: {{ $name }}
               value: {{ required (printf "jetstreamProvisioner.capacity value for %s is required" $name) $value | quote }}
 {{- end }}
