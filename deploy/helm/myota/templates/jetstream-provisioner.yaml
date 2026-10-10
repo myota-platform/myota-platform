@@ -23,7 +23,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: provisioner
-          image: "{{ default .Values.image.repository .Values.jetstreamProvisioner.imageRepository }}:{{ default .Values.image.tag .Values.jetstreamProvisioner.imageTag }}"
+          image: {{ include "myota.imageReference" (dict "repository" (default .Values.image.repository .Values.jetstreamProvisioner.imageRepository) "tag" (default .Values.image.tag .Values.jetstreamProvisioner.imageTag) "digest" .Values.imageRollout.digests.platform) | quote }}
           imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
           command: ["python3", "/app/services/provision_jetstream.py"]
           env:
@@ -52,6 +52,14 @@ spec:
   "NATS_ACTIVITY_WORK_MAX_BYTES" $capacity.activityWorkMaxBytes
   "NATS_ACTIVITY_WORK_MAX_MESSAGES" $capacity.activityWorkMaxMessages
   "NATS_ACTIVITY_WORK_MAX_MESSAGE_BYTES" $capacity.activityWorkMaxMessageBytes
+}}
+{{- end }}
+{{- if eq .Values.jetstreamProvisioner.scope "geodata-work" }}
+{{- $capacityEnv = dict
+  "NATS_GEODATA_WORK_MAX_AGE_SECONDS" $capacity.geodataWorkMaxAgeSeconds
+  "NATS_GEODATA_WORK_MAX_BYTES" $capacity.geodataWorkMaxBytes
+  "NATS_GEODATA_WORK_MAX_MESSAGES" $capacity.geodataWorkMaxMessages
+  "NATS_GEODATA_WORK_MAX_MESSAGE_BYTES" $capacity.geodataWorkMaxMessageBytes
 }}
 {{- end }}
 {{- range $name, $value := $capacityEnv }}
