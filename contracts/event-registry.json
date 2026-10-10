@@ -974,10 +974,39 @@
       "schema": "schemas/events/geodata-conflation-resolved-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-geodata-callsite",
       "producerSources": [
         "myota-geodata-service/geodata.py"
-      ]
+      ],
+      "dataClassification": "geospatial-and-review-metadata",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "resolution": {
+            "type": "string"
+          },
+          "resolutionHistory": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "resolution",
+          "resolutionHistory",
+          "updatedAt"
+        ],
+        "additionalProperties": true
+      }
     },
     {
       "eventType": "geodata.entity-deletion-job.completed.v1",
@@ -987,10 +1016,62 @@
       "schema": "schemas/events/geodata-entity-deletion-job-completed-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-geodata-callsite",
       "producerSources": [
         "myota-geodata-service/geodata.py"
-      ]
+      ],
+      "dataClassification": "personal-and-operational-data",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "entityId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "requestedBy": {
+            "type": "string"
+          },
+          "impact": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "confirmationRequired": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "cascade": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "deleted": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "id",
+          "entityId",
+          "status",
+          "requestedBy",
+          "impact",
+          "confirmationRequired",
+          "createdAt",
+          "updatedAt",
+          "cascade",
+          "deleted"
+        ],
+        "additionalProperties": true
+      }
     },
     {
       "eventType": "geodata.entity-deletion-job.created.v1",
@@ -1000,10 +1081,52 @@
       "schema": "schemas/events/geodata-entity-deletion-job-created-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-geodata-callsite",
       "producerSources": [
         "myota-geodata-service/geodata.py"
-      ]
+      ],
+      "dataClassification": "personal-and-operational-data",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "entityId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "requestedBy": {
+            "type": "string"
+          },
+          "impact": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "confirmationRequired": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "entityId",
+          "status",
+          "requestedBy",
+          "impact",
+          "confirmationRequired",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": true
+      }
     },
     {
       "eventType": "geodata.entity-deletion-job.failed.v1",
@@ -1013,10 +1136,56 @@
       "schema": "schemas/events/geodata-entity-deletion-job-failed-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-geodata-callsite",
       "producerSources": [
         "myota-geodata-service/geodata.py"
-      ]
+      ],
+      "dataClassification": "personal-and-operational-data",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "entityId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "requestedBy": {
+            "type": "string"
+          },
+          "impact": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "confirmationRequired": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "entityId",
+          "status",
+          "requestedBy",
+          "impact",
+          "confirmationRequired",
+          "createdAt",
+          "updatedAt",
+          "error"
+        ],
+        "additionalProperties": true
+      }
     },
     {
       "eventType": "geodata.entity.candidate.created.v1",
@@ -1026,10 +1195,35 @@
       "schema": "schemas/events/geodata-entity-candidate-created-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-geodata-callsite",
       "producerSources": [
         "myota-geodata-service/geodata.py"
-      ]
+      ],
+      "dataClassification": "geospatial-and-operational-data",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "entityId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "importRunId": {
+            "type": "string"
+          },
+          "actor": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "entityId",
+          "status",
+          "importRunId",
+          "actor"
+        ],
+        "additionalProperties": true
+      }
     },
     {
       "eventType": "geodata.entity.deleted.v1",
@@ -1039,10 +1233,37 @@
       "schema": "schemas/events/geodata-entity-deleted-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-geodata-callsite",
       "producerSources": [
         "myota-geodata-service/geodata.py"
-      ]
+      ],
+      "dataClassification": "geospatial-and-review-metadata",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "entityId": {
+            "type": "string"
+          },
+          "deletedBy": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "previousStatus": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "entityId",
+          "deletedBy",
+          "previousStatus"
+        ],
+        "additionalProperties": true
+      }
     },
     {
       "eventType": "geodata.entity.entity-type-changed.v1",
@@ -1052,10 +1273,48 @@
       "schema": "schemas/events/geodata-entity-entity-type-changed-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-geodata-callsite",
       "producerSources": [
         "myota-geodata-service/geodata.py"
-      ]
+      ],
+      "dataClassification": "geospatial-and-review-metadata",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "entityId": {
+            "type": "string"
+          },
+          "editorId": {
+            "type": "string"
+          },
+          "previousEntityTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "entityTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "entityId",
+          "editorId",
+          "previousEntityTypes",
+          "entityTypes",
+          "note"
+        ],
+        "additionalProperties": true
+      }
     },
     {
       "eventType": "geodata.entity.geometry-type-changed.v1",
@@ -1065,10 +1324,42 @@
       "schema": "schemas/events/geodata-entity-geometry-type-changed-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-geodata-callsite",
       "producerSources": [
         "myota-geodata-service/geodata.py"
-      ]
+      ],
+      "dataClassification": "geospatial-and-review-metadata",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "entityId": {
+            "type": "string"
+          },
+          "editorId": {
+            "type": "string"
+          },
+          "previousType": {
+            "type": "string"
+          },
+          "geometryType": {
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "entityId",
+          "editorId",
+          "previousType",
+          "geometryType",
+          "note"
+        ],
+        "additionalProperties": true
+      }
     },
     {
       "eventType": "geodata.entity.geometry-updated.v1",
@@ -1078,10 +1369,39 @@
       "schema": "schemas/events/geodata-entity-geometry-updated-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-geodata-callsite",
       "producerSources": [
         "myota-geodata-service/geodata.py"
-      ]
+      ],
+      "dataClassification": "geospatial-and-review-metadata",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "entityId": {
+            "type": "string"
+          },
+          "editorId": {
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "geometry": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "entityId",
+          "editorId",
+          "note",
+          "geometry"
+        ],
+        "additionalProperties": true
+      }
     },
     {
       "eventType": "geodata.entity.import-approved.v1",
@@ -1091,10 +1411,35 @@
       "schema": "schemas/events/geodata-entity-import-approved-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-geodata-callsite",
       "producerSources": [
         "myota-geodata-service/geodata.py"
-      ]
+      ],
+      "dataClassification": "geospatial-and-operational-data",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "entityId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "importRunId": {
+            "type": "string"
+          },
+          "actor": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "entityId",
+          "status",
+          "importRunId",
+          "actor"
+        ],
+        "additionalProperties": true
+      }
     },
     {
       "eventType": "geodata.entity.import-updated.v1",
@@ -1104,10 +1449,35 @@
       "schema": "schemas/events/geodata-entity-import-updated-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-geodata-callsite",
       "producerSources": [
         "myota-geodata-service/geodata.py"
-      ]
+      ],
+      "dataClassification": "geospatial-and-operational-data",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "entityId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "importRunId": {
+            "type": "string"
+          },
+          "actor": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "entityId",
+          "status",
+          "importRunId",
+          "actor"
+        ],
+        "additionalProperties": true
+      }
     },
     {
       "eventType": "geodata.entity.location-enriched.v1",
@@ -1117,10 +1487,39 @@
       "schema": "schemas/events/geodata-entity-location-enriched-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-geodata-callsite",
       "producerSources": [
         "myota-geodata-service/geodata.py"
-      ]
+      ],
+      "dataClassification": "geospatial-and-review-metadata",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "entityId": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "geometryHash": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "entityId",
+          "requestId",
+          "geometryHash",
+          "status",
+          "reason"
+        ],
+        "additionalProperties": true
+      }
     },
     {
       "eventType": "geodata.entity.location-updated.v1",
@@ -1130,10 +1529,41 @@
       "schema": "schemas/events/geodata-entity-location-updated-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-geodata-callsite",
       "producerSources": [
         "myota-geodata-service/geodata.py"
-      ]
+      ],
+      "dataClassification": "geospatial-and-review-metadata",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "entityId": {
+            "type": "string"
+          },
+          "editorId": {
+            "type": "string"
+          },
+          "manualFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "entityId",
+          "editorId",
+          "manualFields",
+          "note"
+        ],
+        "additionalProperties": true
+      }
     },
     {
       "eventType": "geodata.entity.name-changed.v1",
@@ -1143,10 +1573,42 @@
       "schema": "schemas/events/geodata-entity-name-changed-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-geodata-callsite",
       "producerSources": [
         "myota-geodata-service/geodata.py"
-      ]
+      ],
+      "dataClassification": "geospatial-and-review-metadata",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "entityId": {
+            "type": "string"
+          },
+          "editorId": {
+            "type": "string"
+          },
+          "previousName": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "entityId",
+          "editorId",
+          "previousName",
+          "name",
+          "note"
+        ],
+        "additionalProperties": true
+      }
     },
     {
       "eventType": "geodata.entity.reviewed.v1",
@@ -1158,10 +1620,68 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-geodata-callsite",
       "producerSources": [
         "myota-geodata-service/geodata.py"
-      ]
+      ],
+      "dataClassification": "geospatial-and-review-metadata",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "entityType": {
+            "type": "string"
+          },
+          "entityTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "geometry": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "review": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "reviewHistory": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        },
+        "required": [
+          "id",
+          "entityType",
+          "entityTypes",
+          "name",
+          "status",
+          "geometry",
+          "createdAt",
+          "updatedAt",
+          "review",
+          "reviewHistory"
+        ],
+        "additionalProperties": true
+      }
     },
     {
       "eventType": "geodata.entity.source-disappeared.v1",
@@ -1171,10 +1691,31 @@
       "schema": "schemas/events/geodata-entity-source-disappeared-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-geodata-callsite",
       "producerSources": [
         "myota-geodata-service/geodata.py"
-      ]
+      ],
+      "dataClassification": "geospatial-and-operational-data",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "entityId": {
+            "type": "string"
+          },
+          "policy": {
+            "type": "string"
+          },
+          "previousStatus": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "entityId",
+          "policy",
+          "previousStatus"
+        ],
+        "additionalProperties": true
+      }
     },
     {
       "eventType": "geodata.entity.status-changed.v1",
@@ -1186,10 +1727,42 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-geodata-callsite",
       "producerSources": [
         "myota-geodata-service/geodata.py"
-      ]
+      ],
+      "dataClassification": "geospatial-and-review-metadata",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "entityId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "previousStatus": {
+            "type": "string"
+          },
+          "reviewerId": {
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "entityId",
+          "status",
+          "previousStatus",
+          "reviewerId",
+          "note"
+        ],
+        "additionalProperties": true
+      }
     },
     {
       "eventType": "geodata.import.cancellation-requested.v1",
@@ -1199,10 +1772,27 @@
       "schema": "schemas/events/geodata-import-cancellation-requested-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-geodata-callsite",
       "producerSources": [
         "myota-geodata-service/geodata.py"
-      ]
+      ],
+      "dataClassification": "internal-operational-metadata",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "importRunId": {
+            "type": "string"
+          },
+          "requestedBy": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "importRunId",
+          "requestedBy"
+        ],
+        "additionalProperties": true
+      }
     },
     {
       "eventType": "geodata.import.cancelled.v1",
@@ -1212,10 +1802,23 @@
       "schema": "schemas/events/geodata-import-cancelled-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-geodata-callsite",
       "producerSources": [
         "myota-geodata-service/geodata.py"
-      ]
+      ],
+      "dataClassification": "internal-operational-metadata",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "importRunId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "importRunId"
+        ],
+        "additionalProperties": true
+      }
     },
     {
       "eventType": "geodata.import.candidates.rejected.v1",
@@ -1225,10 +1828,34 @@
       "schema": "schemas/events/geodata-import-candidates-rejected-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-geodata-callsite",
       "producerSources": [
         "myota-geodata-service/geodata.py"
-      ]
+      ],
+      "dataClassification": "geospatial-and-review-metadata",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "importRunId": {
+            "type": "string"
+          },
+          "candidateIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "reviewerId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "importRunId",
+          "candidateIds",
+          "reviewerId"
+        ],
+        "additionalProperties": true
+      }
     },
     {
       "eventType": "geodata.import.candidates.validated.v1",
@@ -1238,10 +1865,34 @@
       "schema": "schemas/events/geodata-import-candidates-validated-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-geodata-callsite",
       "producerSources": [
         "myota-geodata-service/geodata.py"
-      ]
+      ],
+      "dataClassification": "geospatial-and-review-metadata",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "importRunId": {
+            "type": "string"
+          },
+          "candidateIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "reviewerId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "importRunId",
+          "candidateIds",
+          "reviewerId"
+        ],
+        "additionalProperties": true
+      }
     },
     {
       "eventType": "geodata.import.failed.v1",
@@ -1251,10 +1902,27 @@
       "schema": "schemas/events/geodata-import-failed-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-geodata-callsite",
       "producerSources": [
         "myota-geodata-service/geodata.py"
-      ]
+      ],
+      "dataClassification": "internal-operational-metadata",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "importRunId": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "importRunId",
+          "error"
+        ],
+        "additionalProperties": true
+      }
     },
     {
       "eventType": "geodata.import.preprocessed.v1",
@@ -1264,10 +1932,82 @@
       "schema": "schemas/events/geodata-import-preprocessed-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-geodata-callsite",
       "producerSources": [
         "myota-geodata-service/geodata.py"
-      ]
+      ],
+      "dataClassification": "geospatial-and-source-data",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "importRunId": {
+            "type": "string"
+          },
+          "adapter": {
+            "type": "string"
+          },
+          "preprocessed": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "created": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "updated": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "skipped": {
+            "type": "array",
+            "items": {}
+          },
+          "errors": {
+            "type": "array",
+            "items": {}
+          },
+          "disappeared": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "conflationCandidates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "manifest": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "importRunId",
+          "adapter",
+          "preprocessed",
+          "created",
+          "updated",
+          "skipped",
+          "errors",
+          "disappeared",
+          "conflationCandidates",
+          "manifest"
+        ],
+        "additionalProperties": true
+      }
     },
     {
       "eventType": "geodata.import.processed.v1",
@@ -1277,10 +2017,35 @@
       "schema": "schemas/events/geodata-import-processed-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-geodata-callsite",
       "producerSources": [
         "myota-geodata-service/geodata.py"
-      ]
+      ],
+      "dataClassification": "internal-operational-metadata",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "importRunId": {
+            "type": "string"
+          },
+          "processedBy": {
+            "type": "string"
+          },
+          "stagedRecordsDiscarded": {
+            "type": "integer"
+          },
+          "processingQueuesDiscarded": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "importRunId",
+          "processedBy",
+          "stagedRecordsDiscarded",
+          "processingQueuesDiscarded"
+        ],
+        "additionalProperties": true
+      }
     },
     {
       "eventType": "geodata.import.processing.completed.v1",
@@ -1290,10 +2055,50 @@
       "schema": "schemas/events/geodata-import-processing-completed-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-geodata-callsite",
       "producerSources": [
         "myota-geodata-service/geodata.py"
-      ]
+      ],
+      "dataClassification": "geospatial-and-operational-data",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "queueId": {
+            "type": "string"
+          },
+          "importRunId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "targetStatus": {
+            "type": "string"
+          },
+          "created": {
+            "type": "array",
+            "items": {}
+          },
+          "updated": {
+            "type": "array",
+            "items": {}
+          },
+          "errors": {
+            "type": "array",
+            "items": {}
+          }
+        },
+        "required": [
+          "queueId",
+          "importRunId",
+          "status",
+          "targetStatus",
+          "created",
+          "updated",
+          "errors"
+        ],
+        "additionalProperties": true
+      }
     },
     {
       "eventType": "geodata.loadtest.cleaned.v1",
@@ -1303,10 +2108,39 @@
       "schema": "schemas/events/geodata-loadtest-cleaned-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-geodata-callsite",
       "producerSources": [
         "myota-geodata-service/geodata.py"
-      ]
+      ],
+      "dataClassification": "internal-operational-metadata",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "testRunId": {
+            "type": "string"
+          },
+          "importsDeleted": {
+            "type": "integer"
+          },
+          "entitiesDeleted": {
+            "type": "integer"
+          },
+          "objectsDeleted": {
+            "type": "integer"
+          },
+          "uploadSessionsDeleted": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "testRunId",
+          "importsDeleted",
+          "entitiesDeleted",
+          "objectsDeleted",
+          "uploadSessionsDeleted"
+        ],
+        "additionalProperties": true
+      }
     },
     {
       "eventType": "geodata.refresh-schedule.created.v1",
@@ -1316,10 +2150,77 @@
       "schema": "schemas/events/geodata-refresh-schedule-created-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-geodata-callsite",
       "producerSources": [
         "myota-geodata-service/geodata.py"
-      ]
+      ],
+      "dataClassification": "internal-configuration-and-source-metadata",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "programmeSlug": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "entityType": {
+            "type": "string"
+          },
+          "entityTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "adapter": {
+            "type": "string"
+          },
+          "source": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "intervalSeconds": {
+            "type": "integer"
+          },
+          "disappearancePolicy": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "lastRunAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "nextRunAt": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "programmeSlug",
+          "entityType",
+          "entityTypes",
+          "adapter",
+          "source",
+          "intervalSeconds",
+          "disappearancePolicy",
+          "enabled",
+          "lastRunAt",
+          "nextRunAt",
+          "createdAt"
+        ],
+        "additionalProperties": true
+      }
     },
     {
       "eventType": "identity.account.admin-updated.v1",
