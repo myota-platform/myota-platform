@@ -1,0 +1,60 @@
+{{- if .Values.activityNotifications.enabled }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: myota-activity-notification-provisioner
+  annotations:
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 180
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: myota
+        app.kubernetes.io/component: activity-notification-provisioner
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: provisioner
+          image: "{{ .Values.services.activity.imageRepository }}:{{ default .Values.image.tag .Values.services.activity.imageTag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+          command: ["python3", "activity_notification_topology.py"]
+          env:
+            - name: ACTIVITY_NOTIFICATION_TOPOLOGY_ACTION
+              value: provision
+            - name: NATS_URL
+              value: {{ .Values.nats.url | quote }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: myota-activity-notification-retirement
+  annotations:
+    "helm.sh/hook": post-upgrade
+    "helm.sh/hook-weight": "20"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 180
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: myota
+        app.kubernetes.io/component: activity-notification-retirement
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: retire-legacy
+          image: "{{ .Values.services.activity.imageRepository }}:{{ default .Values.image.tag .Values.services.activity.imageTag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+          command: ["python3", "activity_notification_topology.py"]
+          env:
+            - name: ACTIVITY_NOTIFICATION_TOPOLOGY_ACTION
+              value: retire
+            - name: NATS_URL
+              value: {{ .Values.nats.url | quote }}
+{{- end }}

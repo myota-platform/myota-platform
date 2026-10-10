@@ -16,6 +16,8 @@ from nats.aio.client import Client as NATS
 from nats.js.api import (
     AckPolicy,
     ConsumerConfig,
+    DeliverPolicy,
+    ReplayPolicy,
     RetentionPolicy,
     StorageType,
 )
@@ -86,7 +88,7 @@ NATS_UP = Gauge(
 
 
 def required_consumers() -> tuple[ConsumerConfig, ...]:
-    """Describe the current legacy interests before publishing starts."""
+    """Describe the live Activity and legacy Geodata interests before publish."""
     geodata_options = {
         "ack_policy": AckPolicy.EXPLICIT,
         "ack_wait": int(
@@ -101,12 +103,38 @@ def required_consumers() -> tuple[ConsumerConfig, ...]:
     }
     return (
         ConsumerConfig(
-            durable_name="activity-notifications-pull-v1",
-            filter_subject="myota.events.>",
+            durable_name="activity-notifications-v1",
+            filter_subjects=[
+                "myota.events.geodata.entity.reviewed.v1",
+                "myota.events.geodata.entity.status-changed.v1",
+                "myota.events.identity.account.admin-updated.v1",
+                "myota.events.identity.account.created.v1",
+                "myota.events.identity.account.deactivated.v1",
+                "myota.events.identity.bootstrap-admin.created.v1",
+                "myota.events.identity.callsign.added.v1",
+                "myota.events.identity.callsign.evidence-submitted.v1",
+                "myota.events.identity.callsign.primary-changed.v1",
+                "myota.events.identity.callsign.retired.v1",
+                "myota.events.identity.callsign.verified.v1",
+                "myota.events.identity.login.failed.v1",
+                "myota.events.identity.login.succeeded.v1",
+                "myota.events.identity.oidc.mapping.updated.v1",
+                "myota.events.identity.recovery.completed.v1",
+                "myota.events.identity.recovery.requested.v1",
+                "myota.events.identity.role-definition.created.v1",
+                "myota.events.identity.role-definition.updated.v1",
+                "myota.events.identity.role.assigned.v1",
+                "myota.events.identity.roles.replaced.v1",
+                "myota.events.identity.service-token.issued.v1",
+            ],
             ack_policy=AckPolicy.EXPLICIT,
+            deliver_policy=DeliverPolicy.ALL,
+            replay_policy=ReplayPolicy.INSTANT,
             ack_wait=60,
-            max_deliver=10,
+            max_deliver=8,
             max_ack_pending=64,
+            max_waiting=32,
+            backoff=[60, 120, 300, 300, 300, 300, 300, 300],
         ),
         ConsumerConfig(
             durable_name="geodata-entity-deletion-v1",
@@ -142,7 +170,11 @@ async def validate_consumer(js, desired: ConsumerConfig) -> None:
         ) from exc
 
     actual = info.config
-    if actual.filter_subject != desired.filter_subject:
+    if (
+        tuple(actual.filter_subjects or ())
+        != tuple(desired.filter_subjects or ())
+        or actual.filter_subject != desired.filter_subject
+    ):
         raise RuntimeError(
             f"JetStream durable {durable} has unexpected subject filter"
         )
@@ -150,7 +182,15 @@ async def validate_consumer(js, desired: ConsumerConfig) -> None:
         raise RuntimeError(
             f"JetStream durable {durable} must use explicit acknowledgements"
         )
-    for setting in ("ack_wait", "max_deliver", "max_ack_pending"):
+    for setting in (
+        "deliver_policy",
+        "replay_policy",
+        "ack_wait",
+        "max_deliver",
+        "max_ack_pending",
+        "max_waiting",
+        "backoff",
+    ):
         if getattr(actual, setting, None) != getattr(desired, setting, None):
             raise RuntimeError(
                 f"JetStream durable {durable} has unexpected {setting}"

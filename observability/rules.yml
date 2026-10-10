@@ -64,6 +64,19 @@ groups:
         annotations:
           summary: Activity database metrics are unavailable
           description: Activity domain gauges cannot currently be read from PostgreSQL.
+      - alert: MyOTAActivityNotificationDeadLetter
+        expr: myota_activity_notification_unresolved_dead_letters > 0
+        labels: {severity: warning}
+        annotations:
+          summary: Activity notification poison events need operator review
+          description: Inspect the redacted Activity dead-letter record and use the audited notification redrive after remediation.
+      - alert: MyOTAActivityNotificationRetries
+        expr: increase(myota_activity_notification_outcomes_total{outcome="retry"}[10m]) > 5
+        for: 2m
+        labels: {severity: warning}
+        annotations:
+          summary: Activity notification delivery is retrying
+          description: Check Activity PostgreSQL availability, NATS delivery state, and notification worker logs.
       - alert: MyOTAApiErrorRateHigh
         expr: |
           (

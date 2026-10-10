@@ -11,7 +11,7 @@ receivers:
         - job_name: myota-services
           scrape_interval: 15s
           static_configs:
-            - targets: [gateway:8080, identity:8001, programmes:8002, geodata:8003, activity:8004, operations:8005]
+            - targets: [gateway:8080, identity:8001, programmes:8002, geodata:8003, activity:8004, operations:8005, activity-notifications:9110]
         - job_name: myota-outbox
           scrape_interval: 15s
           static_configs:
