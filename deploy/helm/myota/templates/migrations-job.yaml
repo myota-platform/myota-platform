@@ -2,26 +2,55 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: myota-migrations-{{ .Release.Revision }}
-  annotations:
-    "helm.sh/hook": pre-install,pre-upgrade
-    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
   backoffLimit: 4
+  activeDeadlineSeconds: 1800
+  ttlSecondsAfterFinished: 86400
   template:
+    metadata:
+      annotations:
+        myota.org/migration-chart-version: {{ .Chart.Version | quote }}
     spec:
       restartPolicy: Never
       containers:
         - name: migrations
+          {{- if .Values.imageRollout.digests.platform }}
+          image: "{{ .Values.image.repository }}@{{ .Values.imageRollout.digests.platform }}"
+          {{- else }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          {{- end }}
+          # The platform image is published under the mutable `latest` tag;
+          # always pull it so the migration hook cannot run stale cached SQL.
+          imagePullPolicy: Always
           command: ["/bin/bash", "/app/db/migrations/run.sh"]
           env:
-            - name: PGHOST
-              value: {{ .Values.postgres.host | quote }}
-            - name: PGPORT
-              value: "5432"
+            - name: CORE_HOST
+              value: {{ .Values.postgres.coreHost | quote }}
+            - name: CORE_PORT
+              value: {{ .Values.postgres.corePort | quote }}
+            - name: ACTIVITY_HOST
+              value: {{ .Values.postgres.activityHost | quote }}
+            - name: ACTIVITY_PORT
+              value: {{ .Values.postgres.activityPort | quote }}
+            - name: GEO_HOST
+              value: {{ .Values.postgres.geoHost | quote }}
+            - name: GEO_PORT
+              value: {{ .Values.postgres.geoPort | quote }}
             - name: PGUSER
               valueFrom: {secretKeyRef: {name: {{ .Values.postgres.existingSecret }}, key: username}}
             - name: PGPASSWORD
               valueFrom: {secretKeyRef: {name: {{ .Values.postgres.existingSecret }}, key: password}}
-            - name: PGDATABASE
+            - name: CORE_DATABASE
               value: {{ .Values.postgres.coreDatabase | quote }}
+            - name: ACTIVITY_DATABASE
+              value: {{ .Values.postgres.activityDatabase | quote }}
+            - name: GEO_DATABASE
+              value: {{ .Values.postgres.geoDatabase | quote }}
+            - name: MYOTA_SCHEMA_REVISION
+              value: {{ .Release.Revision | quote }}
+            - name: LEGACY_GEO_HOST
+              value: {{ .Values.postgres.coreHost | quote }}
+            - name: LEGACY_GEO_PORT
+              value: {{ .Values.postgres.corePort | quote }}
+            - name: LEGACY_GEO_DATABASE
+              value: {{ .Values.postgres.geoDatabase | quote }}
