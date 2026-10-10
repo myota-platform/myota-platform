@@ -25,21 +25,22 @@ for rollout and retry behavior.
 The synchronized relay source uses the event registry for dotted fact
 subjects, stable message IDs, size bounds, retries, dead-letter recovery, and
 backlog metrics. It validates the legacy `MYOTA_EVENTS` stream read-only. Facts
-remain on that file-backed Interest-retained stream; Geodata work now publishes
-to the disjoint `MYOTA_GEODATA_WORK` WorkQueue. NATS remains cluster-internal
+remain on that file-backed Interest-retained stream; Geodata work publishes to
+the disjoint `MYOTA_GEODATA_WORK` WorkQueue. NATS remains cluster-internal
 through a ClusterIP service without auth/TLS under the trusted workload
-boundary. Phases 0–4 of the migration are complete within their evidence
-bounds. Phase 5's four Geodata target durables and migration 021 are live; all
-four workers subscribe to target subjects. The retry-safe partial-deletion
-handler is deployed. No production Geodata work was available to process. Four
-legacy Geodata durable definitions remain empty and inactive during the
-24-hour rollback observation. Fleet readiness, two-database cross-service
-failure qualification, cancellation/expiry replay and final durable retirement
-remain open. Initial finite limits are accepted for the current single-node
-scope with a documented short-sample caveat. See the [event registry](contracts/event-registry.json),
+boundary. Phases 0–4 are complete within their evidence bounds. Phase 5's four
+Geodata target durables, migration 021, partial-deletion retry fix, and
+transactional Activity idempotency fix are deployed. Helm revision 191 is
+deployed; Fleet reports Ready=True at Deploy commit `a68eedd5ba7ee8aa0297d14ed8a38c4fceb9f109` with 60/60
+resources. First-party image references use immutable digests and match live
+pod IDs. Four target durables are empty with active workers; four old Geodata
+durables remain inactive and empty through the rollback observation ending no
+earlier than 21:28:41 UTC on 11 October 2026. No production Geodata work was available to process.
+Only the observation and safe legacy durable retirement remain open. See the
+[event registry](contracts/event-registry.json),
 [Phase 5 evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase5-geodata-work-2026-10-10.md),
 [migration plan](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/nats-event-migration-plan.md),
-the [Phase 1 completion evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase1-completion-2026-10-10.md),
+[Phase 1 completion evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase1-completion-2026-10-10.md),
 and [Phase 2 relay evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase2-relay-hardening-2026-10-10.md).
 The deployment mirror contains the matching [explicit provisioning guide](deploy/docs/jetstream-topology.md).
 
