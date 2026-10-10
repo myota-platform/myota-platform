@@ -11,8 +11,22 @@
       "properties": {
         "eventType": {
           "const": "programme.archived.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "slug": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "slug"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-programme-callsite",
+  "x-data-classification": "internal-configuration"
 }

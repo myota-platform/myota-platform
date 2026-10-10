@@ -11,8 +11,26 @@
       "properties": {
         "eventType": {
           "const": "programme.entity-type.assigned.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "programmeSlug": {
+              "type": "string"
+            },
+            "code": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "programmeSlug",
+            "code"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-programme-callsite",
+  "x-data-classification": "internal-configuration"
 }

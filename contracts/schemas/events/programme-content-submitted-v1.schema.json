@@ -11,8 +11,103 @@
       "properties": {
         "eventType": {
           "const": "programme.content.submitted.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "programmeSlug": {
+              "type": "string"
+            },
+            "key": {
+              "type": "string"
+            },
+            "locale": {
+              "type": "string"
+            },
+            "value": {},
+            "fallbackLocale": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "status": {
+              "type": "string"
+            },
+            "reviewHistory": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "type": "string"
+                  },
+                  "occurredAt": {
+                    "type": "string"
+                  },
+                  "reviewerId": {
+                    "type": "string"
+                  },
+                  "publisherId": {
+                    "type": "string"
+                  },
+                  "note": {},
+                  "effectiveFrom": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "action",
+                  "occurredAt"
+                ],
+                "additionalProperties": true
+              }
+            },
+            "createdAt": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            },
+            "submittedAt": {
+              "type": "string"
+            },
+            "reviewedAt": {
+              "type": "string"
+            },
+            "effectiveFrom": {
+              "type": "string"
+            },
+            "publishedAt": {
+              "type": "string"
+            },
+            "reviewerId": {
+              "type": "string"
+            },
+            "publisherId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "programmeSlug",
+            "key",
+            "locale",
+            "value",
+            "fallbackLocale",
+            "status",
+            "reviewHistory",
+            "createdAt",
+            "updatedAt"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-programme-callsite",
+  "x-data-classification": "internal-configuration-and-user-metadata"
 }

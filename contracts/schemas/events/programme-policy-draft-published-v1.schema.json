@@ -11,8 +11,205 @@
       "properties": {
         "eventType": {
           "const": "programme.policy-draft.published.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "draft": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "programmeSlug": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "reviewHistory": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "action": {
+                        "type": "string"
+                      },
+                      "occurredAt": {
+                        "type": "string"
+                      },
+                      "reviewerId": {
+                        "type": "string"
+                      },
+                      "publisherId": {
+                        "type": "string"
+                      },
+                      "note": {},
+                      "effectiveFrom": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "action",
+                      "occurredAt"
+                    ],
+                    "additionalProperties": true
+                  }
+                },
+                "createdAt": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "required": [],
+                  "additionalProperties": true
+                },
+                "effectiveFrom": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "updatedAt": {
+                  "type": "string"
+                },
+                "submittedAt": {
+                  "type": "string"
+                },
+                "reviewedAt": {
+                  "type": "string"
+                },
+                "publishedAt": {
+                  "type": "string"
+                },
+                "publisherId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "programmeSlug",
+                "status",
+                "reviewHistory",
+                "createdAt",
+                "type",
+                "name",
+                "schema",
+                "effectiveFrom",
+                "updatedAt"
+              ],
+              "additionalProperties": true
+            },
+            "programme": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "slug": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "entityTypeCodes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "entityTypes": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "code": {
+                        "type": "string"
+                      },
+                      "label": {
+                        "type": "string"
+                      },
+                      "geometry": {
+                        "type": "string"
+                      },
+                      "geometryTypes": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "active": {
+                        "type": "boolean"
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      },
+                      "updatedAt": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "code"
+                    ],
+                    "additionalProperties": true
+                  }
+                },
+                "rules": {},
+                "policyVersion": {
+                  "type": "integer"
+                },
+                "theme": {},
+                "oidc": {},
+                "status": {
+                  "type": "string"
+                },
+                "createdAt": {
+                  "type": "string"
+                },
+                "updatedAt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "slug",
+                "name",
+                "description",
+                "entityTypeCodes",
+                "entityTypes",
+                "rules",
+                "policyVersion",
+                "theme",
+                "oidc",
+                "status",
+                "createdAt",
+                "updatedAt"
+              ],
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "draft",
+            "programme"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-programme-callsite",
+  "x-data-classification": "internal-configuration-and-user-metadata"
 }

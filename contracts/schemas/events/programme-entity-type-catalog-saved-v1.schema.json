@@ -11,8 +11,103 @@
       "properties": {
         "eventType": {
           "const": "programme.entity-type.catalog-saved.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "entityType": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "geometry": {
+                  "type": "string"
+                },
+                "geometryTypes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "description": {
+                  "type": "string"
+                },
+                "active": {
+                  "type": "boolean"
+                },
+                "createdAt": {
+                  "type": "string"
+                },
+                "updatedAt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "code",
+                "label",
+                "geometry",
+                "geometryTypes",
+                "description",
+                "active",
+                "updatedAt"
+              ],
+              "additionalProperties": true
+            },
+            "previous": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "geometry": {
+                      "type": "string"
+                    },
+                    "geometryTypes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "active": {
+                      "type": "boolean"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [],
+                  "additionalProperties": true
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "entityType",
+            "previous"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-programme-callsite",
+  "x-data-classification": "internal-configuration-and-user-metadata"
 }

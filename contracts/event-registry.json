@@ -1592,10 +1592,23 @@
       "schema": "schemas/events/programme-archived-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-programme-callsite",
       "producerSources": [
         "myota-programme-service/programmes.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "internal-configuration"
     },
     {
       "eventType": "programme.content.published.v1",
@@ -1605,10 +1618,104 @@
       "schema": "schemas/events/programme-content-published-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-programme-callsite",
       "producerSources": [
         "myota-programme-service/programmes.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "programmeSlug": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "locale": {
+            "type": "string"
+          },
+          "value": {},
+          "fallbackLocale": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "reviewHistory": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "action": {
+                  "type": "string"
+                },
+                "occurredAt": {
+                  "type": "string"
+                },
+                "reviewerId": {
+                  "type": "string"
+                },
+                "publisherId": {
+                  "type": "string"
+                },
+                "note": {},
+                "effectiveFrom": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "action",
+                "occurredAt"
+              ],
+              "additionalProperties": true
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "submittedAt": {
+            "type": "string"
+          },
+          "reviewedAt": {
+            "type": "string"
+          },
+          "effectiveFrom": {
+            "type": "string"
+          },
+          "publishedAt": {
+            "type": "string"
+          },
+          "reviewerId": {
+            "type": "string"
+          },
+          "publisherId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "programmeSlug",
+          "key",
+          "locale",
+          "value",
+          "fallbackLocale",
+          "status",
+          "reviewHistory",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "internal-configuration-and-user-metadata"
     },
     {
       "eventType": "programme.content.reviewed.v1",
@@ -1618,10 +1725,104 @@
       "schema": "schemas/events/programme-content-reviewed-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-programme-callsite",
       "producerSources": [
         "myota-programme-service/programmes.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "programmeSlug": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "locale": {
+            "type": "string"
+          },
+          "value": {},
+          "fallbackLocale": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "reviewHistory": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "action": {
+                  "type": "string"
+                },
+                "occurredAt": {
+                  "type": "string"
+                },
+                "reviewerId": {
+                  "type": "string"
+                },
+                "publisherId": {
+                  "type": "string"
+                },
+                "note": {},
+                "effectiveFrom": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "action",
+                "occurredAt"
+              ],
+              "additionalProperties": true
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "submittedAt": {
+            "type": "string"
+          },
+          "reviewedAt": {
+            "type": "string"
+          },
+          "effectiveFrom": {
+            "type": "string"
+          },
+          "publishedAt": {
+            "type": "string"
+          },
+          "reviewerId": {
+            "type": "string"
+          },
+          "publisherId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "programmeSlug",
+          "key",
+          "locale",
+          "value",
+          "fallbackLocale",
+          "status",
+          "reviewHistory",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "internal-configuration-and-user-metadata"
     },
     {
       "eventType": "programme.content.saved.v1",
@@ -1631,10 +1832,104 @@
       "schema": "schemas/events/programme-content-saved-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-programme-callsite",
       "producerSources": [
         "myota-programme-service/programmes.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "programmeSlug": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "locale": {
+            "type": "string"
+          },
+          "value": {},
+          "fallbackLocale": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "reviewHistory": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "action": {
+                  "type": "string"
+                },
+                "occurredAt": {
+                  "type": "string"
+                },
+                "reviewerId": {
+                  "type": "string"
+                },
+                "publisherId": {
+                  "type": "string"
+                },
+                "note": {},
+                "effectiveFrom": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "action",
+                "occurredAt"
+              ],
+              "additionalProperties": true
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "submittedAt": {
+            "type": "string"
+          },
+          "reviewedAt": {
+            "type": "string"
+          },
+          "effectiveFrom": {
+            "type": "string"
+          },
+          "publishedAt": {
+            "type": "string"
+          },
+          "reviewerId": {
+            "type": "string"
+          },
+          "publisherId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "programmeSlug",
+          "key",
+          "locale",
+          "value",
+          "fallbackLocale",
+          "status",
+          "reviewHistory",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "internal-configuration-and-user-metadata"
     },
     {
       "eventType": "programme.content.submitted.v1",
@@ -1644,10 +1939,104 @@
       "schema": "schemas/events/programme-content-submitted-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-programme-callsite",
       "producerSources": [
         "myota-programme-service/programmes.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "programmeSlug": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "locale": {
+            "type": "string"
+          },
+          "value": {},
+          "fallbackLocale": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "reviewHistory": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "action": {
+                  "type": "string"
+                },
+                "occurredAt": {
+                  "type": "string"
+                },
+                "reviewerId": {
+                  "type": "string"
+                },
+                "publisherId": {
+                  "type": "string"
+                },
+                "note": {},
+                "effectiveFrom": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "action",
+                "occurredAt"
+              ],
+              "additionalProperties": true
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "submittedAt": {
+            "type": "string"
+          },
+          "reviewedAt": {
+            "type": "string"
+          },
+          "effectiveFrom": {
+            "type": "string"
+          },
+          "publishedAt": {
+            "type": "string"
+          },
+          "reviewerId": {
+            "type": "string"
+          },
+          "publisherId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "programmeSlug",
+          "key",
+          "locale",
+          "value",
+          "fallbackLocale",
+          "status",
+          "reviewHistory",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "internal-configuration-and-user-metadata"
     },
     {
       "eventType": "programme.created.v1",
@@ -1657,10 +2046,104 @@
       "schema": "schemas/events/programme-created-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-programme-callsite",
       "producerSources": [
         "myota-programme-service/programmes.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "entityTypeCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "entityTypes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "geometry": {
+                  "type": "string"
+                },
+                "geometryTypes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "description": {
+                  "type": "string"
+                },
+                "active": {
+                  "type": "boolean"
+                },
+                "createdAt": {
+                  "type": "string"
+                },
+                "updatedAt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "code"
+              ],
+              "additionalProperties": true
+            }
+          },
+          "rules": {},
+          "policyVersion": {
+            "type": "integer"
+          },
+          "theme": {},
+          "oidc": {},
+          "status": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "description",
+          "entityTypeCodes",
+          "entityTypes",
+          "rules",
+          "policyVersion",
+          "theme",
+          "oidc",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "internal-configuration"
     },
     {
       "eventType": "programme.entity-type.assigned.v1",
@@ -1670,10 +2153,27 @@
       "schema": "schemas/events/programme-entity-type-assigned-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-programme-callsite",
       "producerSources": [
         "myota-programme-service/programmes.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "programmeSlug": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "programmeSlug",
+          "code"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "internal-configuration"
     },
     {
       "eventType": "programme.entity-type.catalog-saved.v1",
@@ -1683,10 +2183,104 @@
       "schema": "schemas/events/programme-entity-type-catalog-saved-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-programme-callsite",
       "producerSources": [
         "myota-programme-service/programmes.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "entityType": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "geometry": {
+                "type": "string"
+              },
+              "geometryTypes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "description": {
+                "type": "string"
+              },
+              "active": {
+                "type": "boolean"
+              },
+              "createdAt": {
+                "type": "string"
+              },
+              "updatedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "label",
+              "geometry",
+              "geometryTypes",
+              "description",
+              "active",
+              "updatedAt"
+            ],
+            "additionalProperties": true
+          },
+          "previous": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "geometry": {
+                    "type": "string"
+                  },
+                  "geometryTypes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "active": {
+                    "type": "boolean"
+                  },
+                  "createdAt": {
+                    "type": "string"
+                  },
+                  "updatedAt": {
+                    "type": "string"
+                  }
+                },
+                "required": [],
+                "additionalProperties": true
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "entityType",
+          "previous"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "internal-configuration-and-user-metadata"
     },
     {
       "eventType": "programme.entity-type.unassigned.v1",
@@ -1696,10 +2290,27 @@
       "schema": "schemas/events/programme-entity-type-unassigned-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-programme-callsite",
       "producerSources": [
         "myota-programme-service/programmes.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "programmeSlug": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "programmeSlug",
+          "code"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "internal-configuration"
     },
     {
       "eventType": "programme.policy-draft.published.v1",
@@ -1709,10 +2320,206 @@
       "schema": "schemas/events/programme-policy-draft-published-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-programme-callsite",
       "producerSources": [
         "myota-programme-service/programmes.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "draft": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "programmeSlug": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "reviewHistory": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "action": {
+                      "type": "string"
+                    },
+                    "occurredAt": {
+                      "type": "string"
+                    },
+                    "reviewerId": {
+                      "type": "string"
+                    },
+                    "publisherId": {
+                      "type": "string"
+                    },
+                    "note": {},
+                    "effectiveFrom": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "action",
+                    "occurredAt"
+                  ],
+                  "additionalProperties": true
+                }
+              },
+              "createdAt": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": true
+              },
+              "effectiveFrom": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "updatedAt": {
+                "type": "string"
+              },
+              "submittedAt": {
+                "type": "string"
+              },
+              "reviewedAt": {
+                "type": "string"
+              },
+              "publishedAt": {
+                "type": "string"
+              },
+              "publisherId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "programmeSlug",
+              "status",
+              "reviewHistory",
+              "createdAt",
+              "type",
+              "name",
+              "schema",
+              "effectiveFrom",
+              "updatedAt"
+            ],
+            "additionalProperties": true
+          },
+          "programme": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "slug": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "entityTypeCodes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "entityTypes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "geometry": {
+                      "type": "string"
+                    },
+                    "geometryTypes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "active": {
+                      "type": "boolean"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code"
+                  ],
+                  "additionalProperties": true
+                }
+              },
+              "rules": {},
+              "policyVersion": {
+                "type": "integer"
+              },
+              "theme": {},
+              "oidc": {},
+              "status": {
+                "type": "string"
+              },
+              "createdAt": {
+                "type": "string"
+              },
+              "updatedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "slug",
+              "name",
+              "description",
+              "entityTypeCodes",
+              "entityTypes",
+              "rules",
+              "policyVersion",
+              "theme",
+              "oidc",
+              "status",
+              "createdAt",
+              "updatedAt"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "draft",
+          "programme"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "internal-configuration-and-user-metadata"
     },
     {
       "eventType": "programme.policy-draft.saved.v1",
@@ -1722,10 +2529,103 @@
       "schema": "schemas/events/programme-policy-draft-saved-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-programme-callsite",
       "producerSources": [
         "myota-programme-service/programmes.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "programmeSlug": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "reviewHistory": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "action": {
+                  "type": "string"
+                },
+                "occurredAt": {
+                  "type": "string"
+                },
+                "reviewerId": {
+                  "type": "string"
+                },
+                "publisherId": {
+                  "type": "string"
+                },
+                "note": {},
+                "effectiveFrom": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "action",
+                "occurredAt"
+              ],
+              "additionalProperties": true
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "schema": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+            "additionalProperties": true
+          },
+          "effectiveFrom": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "submittedAt": {
+            "type": "string"
+          },
+          "reviewedAt": {
+            "type": "string"
+          },
+          "publishedAt": {
+            "type": "string"
+          },
+          "publisherId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "programmeSlug",
+          "status",
+          "reviewHistory",
+          "createdAt",
+          "type",
+          "name",
+          "schema",
+          "effectiveFrom",
+          "updatedAt"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "internal-configuration-and-user-metadata"
     },
     {
       "eventType": "programme.updated.v1",
@@ -1735,10 +2635,104 @@
       "schema": "schemas/events/programme-updated-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-programme-callsite",
       "producerSources": [
         "myota-programme-service/programmes.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "entityTypeCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "entityTypes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "geometry": {
+                  "type": "string"
+                },
+                "geometryTypes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "description": {
+                  "type": "string"
+                },
+                "active": {
+                  "type": "boolean"
+                },
+                "createdAt": {
+                  "type": "string"
+                },
+                "updatedAt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "code"
+              ],
+              "additionalProperties": true
+            }
+          },
+          "rules": {},
+          "policyVersion": {
+            "type": "integer"
+          },
+          "theme": {},
+          "oidc": {},
+          "status": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "description",
+          "entityTypeCodes",
+          "entityTypes",
+          "rules",
+          "policyVersion",
+          "theme",
+          "oidc",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "internal-configuration"
     }
   ],
   "work": [
