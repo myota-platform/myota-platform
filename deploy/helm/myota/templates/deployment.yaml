@@ -48,7 +48,7 @@ spec:
         {{- end }}
       containers:
         - name: {{ $name }}
-          image: "{{ default $.Values.image.repository $cfg.imageRepository }}:{{ default $.Values.image.tag $cfg.imageTag }}"
+          image: {{ include "myota.imageReference" (dict "repository" (default $.Values.image.repository $cfg.imageRepository) "tag" (default $.Values.image.tag $cfg.imageTag) "digest" (index $.Values.imageRollout.digests $name)) | quote }}
           imagePullPolicy: {{ $.Values.image.pullPolicy }}
           env:
             - name: SERVICE
@@ -227,7 +227,7 @@ spec:
         {{ include "myota.waitForSchema" (dict "root" . "databaseUrlKey" "activity-database-url") | nindent 8 }}
       containers:
         - name: activity-worker
-          image: "{{ .Values.services.activity.imageRepository }}:{{ default .Values.image.tag .Values.services.activity.imageTag }}"
+          image: {{ include "myota.imageReference" (dict "repository" .Values.services.activity.imageRepository "tag" (default .Values.image.tag .Values.services.activity.imageTag) "digest" .Values.imageRollout.digests.activity) | quote }}
           command: ["python3", "activity_worker.py"]
           env:
             - name: ACTIVITY_DATABASE_URL
@@ -275,7 +275,7 @@ spec:
         {{ include "myota.waitForSchema" (dict "root" . "databaseUrlKey" "activity-database-url") | nindent 8 }}
       containers:
         - name: activity-notifications
-          image: "{{ .Values.services.activity.imageRepository }}:{{ default .Values.image.tag .Values.services.activity.imageTag }}"
+          image: {{ include "myota.imageReference" (dict "repository" .Values.services.activity.imageRepository "tag" (default .Values.image.tag .Values.services.activity.imageTag) "digest" .Values.imageRollout.digests.activity) | quote }}
           command: ["python3", "activity_notification_consumer.py"]
           ports:
             - {name: metrics, containerPort: 9110}
@@ -337,7 +337,7 @@ spec:
         {{ include "myota.waitForSchema" (dict "root" . "databaseUrlKey" "geo-database-url") | nindent 8 }}
       containers:
         - name: geodata-import-processing
-          image: "{{ .Values.services.geodata.imageRepository }}:{{ default .Values.image.tag .Values.services.geodata.imageTag }}"
+          image: {{ include "myota.imageReference" (dict "repository" .Values.services.geodata.imageRepository "tag" (default .Values.image.tag .Values.services.geodata.imageTag) "digest" .Values.imageRollout.digests.geodata) | quote }}
           command: ["python3", "geodata_import_worker.py"]
           env:
             - name: MYOTA_ACTIVITY_URL
@@ -398,7 +398,7 @@ spec:
     spec:
       containers:
         - name: gateway
-          image: "{{ .Values.gateway.imageRepository }}:{{ default .Values.image.tag .Values.gateway.imageTag }}"
+          image: {{ include "myota.imageReference" (dict "repository" .Values.gateway.imageRepository "tag" (default .Values.image.tag .Values.gateway.imageTag) "digest" .Values.imageRollout.digests.gateway) | quote }}
           command: ["python3", "services/dev_server.py"]
           env:
             - name: MYOTA_ENV
@@ -446,7 +446,7 @@ spec:
         {{ include "myota.waitForSchema" (dict "root" $ "databaseUrlKey" (printf "%s-database-url" $db)) | nindent 8 }}
       containers:
         - name: outbox
-          image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag }}"
+          image: {{ include "myota.imageReference" (dict "repository" $.Values.image.repository "tag" $.Values.image.tag "digest" $.Values.imageRollout.digests.platform) | quote }}
           command: ["python3", "services/outbox_worker.py"]
           env:
             - name: OUTBOX_DATABASE_URL
