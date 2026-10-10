@@ -11,8 +11,36 @@
       "properties": {
         "eventType": {
           "const": "geodata.entity.deleted.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "entityId": {
+              "type": "string"
+            },
+            "deletedBy": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "previousStatus": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "entityId",
+            "deletedBy",
+            "previousStatus"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-geodata-callsite",
+  "x-data-classification": "geospatial-and-review-metadata"
 }
