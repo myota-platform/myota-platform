@@ -11,8 +11,113 @@
       "properties": {
         "eventType": {
           "const": "activity.activation.created.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "programmeSlug": {
+              "type": "string"
+            },
+            "entityId": {
+              "type": "string"
+            },
+            "entityType": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "jurisdiction": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "operatorId": {
+              "type": "string"
+            },
+            "operatorCallsign": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "startedAt": {
+              "type": "string"
+            },
+            "endedAt": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "validityExpiresAt": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "status": {
+              "type": "string"
+            },
+            "location": {
+              "type": "object"
+            },
+            "programmeRules": {
+              "type": "object"
+            },
+            "ruleEvaluation": {
+              "type": "object"
+            },
+            "qsoCount": {
+              "type": "integer"
+            },
+            "uniqueCallsignCount": {
+              "type": "integer"
+            },
+            "uniqueEntityCount": {
+              "type": "integer"
+            },
+            "qsos": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": true
+              }
+            },
+            "createdAt": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "programmeSlug",
+            "entityId",
+            "operatorId",
+            "startedAt",
+            "status",
+            "location",
+            "programmeRules",
+            "ruleEvaluation",
+            "qsoCount",
+            "uniqueCallsignCount",
+            "uniqueEntityCount",
+            "createdAt",
+            "updatedAt"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-activity-callsite",
+  "x-data-classification": "personal"
 }
