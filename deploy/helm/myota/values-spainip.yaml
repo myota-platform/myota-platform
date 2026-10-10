@@ -62,7 +62,7 @@ postgres:
 # Phase 4 provisions only Activity's dedicated WorkQueue stream and its six
 # registered durables. It does not convert MYOTA_EVENTS or change Geodata work.
 jetstreamProvisioner:
-  enabled: true
+  enabled: false
   confirmedMigrationGate: true
   scope: activity-work
   capacity:
@@ -70,6 +70,13 @@ jetstreamProvisioner:
     activityWorkMaxBytes: "1073741824"
     activityWorkMaxMessages: "250000"
     activityWorkMaxMessageBytes: "1048576"
+
+# Phase 4 drain gate: keep the old Activity poll workers stopped until the
+# dedicated work stream and migration are enabled in the next rollout step.
+activityWorkers:
+  enabled: true
+  replicas: 0
+  legacyReconciliationEnabled: true
 
 objectStorage:
   endpoint: http://myota-seaweedfs:8333
