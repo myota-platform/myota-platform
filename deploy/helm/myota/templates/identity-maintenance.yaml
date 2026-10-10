@@ -9,9 +9,11 @@ spec:
   template:
     metadata: {labels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: identity-maintenance}}
     spec:
+      initContainers:
+        {{ include "myota.waitForSchema" (dict "root" . "databaseUrlKey" "core-database-url") | nindent 8 }}
       containers:
         - name: identity-maintenance
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: {{ include "myota.imageReference" (dict "repository" .Values.image.repository "tag" .Values.image.tag "digest" .Values.imageRollout.digests.platform) | quote }}
           command: ["python3", "services/identity_maintenance.py"]
           env:
             - name: CORE_DATABASE_URL
