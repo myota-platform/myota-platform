@@ -75,7 +75,7 @@ jetstreamProvisioner:
 # dedicated work stream and migration are enabled in the next rollout step.
 activityWorkers:
   enabled: true
-  replicas: 0
+  replicas: 2
   legacyReconciliationEnabled: true
 
 objectStorage:
