@@ -96,13 +96,10 @@
           },
           "required": [
             "id",
-            "programmeSlug",
-            "operatorId",
             "workedCallsign",
             "workedStationKey",
             "timestamp",
             "source",
-            "status",
             "deduplicationKey"
           ],
           "additionalProperties": true
