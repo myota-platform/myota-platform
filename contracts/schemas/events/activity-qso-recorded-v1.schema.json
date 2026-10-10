@@ -11,8 +11,105 @@
       "properties": {
         "eventType": {
           "const": "activity.qso.recorded.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "activationId": {
+              "type": "string"
+            },
+            "programmeSlug": {
+              "type": "string"
+            },
+            "operatorId": {
+              "type": "string"
+            },
+            "operatorCallsign": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "hunterId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "hunterCallsign": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "workedCallsign": {
+              "type": "string"
+            },
+            "workedStationKey": {
+              "type": "string"
+            },
+            "workedEntityId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "timestamp": {
+              "type": "string"
+            },
+            "band": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "mode": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "rst": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "source": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "deduplicationKey": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "programmeSlug",
+            "operatorId",
+            "workedCallsign",
+            "workedStationKey",
+            "timestamp",
+            "source",
+            "status",
+            "deduplicationKey"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-activity-callsite",
+  "x-data-classification": "personal"
 }
