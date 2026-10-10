@@ -188,7 +188,6 @@ async def validate_consumer(js, desired: ConsumerConfig) -> None:
         "ack_wait",
         "max_deliver",
         "max_ack_pending",
-        "max_waiting",
         "backoff",
     ):
         if getattr(actual, setting, None) != getattr(desired, setting, None):
