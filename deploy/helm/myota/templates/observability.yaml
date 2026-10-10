@@ -139,6 +139,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "myota.fullname" (dict "name" "prometheus") }}
+  annotations:
+    checksum/prometheus-config: {{ printf "%s%s" (.Files.Get "observability/prometheus.yml") (.Files.Get "observability/rules.yml") | sha256sum | quote }}
 spec:
   replicas: 1
   selector:
