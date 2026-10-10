@@ -1,35 +1,49 @@
 # JetStream topology provisioning
 
-**Status:** Phase 1 implementation in progress. Do not provision the target
-topology in a live environment until the matching evidence gates and measured
-capacity values in the NATS migration plan are closed.
+**Status:** Phase 1 implementation is in progress. Do not provision the target
+topology in a live environment until the migration plan's evidence gates and
+measured capacity values are closed.
 
 `services/jetstream_topology.py` is the side-effect-free ADR-0008 topology
 definition. `services/provision_jetstream.py` is the single create-only
-provisioner. It creates the three target streams and ten work durables, validates
-all configured limits and correctness-sensitive consumer delivery settings, and fails on drift. It
-never edits or deletes an existing stream or consumer. In particular, it cannot
-convert the current shared `MYOTA_EVENTS` stream from Interest to Limits; that
-stream also contains legacy Geodata work and requires a separately reviewed
+provisioner. It defines three target streams and ten work durables, validates
+all configured limits and correctness-sensitive consumer delivery settings,
+and fails on drift. It never edits or deletes an existing stream or consumer.
+The registry-to-topology contract check verifies that all ten work subjects and
+durables match
+[the contracts registry](https://github.com/myota-platform/myota-contracts/blob/main/contracts/event-registry.json).
+The topology tests verify explicit capacity requirements, the apply gate, and
+consumer drift rejection. Do not run this provisioner against the current
+shared MYOTA_EVENTS stream: it has a different subject/retention configuration,
+also contains legacy Geodata work, and requires a separately reviewed
 drain/migration procedure.
 
-Finite age, byte, message, and per-message limits have no code defaults for the
-two work streams. They must be set from measured production traffic, maximum
-accepted work duration, storage budget, and recovery objectives. The fact stream
-uses the selected 30-day bounded window. The script fails before connecting if
-`NATS_TOPOLOGY_APPLY` is not exactly `1` or any capacity value is absent or
-non-positive. Today the compose broker has no configured authenticated user, so
-this provisioner is not least-privilege-ready for production. Do not pass
-credentials through ad hoc command-line arguments or enable it on the deployed
-host before NATS authentication and per-role permissions are designed.
+The selected policy is Limits retention for bounded facts and WorkQueue
+retention for Activity and Geodata commands. Streams use file storage,
+DiscardNew, one replica on the current single-server cluster, finite per-message
+limits, and explicit work durable filters. The 30-day fact window is selected;
+byte, message, age and per-message limits for the target streams have no code
+defaults. The values in the joint review are provisional and must be replaced
+with measured representative traffic, maximum accepted-work duration, storage
+reserve, and recovery objectives before production activation. The script
+requires NATS_TOPOLOGY_APPLY=1 and positive capacity values before connecting.
 
-For an isolated broker only, create a disposable environment with the required
-measured test values and explicitly run the `nats-topology` Compose profile. Do
-not run it against the host's deployed broker until the plan's Phase 1 and
-rollout gates are approved and an isolated/production-like evidence record is
-attached. Existing mismatched topology is an error to investigate, not a reason
-to enable automatic updates.
+The deployed broker has no configured authentication or TLS, and the selected
+out-of-band per-role credentials are not available in this workspace. The
+provisioner and application clients are therefore not least-privilege-ready for
+production. Do not pass credentials through command-line arguments or enable
+the provisioner on the deployed host before server auth/TLS, client role
+permissions, and allow/deny behavior have been tested.
 
-The current relay still provisions legacy durables and changes retention. Phase
-2 must remove that mutation and require a pre-provisioned target before this
-one-shot tool can be used in a cutover. Operations remains read-only.
+For an isolated broker only, use the disposable Compose profile with explicit
+test limits. The isolated create/idempotency/drift test passed, and focused
+topology tests plus Ruff checks passed. These checks do not qualify off-node
+backup/restore, production capacity, or authenticated access.
+
+The current relay still provisions legacy durables and changes retention. Do
+not remove that behavior until a controlled Helm/Fleet readiness barrier has
+validated a migration-safe compatibility topology and current consumers can
+connect. The [Phase 1 review](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase1-joint-review-2026-10-10.md),
+[recovery runbook](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/jetstream-recovery.md),
+and [migration plan](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/nats-event-migration-plan.md)
+record the remaining gates. Operations remains a metadata-only observer.
