@@ -11,8 +11,76 @@
       "properties": {
         "eventType": {
           "const": "geodata.refresh-schedule.created.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "programmeSlug": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "entityType": {
+              "type": "string"
+            },
+            "entityTypes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "adapter": {
+              "type": "string"
+            },
+            "source": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "intervalSeconds": {
+              "type": "integer"
+            },
+            "disappearancePolicy": {
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "lastRunAt": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "nextRunAt": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "programmeSlug",
+            "entityType",
+            "entityTypes",
+            "adapter",
+            "source",
+            "intervalSeconds",
+            "disappearancePolicy",
+            "enabled",
+            "lastRunAt",
+            "nextRunAt",
+            "createdAt"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-geodata-callsite",
+  "x-data-classification": "internal-configuration-and-source-metadata"
 }
