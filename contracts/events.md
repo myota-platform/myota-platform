@@ -17,14 +17,16 @@ for repository evidence.
 The [machine-readable registry](event-registry.json) enumerates the Phase 0
 event facts and selected work commands. Per-event schemas are under
 [`schemas/`](schemas/). All schemas constrain the immutable outer envelope and
-event identity. The 19 Identity and 12 Programme fact payload schemas are
-derived from `myota-identity-service/identity.py` and
-`myota-programme-service/programmes.py` and preserve additive compatibility.
-Their data-classification metadata identifies personal, security-sensitive,
-internal authorization/configuration, and user-review metadata. These are
-source evidence, not yet jointly approved producer gates. Other payloads remain
-marked pending where source evidence has not established a stable field
-contract.
+event identity. The 19 Identity, 12 Programme, and 10 Activity fact payload schemas are
+derived from producer call sites in `myota-identity-service/identity.py`,
+`myota-programme-service/programmes.py`, `myota-activity-service/activity.py`,
+`myota-activity-service/activity_repository.py`, and
+`myota-activity-service/awards.py`; additive fields remain accepted. Activity
+classifications identify personal activity/QSO data, import object metadata,
+internal award configuration, and certificate details. Dynamic rule/configuration
+objects and nested award assets remain unconstrained where source code accepts
+caller-defined structures. These are source-derived evidence, not jointly approved
+producer gates. Geodata and Operations payloads remain pending.
 
 Target domain events use `envelopeVersion: 1`, a stable UUID `eventId`, dotted
 `eventType` with its `.vN` suffix, UTC `occurredAt`, producer, aggregate identity,
