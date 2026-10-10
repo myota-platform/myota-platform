@@ -11,8 +11,60 @@
       "properties": {
         "eventType": {
           "const": "awards.request.created.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "awardId": {
+              "type": "string"
+            },
+            "programmeSlug": {
+              "type": "string"
+            },
+            "levelId": {
+              "type": "string"
+            },
+            "subjectId": {
+              "type": "string"
+            },
+            "category": {
+              "type": "string"
+            },
+            "callsign": {
+              "type": "string"
+            },
+            "personName": {
+              "type": "string"
+            },
+            "facts": {},
+            "status": {
+              "type": "string"
+            },
+            "requestedAt": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "awardId",
+            "programmeSlug",
+            "levelId",
+            "subjectId",
+            "category",
+            "callsign",
+            "personName",
+            "facts",
+            "status",
+            "requestedAt"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-activity-callsite",
+  "x-data-classification": "personal-and-certificate-metadata"
 }
