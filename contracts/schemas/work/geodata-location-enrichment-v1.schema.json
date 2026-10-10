@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/myota-platform/myota-contracts/contracts/schemas/work/geodata-location-enrichment-v1.schema.json",
+  "title": "geodata.location-enrichment.v1 command envelope v1",
+  "allOf": [
+    {
+      "$ref": "../work-command.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "workType": {
+          "const": "geodata.location-enrichment.v1"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "entityId",
+            "requestId",
+            "geometryHash",
+            "onlyMissing",
+            "reason"
+          ],
+          "properties": {
+            "entityId": {
+              "type": "string",
+              "format": "uuid",
+              "maxLength": 36
+            },
+            "requestId": {
+              "type": "string",
+              "format": "uuid",
+              "maxLength": 36
+            },
+            "geometryHash": {
+              "type": "string",
+              "minLength": 64,
+              "maxLength": 64,
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "onlyMissing": {
+              "type": "boolean"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            }
+          }
+        }
+      }
+    }
+  ],
+  "x-payload-evidence": "proposed-database-row-reference; checked against current handler sources",
+  "x-work-id-source": "myota_geo.geodata_entity.locationEnrichmentRequestId",
+  "x-producer-sources": [
+    "myota-geodata-service/geodata.py"
+  ],
+  "x-consumer-sources": [
+    "myota-geodata-service/geodata_import_worker.py"
+  ]
+}

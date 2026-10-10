@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/myota-platform/myota-contracts/contracts/schemas/work/activity-award-recalculate-v1.schema.json",
+  "title": "activity.award-recalculate.v1 command envelope v1",
+  "allOf": [
+    {
+      "$ref": "../work-command.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "workType": {
+          "const": "activity.award-recalculate.v1"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "jobId"
+          ],
+          "properties": {
+            "jobId": {
+              "type": "string",
+              "format": "uuid",
+              "maxLength": 36
+            }
+          }
+        }
+      }
+    }
+  ],
+  "x-payload-evidence": "proposed-database-row-reference; checked against current handler sources",
+  "x-work-id-source": "myota_activity.activity_job.id",
+  "x-producer-sources": [
+    "myota-activity-service/activity.py",
+    "myota-activity-service/activity_repository.py",
+    "myota-activity-service/awards.py"
+  ],
+  "x-consumer-sources": [
+    "myota-activity-service/activity_worker.py"
+  ]
+}

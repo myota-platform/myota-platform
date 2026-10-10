@@ -12,7 +12,7 @@ dots in event types with underscores. These are current-state observations, not
 the selected target contract. See the [Phase 0 inventory](../../myota-docs/docs/operations/messaging/nats-event-migration-inventory.md)
 for repository evidence.
 
-## Selected target contract (Phase 1 implementation in progress)
+## Selected target contract (Phase 1 contract/topology complete)
 
 The [machine-readable registry](event-registry.json) enumerates the Phase 0
 event facts and selected work commands. Per-event schemas are under
@@ -25,8 +25,12 @@ are derived from producer call sites in `myota-identity-service/identity.py`,
 classifications identify personal activity/QSO data, import object metadata,
 internal award configuration, and certificate details. Dynamic rule/configuration
 objects and nested award assets remain unconstrained where source code accepts
-caller-defined structures. These are source-derived evidence, not jointly approved
-producer gates. Geodata and Operations payloads remain pending.
+caller-defined structures. The project team's joint review accepts these as
+source-derived inventory contracts, not as authorization to publish every
+current field. Runtime enforcement remains gated on projection, compatibility,
+privacy, and size checks. Operations has no event-producing call site in the
+Phase 0 audit, so no Operations fact schema is required unless it becomes a
+producer.
 
 Target domain events use `envelopeVersion: 1`, a stable UUID `eventId`, dotted
 `eventType` with its `.vN` suffix, UTC `occurredAt`, producer, aggregate identity,
@@ -50,6 +54,16 @@ PostgreSQL remains the source of truth; JetStream is a bounded delivery/replay
 window, not a permanent event archive. The ADR-0008 target is not yet the live
 deployment.
 
+The ten registered work schemas constrain each payload to small identifiers
+that reference the owning database's authoritative job row. The six Activity
+commands use `activity_job.id` for both `workId` and payload `jobId`. Geodata
+commands reference the import run, processing queue, deletion job, or enrichment
+request and include only the bounded identifiers/decision fields needed by the
+handler. QSO batches, ADIF bytes, award fact snapshots, candidate arrays, and
+source documents remain in the database or object store. These are target
+contracts; transaction coupling, redelivery idempotency, and recovery behavior
+must be implemented and tested before a path publishes them.
+
 ```json
 {
   "envelopeVersion": 1,
@@ -65,15 +79,16 @@ deployment.
 ```
 
 The JSON above illustrates the target envelope and is not a claim that all
-current producers emit it. The source-derived Identity and Programme schemas
-describe current payload shapes, including review metadata and sensitive fields;
-joint owner review is still required before they become producer enforcement.
-Geodata payload schemas are source-derived but not yet owner/privacy approved. In
-particular, `geodata.import.preprocessed.v1` currently records the producer result
-object, which includes internal `_records` and `_status` fields and may carry source
-feature data; minimize that payload before using the schema to enforce publication.
-Operations payloads remain pending. Other unresolved payload contracts remain
-explicitly marked in the registry.
+current producers emit it. The source-derived Identity, Programme, Activity,
+and Geodata schemas describe observed payload shapes, including review metadata
+and sensitive fields. `geodata.import.preprocessed.v1` currently records the
+producer result object, including internal `_records` and `_status` fields and
+potential source features. Preserve v1 meaning; before publishing a minimized
+projection, define a compatible successor event version and consumer disposition.
+Operations has no event-producing call site. The target work payload shapes are
+defined, but transactional publication, idempotent handling, and recovery from
+the owning row remain runtime implementation gates before any work path uses
+these schemas.
 
 Important events include `identity.account.created.v1`, `identity.callsign.verified.v1`, `programme.created.v1`, `geodata.import.queued.v1`, `geodata.import.cancellation-requested.v1`, `geodata.import.cancelled.v1`, `geodata.import.preprocessed.v1`, `geodata.import.candidates.validated.v1`, `geodata.import.processing.queued.v1`, `geodata.import.processing.completed.v1`, `geodata.import.processed.v1`, `geodata.entity.candidate.created.v1`, `geodata.entity.reviewed.v1`, `geodata.entity.location-enrichment-requested.v1`, `geodata.entity.location-enriched.v1`, `activity.activation.created.v1`, `activity.qso.recorded.v1`, `awards.definition.saved.v1`, `awards.definition.published.v1`, `awards.request.created.v1`, `awards.issued.v1`, and `awards.rendered.v1`.
 

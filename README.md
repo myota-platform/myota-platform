@@ -27,11 +27,13 @@ consumers before publishing and leaves deployed `MYOTA_EVENTS` on Interest
 retention. NATS remains cluster-internal through a ClusterIP service; auth/TLS is
 not required while the cluster workload boundary remains trusted. The selected
 migration to bounded Limits facts plus separate Activity and Geodata WorkQueue
-streams is not deployed. Phase 1 contract and create-only provisioner preparation
-is underway; finite limits have no production values until capacity evidence is
-closed. See the [event registry](contracts/event-registry.json),
+streams is not deployed. Phase 1 contract/topology and isolated safety
+qualification are complete; the opt-in Helm pre-upgrade gate remains disabled
+until Phase 2 compatibility checks pass. Initial finite limits are accepted for
+the current single-node scope with a documented short-sample caveat. See the
+[event registry](contracts/event-registry.json),
 [migration plan](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/nats-event-migration-plan.md),
-and [Phase 1 evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase1-contract-topology-2026-10-09.md).
+and [Phase 1 completion evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase1-completion-2026-10-10.md).
 The deployment mirror contains the matching [explicit provisioning guide](deploy/docs/jetstream-topology.md).
 
 ## What works now

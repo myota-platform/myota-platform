@@ -4468,8 +4468,31 @@
       "subject": "myota.work.activity.qso-ingestion.v1",
       "stream": "MYOTA_ACTIVITY_WORK",
       "durable": "activity-qso-ingestion-v1",
-      "schema": "schemas/work-command.schema.json",
-      "payloadEvidence": "pending-activity-idempotency-and-payload-review"
+      "schema": "schemas/work/activity-qso-ingestion-v1.schema.json",
+      "payloadEvidence": "proposed-database-row-reference; checked against current handler sources",
+      "payloadSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "jobId"
+        ],
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "format": "uuid",
+            "maxLength": 36
+          }
+        }
+      },
+      "workIdSource": "myota_activity.activity_job.id",
+      "producerSources": [
+        "myota-activity-service/activity.py",
+        "myota-activity-service/activity_repository.py",
+        "myota-activity-service/awards.py"
+      ],
+      "consumerSources": [
+        "myota-activity-service/activity_worker.py"
+      ]
     },
     {
       "workType": "activity.adif-import.v1",
@@ -4478,8 +4501,31 @@
       "subject": "myota.work.activity.adif-import.v1",
       "stream": "MYOTA_ACTIVITY_WORK",
       "durable": "activity-adif-import-v1",
-      "schema": "schemas/work-command.schema.json",
-      "payloadEvidence": "pending-activity-idempotency-and-payload-review"
+      "schema": "schemas/work/activity-adif-import-v1.schema.json",
+      "payloadEvidence": "proposed-database-row-reference; checked against current handler sources",
+      "payloadSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "jobId"
+        ],
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "format": "uuid",
+            "maxLength": 36
+          }
+        }
+      },
+      "workIdSource": "myota_activity.activity_job.id",
+      "producerSources": [
+        "myota-activity-service/activity.py",
+        "myota-activity-service/activity_repository.py",
+        "myota-activity-service/awards.py"
+      ],
+      "consumerSources": [
+        "myota-activity-service/activity_worker.py"
+      ]
     },
     {
       "workType": "activity.award-recalculate.v1",
@@ -4488,8 +4534,31 @@
       "subject": "myota.work.activity.award-recalculate.v1",
       "stream": "MYOTA_ACTIVITY_WORK",
       "durable": "activity-award-recalculate-v1",
-      "schema": "schemas/work-command.schema.json",
-      "payloadEvidence": "pending-activity-idempotency-and-payload-review"
+      "schema": "schemas/work/activity-award-recalculate-v1.schema.json",
+      "payloadEvidence": "proposed-database-row-reference; checked against current handler sources",
+      "payloadSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "jobId"
+        ],
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "format": "uuid",
+            "maxLength": 36
+          }
+        }
+      },
+      "workIdSource": "myota_activity.activity_job.id",
+      "producerSources": [
+        "myota-activity-service/activity.py",
+        "myota-activity-service/activity_repository.py",
+        "myota-activity-service/awards.py"
+      ],
+      "consumerSources": [
+        "myota-activity-service/activity_worker.py"
+      ]
     },
     {
       "workType": "activity.award-evaluation.v1",
@@ -4498,8 +4567,31 @@
       "subject": "myota.work.activity.award-evaluation.v1",
       "stream": "MYOTA_ACTIVITY_WORK",
       "durable": "activity-award-evaluation-v1",
-      "schema": "schemas/work-command.schema.json",
-      "payloadEvidence": "pending-activity-idempotency-and-payload-review"
+      "schema": "schemas/work/activity-award-evaluation-v1.schema.json",
+      "payloadEvidence": "proposed-database-row-reference; checked against current handler sources",
+      "payloadSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "jobId"
+        ],
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "format": "uuid",
+            "maxLength": 36
+          }
+        }
+      },
+      "workIdSource": "myota_activity.activity_job.id",
+      "producerSources": [
+        "myota-activity-service/activity.py",
+        "myota-activity-service/activity_repository.py",
+        "myota-activity-service/awards.py"
+      ],
+      "consumerSources": [
+        "myota-activity-service/activity_worker.py"
+      ]
     },
     {
       "workType": "activity.pdf-render.v1",
@@ -4508,8 +4600,31 @@
       "subject": "myota.work.activity.pdf-render.v1",
       "stream": "MYOTA_ACTIVITY_WORK",
       "durable": "activity-pdf-render-v1",
-      "schema": "schemas/work-command.schema.json",
-      "payloadEvidence": "pending-activity-idempotency-and-payload-review"
+      "schema": "schemas/work/activity-pdf-render-v1.schema.json",
+      "payloadEvidence": "proposed-database-row-reference; checked against current handler sources",
+      "payloadSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "jobId"
+        ],
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "format": "uuid",
+            "maxLength": 36
+          }
+        }
+      },
+      "workIdSource": "myota_activity.activity_job.id",
+      "producerSources": [
+        "myota-activity-service/activity.py",
+        "myota-activity-service/activity_repository.py",
+        "myota-activity-service/awards.py"
+      ],
+      "consumerSources": [
+        "myota-activity-service/activity_worker.py"
+      ]
     },
     {
       "workType": "activity.statistics-rebuild.v1",
@@ -4518,8 +4633,31 @@
       "subject": "myota.work.activity.statistics-rebuild.v1",
       "stream": "MYOTA_ACTIVITY_WORK",
       "durable": "activity-statistics-rebuild-v1",
-      "schema": "schemas/work-command.schema.json",
-      "payloadEvidence": "pending-activity-idempotency-and-payload-review"
+      "schema": "schemas/work/activity-statistics-rebuild-v1.schema.json",
+      "payloadEvidence": "proposed-database-row-reference; checked against current handler sources",
+      "payloadSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "jobId"
+        ],
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "format": "uuid",
+            "maxLength": 36
+          }
+        }
+      },
+      "workIdSource": "myota_activity.activity_job.id",
+      "producerSources": [
+        "myota-activity-service/activity.py",
+        "myota-activity-service/activity_repository.py",
+        "myota-activity-service/awards.py"
+      ],
+      "consumerSources": [
+        "myota-activity-service/activity_worker.py"
+      ]
     },
     {
       "workType": "geodata.import-preprocess.v1",
@@ -4528,11 +4666,32 @@
       "subject": "myota.work.geodata.import-preprocess.v1",
       "stream": "MYOTA_GEODATA_WORK",
       "durable": "geodata-preprocessing-v1",
-      "schema": "schemas/work-command.schema.json",
-      "payloadEvidence": "pending-geodata-recovery-and-payload-review",
+      "schema": "schemas/work/geodata-import-preprocess-v1.schema.json",
+      "payloadEvidence": "proposed-database-row-reference; checked against current handler sources",
       "sourceEventTypes": [
         "geodata.import.queued.v1",
         "geodata.import.recovered.v1"
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "importRunId"
+        ],
+        "properties": {
+          "importRunId": {
+            "type": "string",
+            "format": "uuid",
+            "maxLength": 36
+          }
+        }
+      },
+      "workIdSource": "myota_geo.import_run.id",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ],
+      "consumerSources": [
+        "myota-geodata-service/geodata_import_worker.py"
       ]
     },
     {
@@ -4542,11 +4701,32 @@
       "subject": "myota.work.geodata.import-promotion.v1",
       "stream": "MYOTA_GEODATA_WORK",
       "durable": "geodata-import-promotion-v1",
-      "schema": "schemas/work-command.schema.json",
-      "payloadEvidence": "pending-geodata-recovery-and-payload-review",
+      "schema": "schemas/work/geodata-import-promotion-v1.schema.json",
+      "payloadEvidence": "proposed-database-row-reference; checked against current handler sources",
       "sourceEventTypes": [
         "geodata.import.processing.queued.v1",
         "geodata.import.processing.recovered.v1"
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "queueId"
+        ],
+        "properties": {
+          "queueId": {
+            "type": "string",
+            "format": "uuid",
+            "maxLength": 36
+          }
+        }
+      },
+      "workIdSource": "myota_geo.geodata_import_processing_queue.id",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ],
+      "consumerSources": [
+        "myota-geodata-service/geodata_import_worker.py"
       ]
     },
     {
@@ -4556,10 +4736,31 @@
       "subject": "myota.work.geodata.entity-delete.v1",
       "stream": "MYOTA_GEODATA_WORK",
       "durable": "geodata-entity-deletion-v1",
-      "schema": "schemas/work-command.schema.json",
-      "payloadEvidence": "pending-geodata-recovery-and-payload-review",
+      "schema": "schemas/work/geodata-entity-delete-v1.schema.json",
+      "payloadEvidence": "proposed-database-row-reference; checked against current handler sources",
       "sourceEventTypes": [
         "geodata.entity-deletion-job.queued.v1"
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "jobId"
+        ],
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "format": "uuid",
+            "maxLength": 36
+          }
+        }
+      },
+      "workIdSource": "myota_geo.service_state.entityDeletionJobs[jobId]",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ],
+      "consumerSources": [
+        "myota-geodata-service/geodata_import_worker.py"
       ]
     },
     {
@@ -4569,10 +4770,54 @@
       "subject": "myota.work.geodata.location-enrichment.v1",
       "stream": "MYOTA_GEODATA_WORK",
       "durable": "geodata-location-enrichment-v1",
-      "schema": "schemas/work-command.schema.json",
-      "payloadEvidence": "pending-geodata-recovery-and-payload-review",
+      "schema": "schemas/work/geodata-location-enrichment-v1.schema.json",
+      "payloadEvidence": "proposed-database-row-reference; checked against current handler sources",
       "sourceEventTypes": [
         "geodata.entity.location-enrichment-requested.v1"
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entityId",
+          "requestId",
+          "geometryHash",
+          "onlyMissing",
+          "reason"
+        ],
+        "properties": {
+          "entityId": {
+            "type": "string",
+            "format": "uuid",
+            "maxLength": 36
+          },
+          "requestId": {
+            "type": "string",
+            "format": "uuid",
+            "maxLength": 36
+          },
+          "geometryHash": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64,
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "onlyMissing": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        }
+      },
+      "workIdSource": "myota_geo.geodata_entity.locationEnrichmentRequestId",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ],
+      "consumerSources": [
+        "myota-geodata-service/geodata_import_worker.py"
       ]
     }
   ]

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/myota-platform/myota-contracts/contracts/schemas/work/geodata-import-preprocess-v1.schema.json",
+  "title": "geodata.import-preprocess.v1 command envelope v1",
+  "allOf": [
+    {
+      "$ref": "../work-command.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "workType": {
+          "const": "geodata.import-preprocess.v1"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "importRunId"
+          ],
+          "properties": {
+            "importRunId": {
+              "type": "string",
+              "format": "uuid",
+              "maxLength": 36
+            }
+          }
+        }
+      }
+    }
+  ],
+  "x-payload-evidence": "proposed-database-row-reference; checked against current handler sources",
+  "x-work-id-source": "myota_geo.import_run.id",
+  "x-producer-sources": [
+    "myota-geodata-service/geodata.py"
+  ],
+  "x-consumer-sources": [
+    "myota-geodata-service/geodata_import_worker.py"
+  ]
+}

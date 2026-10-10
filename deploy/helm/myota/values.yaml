@@ -57,7 +57,11 @@ services:
     replicas: 1
     pollSeconds: 30
     historyDays: 7
+    # Empty URLs use the chart's SeaweedFS health and exporter endpoints.
+    storageHealthUrl: ""
+    storageMetricsUrl: ""
   identity:
+    internalUrl: http://myota-identity:8001
     imageRepository: ghcr.io/myota-platform/myota-identity-service
     imageTag: ""
     port: 8001
@@ -69,6 +73,15 @@ services:
     imageRepository: ghcr.io/myota-platform/myota-geodata-service
     imageTag: ""
     port: 8003
+    replicas: 1
+    dbPoolMax: 8
+    resources:
+      requests:
+        cpu: 250m
+        memory: 256Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
     importWorkers: 1
   activity:
     imageRepository: ghcr.io/myota-platform/myota-activity-service
@@ -95,8 +108,40 @@ activityAdifRetention:
 geodataImportProcessing:
   enabled: true
   replicas: 1
+  # Keep worker scaling independent from API scaling. The shared durable
+  # consumer and DB lease make two replicas safe; higher counts need evidence.
+  maxReplicas: 2
+  dbPoolMax: 4
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
   maxAckPending: 4
   maxDeliveries: 100
+  deletionReconcileSeconds: 15
+  batchSize: 100
+geodataApiAutoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 70
+  scaleUpStabilizationSeconds: 30
+  scaleDownStabilizationSeconds: 300
+geodataApiAvailability:
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+  topologySpread:
+    enabled: true
+geodataConnectionBudget:
+  # PostgreSQL's upstream default, verified on the current K3s geo database.
+  maxConnections: 100
+  # Keep this reserve for migrations, operations and manual/maintenance work.
+  reservedConnections: 40
+  outboxPoolMax: 10
 geodataImportRetention:
   enabled: true
   schedule: "17 3 * * *"
@@ -118,6 +163,7 @@ seaweedfs:
   image: chrislusf/seaweedfs:latest
   storageSize: 20Gi
   storageClassName: ""
+  metricsPort: 9324
 geodataPipeline:
   enabled: true
   locationEnrichment:
@@ -125,6 +171,9 @@ geodataPipeline:
     existingSecret: myota-geodata-enrichment
     apiKeyKey: api-key
     language: en
+    # Increment after creating or rotating the external Secret so Fleet rolls
+    # both geodata pods and reloads the environment variable.
+    rolloutRevision: "1"
   maxImportFeatures: 5000
   maxCoordinates: 50000
   maxBodyBytes: "1073741824"
@@ -173,6 +222,26 @@ nats:
     enabled: true
     storageSize: 8Gi
     storageClassName: ""
+jetstreamProvisioner:
+  # Remains disabled until the Phase 2 compatibility and cutover gates pass.
+  # When enabled on an upgrade, Helm waits for this fail-closed pre-upgrade
+  # hook before updating application workloads.
+  enabled: false
+  confirmedMigrationGate: false
+  imageRepository: ""
+  imageTag: ""
+  capacity:
+    eventsMaxBytes: ""
+    eventsMaxMessages: ""
+    eventsMaxMessageBytes: ""
+    activityWorkMaxAgeSeconds: ""
+    activityWorkMaxBytes: ""
+    activityWorkMaxMessages: ""
+    activityWorkMaxMessageBytes: ""
+    geodataWorkMaxAgeSeconds: ""
+    geodataWorkMaxBytes: ""
+    geodataWorkMaxMessages: ""
+    geodataWorkMaxMessageBytes: ""
 outbox:
   enabled: true
   maxAttempts: 12
