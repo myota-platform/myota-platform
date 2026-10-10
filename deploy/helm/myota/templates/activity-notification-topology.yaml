@@ -20,7 +20,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: provisioner
-          image: "{{ .Values.services.activity.imageRepository }}:{{ default .Values.image.tag .Values.services.activity.imageTag }}"
+          image: {{ include "myota.imageReference" (dict "repository" .Values.services.activity.imageRepository "tag" (default .Values.image.tag .Values.services.activity.imageTag) "digest" .Values.imageRollout.digests.activity) | quote }}
           imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
           command: ["python3", "activity_notification_topology.py"]
           env:
@@ -49,7 +49,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: retire-legacy
-          image: "{{ .Values.services.activity.imageRepository }}:{{ default .Values.image.tag .Values.services.activity.imageTag }}"
+          image: {{ include "myota.imageReference" (dict "repository" .Values.services.activity.imageRepository "tag" (default .Values.image.tag .Values.services.activity.imageTag) "digest" .Values.imageRollout.digests.activity) | quote }}
           imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
           command: ["python3", "activity_notification_topology.py"]
           env:
