@@ -11,8 +11,77 @@
       "properties": {
         "eventType": {
           "const": "identity.callsign.retired.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "value": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "source": {
+              "type": "string"
+            },
+            "verificationSource": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "verifiedAt": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "validFrom": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "validTo": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "evidenceIds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "createdAt": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "value",
+            "status",
+            "source",
+            "verificationSource",
+            "verifiedAt",
+            "validFrom",
+            "validTo",
+            "evidenceIds",
+            "createdAt",
+            "updatedAt"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-identity-callsite",
+  "x-data-classification": "personal"
 }

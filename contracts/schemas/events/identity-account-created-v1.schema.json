@@ -11,8 +11,139 @@
       "properties": {
         "eventType": {
           "const": "identity.account.created.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "account": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "displayName": {
+                  "type": "string"
+                },
+                "email": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "participationType": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "callsigns": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "source": {
+                        "type": "string"
+                      },
+                      "verificationSource": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "verifiedAt": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "validFrom": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "validTo": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "evidenceIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      },
+                      "updatedAt": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "value",
+                      "status",
+                      "source",
+                      "verificationSource",
+                      "verifiedAt",
+                      "validFrom",
+                      "validTo",
+                      "evidenceIds",
+                      "createdAt",
+                      "updatedAt"
+                    ],
+                    "additionalProperties": true
+                  }
+                },
+                "primaryCallsignId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "createdAt": {
+                  "type": "string"
+                },
+                "updatedAt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "displayName",
+                "email",
+                "participationType",
+                "status",
+                "callsigns",
+                "primaryCallsignId",
+                "createdAt",
+                "updatedAt"
+              ],
+              "additionalProperties": true
+            },
+            "source": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "account"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-identity-callsite",
+  "x-data-classification": "personal"
 }

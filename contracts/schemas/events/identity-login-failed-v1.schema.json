@@ -11,8 +11,29 @@
       "properties": {
         "eventType": {
           "const": "identity.login.failed.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "email": {
+              "type": "string"
+            },
+            "remoteAddr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "email",
+            "remoteAddr"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-identity-callsite",
+  "x-data-classification": "personal-and-security"
 }

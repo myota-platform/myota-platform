@@ -507,10 +507,30 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-identity-callsite",
       "producerSources": [
         "myota-identity-service/identity.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "accountId",
+          "fields"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "personal"
     },
     {
       "eventType": "identity.account.created.v1",
@@ -522,10 +542,140 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-identity-callsite",
       "producerSources": [
         "myota-identity-service/identity.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "account": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "email": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "participationType": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "callsigns": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "string"
+                    },
+                    "verificationSource": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "verifiedAt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "validFrom": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "validTo": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "evidenceIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "value",
+                    "status",
+                    "source",
+                    "verificationSource",
+                    "verifiedAt",
+                    "validFrom",
+                    "validTo",
+                    "evidenceIds",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": true
+                }
+              },
+              "primaryCallsignId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "createdAt": {
+                "type": "string"
+              },
+              "updatedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "displayName",
+              "email",
+              "participationType",
+              "status",
+              "callsigns",
+              "primaryCallsignId",
+              "createdAt",
+              "updatedAt"
+            ],
+            "additionalProperties": true
+          },
+          "source": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "account"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "personal"
     },
     {
       "eventType": "identity.account.deactivated.v1",
@@ -537,10 +687,27 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-identity-callsite",
       "producerSources": [
         "myota-identity-service/identity.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "anonymized": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "accountId",
+          "anonymized"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "personal"
     },
     {
       "eventType": "identity.bootstrap-admin.created.v1",
@@ -552,10 +719,27 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-identity-callsite",
       "producerSources": [
         "myota-identity-service/identity.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "accountId",
+          "email"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "personal"
     },
     {
       "eventType": "identity.callsign.added.v1",
@@ -567,10 +751,82 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-identity-callsite",
       "producerSources": [
         "myota-identity-service/identity.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "verificationSource": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "verifiedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "validFrom": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "validTo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "evidenceIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "accountId",
+          "id",
+          "value",
+          "status",
+          "source",
+          "verificationSource",
+          "verifiedAt",
+          "validFrom",
+          "validTo",
+          "evidenceIds",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "personal"
     },
     {
       "eventType": "identity.callsign.evidence-submitted.v1",
@@ -582,10 +838,61 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-identity-callsite",
       "producerSources": [
         "myota-identity-service/identity.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "callsignId": {
+            "type": "string"
+          },
+          "accountId": {
+            "type": "string"
+          },
+          "evidenceType": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "checksum": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+            "additionalProperties": true
+          },
+          "submittedAt": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "callsignId",
+          "accountId",
+          "evidenceType",
+          "source",
+          "checksum",
+          "metadata",
+          "submittedAt",
+          "status"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "personal"
     },
     {
       "eventType": "identity.callsign.primary-changed.v1",
@@ -597,10 +904,23 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-identity-callsite",
       "producerSources": [
         "myota-identity-service/identity.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "callsignId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "callsignId"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "personal"
     },
     {
       "eventType": "identity.callsign.retired.v1",
@@ -612,10 +932,78 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-identity-callsite",
       "producerSources": [
         "myota-identity-service/identity.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "verificationSource": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "verifiedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "validFrom": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "validTo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "evidenceIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "value",
+          "status",
+          "source",
+          "verificationSource",
+          "verifiedAt",
+          "validFrom",
+          "validTo",
+          "evidenceIds",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "personal"
     },
     {
       "eventType": "identity.callsign.verified.v1",
@@ -627,10 +1015,78 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-identity-callsite",
       "producerSources": [
         "myota-identity-service/identity.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "verificationSource": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "verifiedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "validFrom": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "validTo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "evidenceIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "value",
+          "status",
+          "source",
+          "verificationSource",
+          "verifiedAt",
+          "validFrom",
+          "validTo",
+          "evidenceIds",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "personal"
     },
     {
       "eventType": "identity.login.failed.v1",
@@ -642,10 +1098,30 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-identity-callsite",
       "producerSources": [
         "myota-identity-service/identity.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "remoteAddr": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "email",
+          "remoteAddr"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "personal-and-security"
     },
     {
       "eventType": "identity.login.succeeded.v1",
@@ -657,10 +1133,30 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-identity-callsite",
       "producerSources": [
         "myota-identity-service/identity.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "remoteAddr": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "accountId",
+          "remoteAddr"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "personal-and-security"
     },
     {
       "eventType": "identity.oidc.mapping.updated.v1",
@@ -672,10 +1168,54 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-identity-callsite",
       "producerSources": [
         "myota-identity-service/identity.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "programmeSlug": {
+            "type": "string"
+          },
+          "issuer": {
+            "type": "string"
+          },
+          "clientId": {
+            "type": "string"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "programmeSlug",
+          "issuer",
+          "clientId",
+          "scopes",
+          "enabled",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "internal-configuration"
     },
     {
       "eventType": "identity.recovery.completed.v1",
@@ -687,10 +1227,23 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-identity-callsite",
       "producerSources": [
         "myota-identity-service/identity.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "accountId"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "personal-and-security"
     },
     {
       "eventType": "identity.recovery.requested.v1",
@@ -702,10 +1255,23 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-identity-callsite",
       "producerSources": [
         "myota-identity-service/identity.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "accountId"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "personal-and-security"
     },
     {
       "eventType": "identity.role-definition.created.v1",
@@ -717,10 +1283,50 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-identity-callsite",
       "producerSources": [
         "myota-identity-service/identity.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "system": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "description",
+          "scopes",
+          "system",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "internal-authorization"
     },
     {
       "eventType": "identity.role-definition.updated.v1",
@@ -732,10 +1338,50 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-identity-callsite",
       "producerSources": [
         "myota-identity-service/identity.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "system": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "description",
+          "scopes",
+          "system",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "internal-authorization"
     },
     {
       "eventType": "identity.role.assigned.v1",
@@ -747,10 +1393,70 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-identity-callsite",
       "producerSources": [
         "myota-identity-service/identity.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "accountId": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "programmeSlug": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "jurisdiction": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "entityType": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "validTo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "accountId",
+          "role",
+          "programmeSlug",
+          "jurisdiction",
+          "entityType",
+          "scopes",
+          "createdAt",
+          "validTo"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "personal-and-security"
     },
     {
       "eventType": "identity.roles.replaced.v1",
@@ -762,10 +1468,86 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-identity-callsite",
       "producerSources": [
         "myota-identity-service/identity.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "accountId": {
+                  "type": "string"
+                },
+                "role": {
+                  "type": "string"
+                },
+                "programmeSlug": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "jurisdiction": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "entityType": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "scopes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "createdAt": {
+                  "type": "string"
+                },
+                "validTo": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "accountId",
+                "role",
+                "programmeSlug",
+                "jurisdiction",
+                "entityType",
+                "scopes",
+                "createdAt",
+                "validTo"
+              ],
+              "additionalProperties": true
+            }
+          }
+        },
+        "required": [
+          "accountId",
+          "roles"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "personal-and-security"
     },
     {
       "eventType": "identity.service-token.issued.v1",
@@ -777,10 +1559,30 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-identity-callsite",
       "producerSources": [
         "myota-identity-service/identity.py"
-      ]
+      ],
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "service": {
+            "type": "string"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "service",
+          "scopes"
+        ],
+        "additionalProperties": true
+      },
+      "dataClassification": "security-sensitive"
     },
     {
       "eventType": "programme.archived.v1",

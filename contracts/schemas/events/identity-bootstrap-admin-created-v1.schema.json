@@ -11,8 +11,26 @@
       "properties": {
         "eventType": {
           "const": "identity.bootstrap-admin.created.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "accountId": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "accountId",
+            "email"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-identity-callsite",
+  "x-data-classification": "personal"
 }

@@ -11,8 +11,22 @@
       "properties": {
         "eventType": {
           "const": "identity.recovery.completed.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "accountId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "accountId"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-identity-callsite",
+  "x-data-classification": "personal-and-security"
 }

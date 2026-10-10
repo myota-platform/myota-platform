@@ -11,8 +11,22 @@
       "properties": {
         "eventType": {
           "const": "identity.callsign.primary-changed.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "callsignId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "callsignId"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-identity-callsite",
+  "x-data-classification": "personal"
 }

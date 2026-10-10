@@ -11,8 +11,49 @@
       "properties": {
         "eventType": {
           "const": "identity.role-definition.updated.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "scopes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "system": {
+              "type": "boolean"
+            },
+            "createdAt": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "name",
+            "description",
+            "scopes",
+            "system",
+            "createdAt",
+            "updatedAt"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-identity-callsite",
+  "x-data-classification": "internal-authorization"
 }

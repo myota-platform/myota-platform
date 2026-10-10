@@ -11,8 +11,53 @@
       "properties": {
         "eventType": {
           "const": "identity.oidc.mapping.updated.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "programmeSlug": {
+              "type": "string"
+            },
+            "issuer": {
+              "type": "string"
+            },
+            "clientId": {
+              "type": "string"
+            },
+            "scopes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "createdAt": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "programmeSlug",
+            "issuer",
+            "clientId",
+            "scopes",
+            "enabled",
+            "createdAt",
+            "updatedAt"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-identity-callsite",
+  "x-data-classification": "internal-configuration"
 }

@@ -11,8 +11,29 @@
       "properties": {
         "eventType": {
           "const": "identity.account.admin-updated.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "accountId": {
+              "type": "string"
+            },
+            "fields": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "accountId",
+            "fields"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-identity-callsite",
+  "x-data-classification": "personal"
 }

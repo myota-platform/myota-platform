@@ -11,8 +11,26 @@
       "properties": {
         "eventType": {
           "const": "identity.account.deactivated.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "accountId": {
+              "type": "string"
+            },
+            "anonymized": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "accountId",
+            "anonymized"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-identity-callsite",
+  "x-data-classification": "personal"
 }

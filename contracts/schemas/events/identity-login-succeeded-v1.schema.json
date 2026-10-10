@@ -11,8 +11,29 @@
       "properties": {
         "eventType": {
           "const": "identity.login.succeeded.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "accountId": {
+              "type": "string"
+            },
+            "remoteAddr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "accountId",
+            "remoteAddr"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-identity-callsite",
+  "x-data-classification": "personal-and-security"
 }

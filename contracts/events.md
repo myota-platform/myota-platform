@@ -16,10 +16,13 @@ for repository evidence.
 
 The [machine-readable registry](event-registry.json) enumerates the Phase 0
 event facts and selected work commands. Per-event schemas are under
-[`schemas/`](schemas/). They currently enforce the immutable outer envelope and
-event identity; payload shapes are deliberately marked as pending owner review
-where source evidence does not establish a stable field contract. This registry
-is not yet a complete payload compatibility gate.
+[`schemas/`](schemas/). All schemas constrain the immutable outer envelope and
+event identity. The 19 Identity fact payload schemas are derived from
+`myota-identity-service/identity.py` and preserve additive compatibility;
+their data-classification metadata identifies personal, security-sensitive, or
+internal authorization/configuration data. They are source evidence, not yet
+owner-approved producer gates. Other payloads remain marked pending where
+source evidence has not established a stable field contract.
 
 Target domain events use `envelopeVersion: 1`, a stable UUID `eventId`, dotted
 `eventType` with its `.vN` suffix, UTC `occurredAt`, producer, aggregate identity,
@@ -54,9 +57,10 @@ deployment.
 ```
 
 The JSON above illustrates the target envelope and is not a claim that all
-current producers emit it. `payload` fields for each event are defined in the
-per-event schema once reviewed by the owning service; the current registry
-marks unresolved payload contracts explicitly.
+current producers emit it. The source-derived Identity schemas describe current
+payload shapes, including sensitive fields; owner review and privacy approval
+are still required before they become producer enforcement. Other unresolved
+payload contracts remain explicitly marked in the registry.
 
 Important events include `identity.account.created.v1`, `identity.callsign.verified.v1`, `programme.created.v1`, `geodata.import.queued.v1`, `geodata.import.cancellation-requested.v1`, `geodata.import.cancelled.v1`, `geodata.import.preprocessed.v1`, `geodata.import.candidates.validated.v1`, `geodata.import.processing.queued.v1`, `geodata.import.processing.completed.v1`, `geodata.import.processed.v1`, `geodata.entity.candidate.created.v1`, `geodata.entity.reviewed.v1`, `geodata.entity.location-enrichment-requested.v1`, `geodata.entity.location-enriched.v1`, `activity.activation.created.v1`, `activity.qso.recorded.v1`, `awards.definition.saved.v1`, `awards.definition.published.v1`, `awards.request.created.v1`, `awards.issued.v1`, and `awards.rendered.v1`.
 

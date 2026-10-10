@@ -11,8 +11,60 @@
       "properties": {
         "eventType": {
           "const": "identity.callsign.evidence-submitted.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "callsignId": {
+              "type": "string"
+            },
+            "accountId": {
+              "type": "string"
+            },
+            "evidenceType": {
+              "type": "string"
+            },
+            "source": {
+              "type": "string"
+            },
+            "checksum": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "metadata": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": true
+            },
+            "submittedAt": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "callsignId",
+            "accountId",
+            "evidenceType",
+            "source",
+            "checksum",
+            "metadata",
+            "submittedAt",
+            "status"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-identity-callsite",
+  "x-data-classification": "personal"
 }

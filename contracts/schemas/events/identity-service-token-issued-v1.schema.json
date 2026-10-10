@@ -11,8 +11,29 @@
       "properties": {
         "eventType": {
           "const": "identity.service-token.issued.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "service": {
+              "type": "string"
+            },
+            "scopes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "service",
+            "scopes"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-identity-callsite",
+  "x-data-classification": "security-sensitive"
 }
