@@ -11,8 +11,40 @@
       "properties": {
         "eventType": {
           "const": "activity.entity.cascade-deleted.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "entityId": {
+              "type": "string"
+            },
+            "deletedBy": {
+              "type": "string"
+            },
+            "qsoCount": {
+              "type": "integer"
+            },
+            "awardRecalculationJobs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": true
+              }
+            }
+          },
+          "required": [
+            "entityId",
+            "deletedBy",
+            "qsoCount",
+            "awardRecalculationJobs"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-activity-callsite",
+  "x-data-classification": "personal"
 }
