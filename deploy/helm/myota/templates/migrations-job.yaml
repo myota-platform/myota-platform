@@ -21,7 +21,7 @@ spec:
           {{- end }}
           # The platform image is published under the mutable `latest` tag;
           # always pull it so the migration hook cannot run stale cached SQL.
-          imagePullPolicy: Always
+          imagePullPolicy: "Always"
           command: ["/bin/bash", "/app/db/migrations/run.sh"]
           env:
             - name: CORE_HOST
