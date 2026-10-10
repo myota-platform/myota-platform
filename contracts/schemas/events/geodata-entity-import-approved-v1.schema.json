@@ -11,8 +11,34 @@
       "properties": {
         "eventType": {
           "const": "geodata.entity.import-approved.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "entityId": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "importRunId": {
+              "type": "string"
+            },
+            "actor": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "entityId",
+            "status",
+            "importRunId",
+            "actor"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-geodata-callsite",
+  "x-data-classification": "geospatial-and-operational-data"
 }
