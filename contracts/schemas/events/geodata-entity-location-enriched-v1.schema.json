@@ -11,8 +11,38 @@
       "properties": {
         "eventType": {
           "const": "geodata.entity.location-enriched.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "entityId": {
+              "type": "string"
+            },
+            "requestId": {
+              "type": "string"
+            },
+            "geometryHash": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "reason": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "entityId",
+            "requestId",
+            "geometryHash",
+            "status",
+            "reason"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-geodata-callsite",
+  "x-data-classification": "geospatial-and-review-metadata"
 }
