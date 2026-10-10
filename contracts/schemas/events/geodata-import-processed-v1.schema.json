@@ -11,8 +11,34 @@
       "properties": {
         "eventType": {
           "const": "geodata.import.processed.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "importRunId": {
+              "type": "string"
+            },
+            "processedBy": {
+              "type": "string"
+            },
+            "stagedRecordsDiscarded": {
+              "type": "integer"
+            },
+            "processingQueuesDiscarded": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "importRunId",
+            "processedBy",
+            "stagedRecordsDiscarded",
+            "processingQueuesDiscarded"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-geodata-callsite",
+  "x-data-classification": "internal-operational-metadata"
 }
