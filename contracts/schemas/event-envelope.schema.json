@@ -9,7 +9,11 @@
     "envelopeVersion": { "const": 1 },
     "eventId": { "type": "string", "format": "uuid" },
     "eventType": { "type": "string", "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+\\.v[1-9][0-9]*$" },
-    "occurredAt": { "type": "string", "format": "date-time" },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
     "producer": { "type": "string", "minLength": 1, "maxLength": 80 },
     "aggregate": {
       "type": "object",
