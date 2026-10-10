@@ -104,6 +104,43 @@ class JetStreamTopologyTests(unittest.TestCase):
         )
         self.assertEqual(len(consumers), 6)
 
+    def test_geodata_work_scope_can_be_provisioned_without_other_streams(self):
+        geodata_capacity = {
+            key: value
+            for key, value in CAPACITY.items()
+            if key.startswith("NATS_GEODATA_WORK_")
+        }
+        with patch.dict(os.environ, geodata_capacity, clear=True):
+            streams, consumers = desired_topology("geodata-work")
+        self.assertEqual(
+            [stream.name for stream in streams], ["MYOTA_GEODATA_WORK"]
+        )
+        self.assertEqual(len(consumers), 4)
+        self.assertTrue(
+            all(item.stream == "MYOTA_GEODATA_WORK" for item in consumers)
+        )
+
+    def test_geodata_work_scope_from_environment_is_narrow(self):
+        geodata_capacity = {
+            key: value
+            for key, value in CAPACITY.items()
+            if key.startswith("NATS_GEODATA_WORK_")
+        }
+        with patch.dict(
+            os.environ,
+            {
+                **geodata_capacity,
+                "NATS_TOPOLOGY_APPLY": "1",
+                "NATS_TOPOLOGY_SCOPE": "geodata-work",
+            },
+            clear=True,
+        ):
+            streams, consumers = topology_from_environment()
+        self.assertEqual(
+            [stream.name for stream in streams], ["MYOTA_GEODATA_WORK"]
+        )
+        self.assertEqual(len(consumers), 4)
+
     def test_consumer_drift_checks_delivery_and_replay_safety_settings(self):
         with patch.dict(os.environ, CAPACITY, clear=True):
             _, consumers = desired_topology()

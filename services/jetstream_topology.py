@@ -140,6 +140,32 @@ def desired_topology(
     scope: str = "all",
 ) -> tuple[tuple[Stream, ...], tuple[Consumer, ...]]:
     """Build finite target limits from explicitly supplied capacity evidence."""
+    if scope == "geodata-work":
+        geodata_stream = Stream(
+            "MYOTA_GEODATA_WORK",
+            ("myota.work.geodata.>",),
+            "workqueue",
+            _positive_int("NATS_GEODATA_WORK_MAX_AGE_SECONDS"),
+            _positive_int("NATS_GEODATA_WORK_MAX_BYTES"),
+            _positive_int("NATS_GEODATA_WORK_MAX_MESSAGES"),
+            _positive_int("NATS_GEODATA_WORK_MAX_MESSAGE_BYTES"),
+        )
+        geodata_consumers = tuple(
+            Consumer(
+                "MYOTA_GEODATA_WORK",
+                durable,
+                subject,
+                ack_wait,
+                max_deliver,
+                max_pending,
+                max_waiting,
+            )
+            for durable, subject, ack_wait, max_deliver, max_pending, max_waiting in GEODATA_WORK
+        )
+        streams, consumers = (geodata_stream,), geodata_consumers
+        validate_topology(streams, consumers, scope)
+        return streams, consumers
+
     activity_stream = Stream(
         "MYOTA_ACTIVITY_WORK",
         ("myota.work.activity.>",),
@@ -244,12 +270,12 @@ def validate_topology(
     required = (
         {"MYOTA_ACTIVITY_WORK"}
         if scope == "activity-work"
+        else {"MYOTA_GEODATA_WORK"}
+        if scope == "geodata-work"
         else {"MYOTA_EVENTS", "MYOTA_ACTIVITY_WORK", "MYOTA_GEODATA_WORK"}
     )
     if set(names) != required:
-        raise ValueError(
-            "target topology must contain exactly the three ADR-0008 streams"
-        )
+        raise ValueError(f"unexpected stream set for topology scope {scope}")
     durable_keys: set[tuple[str, str]] = set()
     work_filters: set[tuple[str, str]] = set()
     for consumer in consumers:

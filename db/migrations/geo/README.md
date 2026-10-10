@@ -44,14 +44,22 @@ ordered SQL files define the `myota_geo` database:
     from corrupting authoritative rows. New API/consumer processes wait for
     its feature marker before accepting work. Replaying migrations does not
     re-create deleted legacy resources.
-17. `017_import_cancellation.sql` adds durable cancellation metadata for
-    queued uploads and active preprocessing, and includes cancelled runs in
-    stale-import retention indexing.
-18. `018_import_lookup_indexes.sql` adds a source-reference index; candidate
-    replay uses the existing `(import_run_id, ordinal)` index.
+17. `017_import_cancellation.sql` adds durable cancellation-request metadata
+    for queued uploads and active preprocessing runs. Active workers observe
+    `CANCELLING` at bounded checkpoints and finish as `CANCELLED`; queued work
+    is cancelled immediately and staged rows/source artifacts are removed.
+18. `018_import_lookup_indexes.sql` adds a source-reference lookup index;
+    candidate replay uses the existing `(import_run_id, ordinal)` index.
 19. `019_maidenhead_locators.sql` adds sorted four- and six-character
     Maidenhead cell arrays, backfills existing entities, and recalculates the
     arrays automatically whenever an entity geometry changes.
+20. `020_outbox_dead_letter_redrive.sql` adds resolution state and an audit
+    trail for operator-approved redrives. Redrive keeps the original dead-letter
+    evidence and republishes from the retained outbox row with its stable event ID.
+21. `021_jetstream_work_recovery.sql` records bounded redispatch timestamps for
+    import runs, promotion queues, and location-enrichment work. A repair loop
+    can restore expired work through the transactional outbox without executing
+    work outside its JetStream durable.
 
 The platform migration runner applies every numbered `geo/NNN_*.sql` file in
 lexical order. Additions to this directory are therefore included in the next
@@ -77,6 +85,10 @@ background run is started. The geodata service claims a PostgreSQL lease,
 refreshes its heartbeat while parsing and normalizing, and clears the lease
 when the run reaches `PREPROCESSED` or `FAILED`. On startup, queued runs and
 processing runs whose lease has expired are requeued from their stored source.
+Preprocessing loads existing candidates through the import-run index and
+resolves source references through a dedicated entity index. The worker stops
+and joins its heartbeat before refreshing the authoritative run row and writing
+terminal status, preventing a stale heartbeat from conflicting with cleanup.
 Runs without a recoverable source are marked `FAILED` with an explanatory
 error instead of remaining indefinitely in `PROCESSING`. The lease duration
 defaults to 15 minutes and can be tuned with

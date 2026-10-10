@@ -570,6 +570,8 @@
     "geodata.import.queued.v1": {
       "subject": "myota.geodata.import.preprocess.v1",
       "workType": "geodata.import-preprocess.v1",
+      "workIdField": "importRunId",
+      "payloadFields": ["importRunId"],
       "producers": [
         "geodata"
       ]
@@ -577,6 +579,8 @@
     "geodata.import.recovered.v1": {
       "subject": "myota.geodata.import.preprocess.v1",
       "workType": "geodata.import-preprocess.v1",
+      "workIdField": "importRunId",
+      "payloadFields": ["importRunId"],
       "producers": [
         "geodata"
       ]
@@ -584,6 +588,8 @@
     "geodata.import.processing.queued.v1": {
       "subject": "myota.geodata.import.process.v1",
       "workType": "geodata.import-promotion.v1",
+      "workIdField": "queueId",
+      "payloadFields": ["queueId"],
       "producers": [
         "geodata"
       ]
@@ -591,6 +597,8 @@
     "geodata.import.processing.recovered.v1": {
       "subject": "myota.geodata.import.process.v1",
       "workType": "geodata.import-promotion.v1",
+      "workIdField": "queueId",
+      "payloadFields": ["queueId"],
       "producers": [
         "geodata"
       ]
@@ -598,6 +606,8 @@
     "geodata.entity-deletion-job.queued.v1": {
       "subject": "myota.geodata.entity.delete.v1",
       "workType": "geodata.entity-delete.v1",
+      "workIdField": "jobId",
+      "payloadFields": ["jobId"],
       "producers": [
         "geodata"
       ]
@@ -605,6 +615,14 @@
     "geodata.entity.location-enrichment-requested.v1": {
       "subject": "myota.geodata.entity.location-enrichment.v1",
       "workType": "geodata.location-enrichment.v1",
+      "workIdField": "requestId",
+      "payloadFields": [
+        "entityId",
+        "requestId",
+        "geometryHash",
+        "onlyMissing",
+        "reason"
+      ],
       "producers": [
         "geodata"
       ]

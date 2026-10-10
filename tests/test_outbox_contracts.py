@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import sys
 import unittest
@@ -69,7 +70,14 @@ class FakeJetStream:
         self.published.append((subject, body, headers, timeout))
         if self.error:
             raise self.error
-        return type("Ack", (), {"stream": "MYOTA_EVENTS"})()
+        stream = (
+            "MYOTA_GEODATA_WORK"
+            if subject.startswith("myota.work.geodata.")
+            else "MYOTA_ACTIVITY_WORK"
+            if subject.startswith("myota.work.activity.")
+            else "MYOTA_EVENTS"
+        )
+        return type("Ack", (), {"stream": stream})()
 
 
 class OutboxContractTests(unittest.TestCase):
@@ -83,20 +91,78 @@ class OutboxContractTests(unittest.TestCase):
         self.assertEqual(envelope["eventId"], EVENT_ID)
         self.assertEqual(envelope["occurredAt"], "2026-10-10T12:00:00.000000Z")
 
-    def test_legacy_geodata_work_keeps_subject_until_phase_five(self):
+    def test_legacy_geodata_event_projects_to_bounded_target_command(self):
         work = event_envelope(
             row(
                 "geodata.entity-deletion-job.queued.v1",
                 "geodata",
                 {
-                    "jobId": "job-1",
+                    "jobId": "d1cedf47-6d04-48d5-85d8-6c6d64b0ec65",
                     "natsSubject": "myota.geodata.entity.delete.v1",
                 },
             )
         )
-        self.assertEqual(event_subject(work), "myota.geodata.entity.delete.v1")
-        self.assertNotIn("envelopeVersion", work)
+        self.assertEqual(
+            event_subject(work), "myota.work.geodata.entity-delete.v1"
+        )
+        self.assertEqual(event_stream(work), "MYOTA_GEODATA_WORK")
+        self.assertEqual(work["workType"], "geodata.entity-delete.v1")
+        self.assertEqual(
+            work["payload"],
+            {"jobId": "d1cedf47-6d04-48d5-85d8-6c6d64b0ec65"},
+        )
+        self.assertNotIn("eventId", work)
+        self.assertNotIn("eventType", work)
+        self.assertNotIn("natsSubject", work["payload"])
         self.assertNotIn("attempts", work)
+
+    def test_geodata_location_projection_uses_request_id_and_drops_private_fields(
+        self,
+    ):
+        work = event_envelope(
+            row(
+                "geodata.entity.location-enrichment-requested.v1",
+                "geodata",
+                {
+                    "entityId": "d1cedf47-6d04-48d5-85d8-6c6d64b0ec65",
+                    "requestId": EVENT_ID,
+                    "geometryHash": "a" * 64,
+                    "onlyMissing": True,
+                    "reason": "ADMIN_REQUEST",
+                    "requestedBy": "private-user-id",
+                    "natsSubject": "myota.geodata.entity.location-enrichment.v1",
+                },
+            )
+        )
+        self.assertEqual(work["workId"], EVENT_ID)
+        self.assertEqual(
+            work["payload"],
+            {
+                "entityId": "d1cedf47-6d04-48d5-85d8-6c6d64b0ec65",
+                "requestId": EVENT_ID,
+                "geometryHash": "a" * 64,
+                "onlyMissing": True,
+                "reason": "ADMIN_REQUEST",
+            },
+        )
+
+    def test_geodata_work_rejects_missing_reference_field(self):
+        with self.assertRaisesRegex(
+            OutboxContractError, "missing required field"
+        ):
+            event_envelope(
+                row(
+                    "geodata.entity.location-enrichment-requested.v1",
+                    "geodata",
+                    {
+                        "entityId": "d1cedf47-6d04-48d5-85d8-6c6d64b0ec65",
+                        "geometryHash": "a" * 64,
+                        "onlyMissing": True,
+                        "reason": "ADMIN_REQUEST",
+                        "natsSubject": "myota.geodata.entity.location-enrichment.v1",
+                    },
+                )
+            )
 
     def test_activity_work_command_uses_registered_stream_and_small_envelope(
         self,
@@ -170,6 +236,32 @@ class RelayFailureWindowTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(subject, "myota.events.identity.account.created.v1")
         self.assertEqual(headers["Nats-Msg-Id"], EVENT_ID)
         self.assertGreater(timeout, 0)
+        mark.assert_called_once_with(EVENT_ID)
+
+    async def test_geodata_legacy_outbox_row_publishes_once_to_target_stream(
+        self,
+    ):
+        event = claimed(
+            "geodata.import.processing.queued.v1",
+            "geodata",
+            {
+                "queueId": "d1cedf47-6d04-48d5-85d8-6c6d64b0ec65",
+                "candidateIds": ["bounded-by-database-row"],
+                "natsSubject": "myota.geodata.import.process.v1",
+            },
+        )
+        js = FakeJetStream()
+        with patch("outbox_worker.mark_published") as mark:
+            await relay_one(js, event)
+        subject, body, headers, _ = js.published[0]
+        envelope = json.loads(body)
+        self.assertEqual(subject, "myota.work.geodata.import-promotion.v1")
+        self.assertEqual(envelope["workType"], "geodata.import-promotion.v1")
+        self.assertEqual(
+            envelope["payload"],
+            {"queueId": "d1cedf47-6d04-48d5-85d8-6c6d64b0ec65"},
+        )
+        self.assertEqual(headers["Nats-Msg-Id"], EVENT_ID)
         mark.assert_called_once_with(EVENT_ID)
 
     async def test_publish_failure_schedules_retry_without_marking_published(

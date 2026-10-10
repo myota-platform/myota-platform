@@ -22,6 +22,7 @@ from nats.js.api import (
     StorageType,
 )
 from prometheus_client import Counter, Gauge, Histogram, start_http_server
+from jetstream_topology import ACTIVITY_WORK, GEODATA_WORK
 from outbox_routing import (
     CATALOG,
     OutboxContractError,
@@ -44,7 +45,7 @@ PUBLISH_TIMEOUT_SECONDS = max(
 WORKER_NAME = os.environ.get("OUTBOX_WORKER", "myota-outbox")
 METRICS_PORT = max(0, int(os.environ.get("OUTBOX_METRICS_PORT", "9108")))
 STREAM_NAME = "MYOTA_EVENTS"
-STREAM_SUBJECTS = ("myota.events.>", "myota.geodata.>")
+STREAM_SUBJECTS = ("myota.events.>",)
 
 PUBLISHED_TOTAL = Counter(
     "myota_outbox_published_events_total",
@@ -94,19 +95,7 @@ NATS_UP = Gauge(
 
 
 def required_consumers() -> tuple[ConsumerConfig, ...]:
-    """Describe the live Activity and legacy Geodata interests before publish."""
-    geodata_options = {
-        "ack_policy": AckPolicy.EXPLICIT,
-        "ack_wait": int(
-            os.environ.get("GEODATA_WORKER_ACK_WAIT_SECONDS", "120")
-        ),
-        "max_deliver": int(
-            os.environ.get("GEODATA_WORKER_MAX_DELIVERIES", "100")
-        ),
-        "max_ack_pending": int(
-            os.environ.get("GEODATA_WORKER_MAX_ACK_PENDING", "4")
-        ),
-    }
+    """Describe the current fact-stream subscriber before fact publication."""
     return (
         ConsumerConfig(
             durable_name="activity-notifications-v1",
@@ -141,26 +130,6 @@ def required_consumers() -> tuple[ConsumerConfig, ...]:
             max_ack_pending=64,
             max_waiting=32,
             backoff=[60, 120, 300, 300, 300, 300, 300, 300],
-        ),
-        ConsumerConfig(
-            durable_name="geodata-entity-deletion-v1",
-            filter_subject="myota.geodata.entity.delete.v1",
-            **geodata_options,
-        ),
-        ConsumerConfig(
-            durable_name="geodata-preprocessing-v1",
-            filter_subject="myota.geodata.import.preprocess.v1",
-            **geodata_options,
-        ),
-        ConsumerConfig(
-            durable_name="geodata-import-processing-v2",
-            filter_subject="myota.geodata.import.process.v1",
-            **geodata_options,
-        ),
-        ConsumerConfig(
-            durable_name="geodata-location-enrichment-v1",
-            filter_subject="myota.geodata.entity.location-enrichment.v1",
-            **geodata_options,
         ),
     )
 
@@ -224,8 +193,6 @@ async def ensure_stream(nc: NATS) -> None:
             f"legacy {STREAM_NAME} is missing required subject coverage"
         )
 
-    # The four legacy work durables remain until replacements are provisioned
-    # and drained in Phase 5. Do not apply the selected target topology here.
     for consumer in required_consumers():
         await validate_consumer(js, consumer)
 
@@ -241,59 +208,125 @@ async def ensure_stream(nc: NATS) -> None:
         raise RuntimeError(f"legacy {STREAM_NAME} must use file storage")
 
     if WORKER_NAME == "activity-outbox":
-        await validate_activity_work_topology(js)
+        await validate_target_work_topology(
+            js,
+            "MYOTA_ACTIVITY_WORK",
+            "myota.work.activity.>",
+            ACTIVITY_WORK,
+            6,
+        )
+    elif WORKER_NAME == "geo-outbox":
+        await validate_target_work_topology(
+            js,
+            "MYOTA_GEODATA_WORK",
+            "myota.work.geodata.>",
+            GEODATA_WORK,
+            4,
+        )
 
 
-async def validate_activity_work_topology(js) -> None:
-    """Fail closed unless every registered Activity command has a pull durable."""
+async def validate_target_work_topology(
+    js, stream_name: str, subject: str, definitions, expected_count: int
+) -> None:
+    """Fail closed unless a registered service work stream is fully provisioned."""
     routes = CATALOG.get("targetWorkRoutes", {})
-    activity_routes = {
+    routes = {
         work_type: route
         for work_type, route in routes.items()
-        if route["stream"] == "MYOTA_ACTIVITY_WORK"
+        if route["stream"] == stream_name
     }
-    if len(activity_routes) != 6:
+    if len(routes) != expected_count:
         raise RuntimeError(
-            "Activity work routes are incomplete in the registry"
+            f"{stream_name} work routes are incomplete in the registry"
         )
     try:
-        stream = await js.stream_info("MYOTA_ACTIVITY_WORK")
+        stream = await js.stream_info(stream_name)
     except Exception as exc:
-        raise RuntimeError("required Activity work stream is missing") from exc
+        raise RuntimeError(
+            f"required work stream {stream_name} is missing"
+        ) from exc
     config = stream.config
     subjects = set(config.subjects or [])
-    if "myota.work.activity.>" not in subjects:
-        raise RuntimeError(
-            "Activity work stream lacks its exact subject coverage"
-        )
+    if subjects != {subject}:
+        raise RuntimeError(f"{stream_name} has unexpected subject coverage")
     retention = getattr(config.retention, "value", config.retention)
     if str(retention).lower() != RetentionPolicy.WORK_QUEUE.value:
-        raise RuntimeError("Activity work stream must use WorkQueue retention")
-    if config.storage != StorageType.FILE or config.num_replicas != 1:
-        raise RuntimeError(
-            "Activity work stream storage/replica policy drifted"
+        raise RuntimeError(f"{stream_name} must use WorkQueue retention")
+    if (
+        config.storage != StorageType.FILE
+        or config.num_replicas != 1
+        or min(
+            config.max_age,
+            config.max_bytes,
+            config.max_msgs,
+            config.max_msg_size,
         )
-    for route in activity_routes.values():
-        try:
-            info = await js.consumer_info(
-                "MYOTA_ACTIVITY_WORK", route["durable"]
+        <= 0
+    ):
+        raise RuntimeError(
+            f"{stream_name} storage, replica, or finite capacity policy drifted"
+        )
+    expected = {
+        durable: (
+            filter_subject,
+            ack_wait,
+            max_deliver,
+            max_pending,
+            max_waiting,
+        )
+        for durable, filter_subject, ack_wait, max_deliver, max_pending, max_waiting in definitions
+    }
+    for route in routes.values():
+        if route["durable"] not in expected:
+            raise RuntimeError(
+                f"unprovisioned durable in route {route['durable']}"
             )
+        filter_subject, ack_wait, max_deliver, max_pending, max_waiting = (
+            expected[route["durable"]]
+        )
+        if route["subject"] != filter_subject:
+            raise RuntimeError(
+                f"registered route filter drifted for {route['durable']}"
+            )
+        try:
+            info = await js.consumer_info(stream_name, route["durable"])
         except Exception as exc:
             raise RuntimeError(
-                f"required Activity work durable {route['durable']} is missing"
+                f"required work durable {stream_name}/{route['durable']} is missing"
             ) from exc
         consumer = info.config
-        if consumer.filter_subject != route["subject"]:
+        if consumer.filter_subject != filter_subject:
             raise RuntimeError(
-                f"Activity work durable {route['durable']} has an unexpected filter"
+                f"work durable {route['durable']} has an unexpected filter"
             )
         if consumer.ack_policy != AckPolicy.EXPLICIT:
             raise RuntimeError(
-                f"Activity work durable {route['durable']} must use explicit ACK"
+                f"work durable {route['durable']} must use explicit ACK"
             )
-        if getattr(consumer, "deliver_subject", None) is not None:
+        ack_wait_value = consumer.ack_wait
+        if hasattr(ack_wait_value, "total_seconds"):
+            ack_wait_value = ack_wait_value.total_seconds()
+        actual = (
+            ack_wait_value,
+            consumer.max_deliver,
+            consumer.max_ack_pending,
+            consumer.max_waiting,
+        )
+        if actual != (ack_wait, max_deliver, max_pending, max_waiting):
             raise RuntimeError(
-                f"Activity work durable {route['durable']} must use pull delivery"
+                f"work durable {route['durable']} retry or pending limits drifted"
+            )
+        deliver_policy = getattr(consumer, "deliver_policy", None)
+        replay_policy = getattr(consumer, "replay_policy", None)
+        deliver_policy = getattr(deliver_policy, "value", deliver_policy)
+        replay_policy = getattr(replay_policy, "value", replay_policy)
+        if (
+            getattr(consumer, "deliver_subject", None) is not None
+            or deliver_policy != "all"
+            or replay_policy != "instant"
+        ):
+            raise RuntimeError(
+                f"work durable {route['durable']} delivery policy drifted"
             )
 
 
