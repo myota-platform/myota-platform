@@ -11,8 +11,33 @@
       "properties": {
         "eventType": {
           "const": "geodata.import.candidates.rejected.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "importRunId": {
+              "type": "string"
+            },
+            "candidateIds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "reviewerId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "importRunId",
+            "candidateIds",
+            "reviewerId"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-geodata-callsite",
+  "x-data-classification": "geospatial-and-review-metadata"
 }
