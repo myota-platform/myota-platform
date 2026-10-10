@@ -139,8 +139,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "myota.fullname" (dict "name" "prometheus") }}
-  annotations:
-    checksum/prometheus-config: {{ printf "%s%s" (.Files.Get "observability/prometheus.yml") (.Files.Get "observability/rules.yml") | sha256sum | quote }}
 spec:
   replicas: 1
   selector:
@@ -148,6 +146,8 @@ spec:
   template:
     metadata:
       labels: {app.kubernetes.io/name: {{ include "myota.name" . }}, app.kubernetes.io/component: prometheus}
+      annotations:
+        checksum/prometheus-config: {{ printf "%s%s" (.Files.Get "observability/prometheus.yml") (.Files.Get "observability/rules.yml") | sha256sum | quote }}
     spec:
       securityContext: {fsGroup: 65534}
       containers:
