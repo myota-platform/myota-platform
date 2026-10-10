@@ -62,7 +62,7 @@ postgres:
 # Phase 4 provisions only Activity's dedicated WorkQueue stream and its six
 # registered durables. It does not convert MYOTA_EVENTS or change Geodata work.
 jetstreamProvisioner:
-  enabled: false
+  enabled: true
   confirmedMigrationGate: true
   scope: activity-work
   capacity:
