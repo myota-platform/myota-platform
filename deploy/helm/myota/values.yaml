@@ -3,8 +3,8 @@ image:
   tag: latest
   pullPolicy: IfNotPresent
 imageRollout:
-  # Updated by the image-digest-sync workflow; changing a digest annotation
-  # changes each Deployment's pod template and triggers a rolling restart.
+  # Updated by image-digest-sync. Configured digests are used in image
+  # references, so rollout and runtime content resolve to the same artifact.
   digests:
     identity: ""
     programmes: ""
