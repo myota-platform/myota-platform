@@ -22,20 +22,21 @@ stale preprocessing projections under a row lock. See the
 [operations runbook](https://github.com/myota-platform/myota-docs/blob/main/docs/operations.md#activity-notification-consumer-rollouts)
 for rollout and retry behavior.
 
-The synchronized relay source now uses the event registry for dotted fact
+The synchronized relay source uses the event registry for dotted fact
 subjects, stable message IDs, size bounds, retries, dead-letter recovery, and
-backlog metrics. It validates the legacy `MYOTA_EVENTS` stream read-only. The
-live stream remains on Interest retention with the existing durable consumers;
-the relay does not provision target streams. NATS remains cluster-internal
+backlog metrics. It validates the legacy `MYOTA_EVENTS` stream read-only. Facts
+remain on that file-backed Interest-retained stream; Geodata work now publishes
+to the disjoint `MYOTA_GEODATA_WORK` WorkQueue. NATS remains cluster-internal
 through a ClusterIP service without auth/TLS under the trusted workload
 boundary. Phases 0–4 of the migration are complete within their evidence
-bounds. Phase 5 Geodata source and isolated reliability checks pass. Helm 183
-pre-provisioned the target WorkQueue and four exact durables, but the live
-worker still subscribes to legacy subjects and migration 021 is not installed.
-Do not change routing or retire old durables before the image/schema rollout,
-recovery gates, and rollback window pass. Initial finite limits are accepted
-for the current single-node scope with a documented short-sample caveat. See the
-[event registry](contracts/event-registry.json),
+bounds. Phase 5's four Geodata target durables and migration 021 are live; all
+four workers subscribe to target subjects. The retry-safe partial-deletion
+handler is deployed. No production Geodata work was available to process. Four
+legacy Geodata durable definitions remain empty and inactive during the
+24-hour rollback observation. Fleet readiness, two-database cross-service
+failure qualification, cancellation/expiry replay and final durable retirement
+remain open. Initial finite limits are accepted for the current single-node
+scope with a documented short-sample caveat. See the [event registry](contracts/event-registry.json),
 [Phase 5 evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase5-geodata-work-2026-10-10.md),
 [migration plan](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/nats-event-migration-plan.md),
 the [Phase 1 completion evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase1-completion-2026-10-10.md),
