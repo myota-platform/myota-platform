@@ -11,8 +11,81 @@
       "properties": {
         "eventType": {
           "const": "activity.adif.queued.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "activationId": {
+              "type": "string"
+            },
+            "filename": {
+              "type": "string"
+            },
+            "objectKey": {
+              "type": "string"
+            },
+            "bucket": {
+              "type": "string"
+            },
+            "sha256": {
+              "type": "string"
+            },
+            "contentSize": {
+              "type": "integer"
+            },
+            "scan": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": true
+            },
+            "status": {
+              "type": "string"
+            },
+            "malwareStatus": {
+              "type": "string"
+            },
+            "recordsSeen": {
+              "type": "integer"
+            },
+            "recordsAccepted": {
+              "type": "integer"
+            },
+            "recordsRejected": {
+              "type": "integer"
+            },
+            "errors": {
+              "type": "array",
+              "items": {}
+            },
+            "createdAt": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "activationId",
+            "filename",
+            "objectKey",
+            "bucket",
+            "sha256",
+            "contentSize",
+            "status",
+            "malwareStatus",
+            "recordsSeen",
+            "recordsAccepted",
+            "recordsRejected",
+            "errors",
+            "createdAt"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-activity-callsite",
+  "x-data-classification": "personal-and-operational-data"
 }
