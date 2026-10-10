@@ -30,12 +30,12 @@ the disjoint `MYOTA_GEODATA_WORK` WorkQueue. NATS remains cluster-internal
 through a ClusterIP service without auth/TLS under the trusted workload
 boundary. Phases 0–4 are complete within their evidence bounds. Phase 5's four
 Geodata target durables, migration 021, partial-deletion retry fix, and
-transactional Activity idempotency fix are deployed. Helm revision 191 is
-deployed; Fleet reports Ready=True at Deploy commit `a68eedd5ba7ee8aa0297d14ed8a38c4fceb9f109` with 60/60
+transactional Activity idempotency fix are deployed. Helm revision 192 is
+deployed; Fleet reports Ready=True at Deploy commit `6443473828305ab9d02a918bbe990d01abe97f6a` with 60/60
 resources. First-party image references use immutable digests and match live
 pod IDs. Four target durables are empty with active workers; four old Geodata
 durables remain inactive and empty through the rollback observation ending no
-earlier than 21:28:41 UTC on 11 October 2026. No production Geodata work was available to process.
+earlier than 21:39:22 UTC on 11 October 2026. No production Geodata work was available to process.
 Only the observation and safe legacy durable retirement remain open. See the
 [event registry](contracts/event-registry.json),
 [Phase 5 evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase5-geodata-work-2026-10-10.md),
