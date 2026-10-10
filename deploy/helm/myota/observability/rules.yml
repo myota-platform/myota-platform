@@ -29,6 +29,38 @@ groups:
         annotations:
           summary: MyOTA service metrics are unavailable
           description: A service is not responding at its metrics endpoint.
+      - alert: MyOTASeaweedMetricsUnavailable
+        expr: up{job="myota-otel-collector", exported_job="seaweedfs"} == 0
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: SeaweedFS Prometheus metrics endpoint is unavailable
+          description: Check the SeaweedFS mini metrics listener and Collector scrape target; missing metrics are not zero storage activity.
+      - alert: MyOTASeaweedS3ErrorRateHigh
+        expr: |
+          (
+            sum(rate(SeaweedFS_s3_request_total{exported_job="seaweedfs",code!~"2.."}[5m]))
+            /
+            clamp_min(sum(rate(SeaweedFS_s3_request_total{exported_job="seaweedfs"}[5m])), 0.1)
+          ) > 0.05
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: SeaweedFS S3 error rate is high
+          description: More than 5% of observed S3 requests have returned non-2xx responses for five minutes.
+      - alert: MyOTASeaweedS3LatencyHigh
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (
+              rate(SeaweedFS_s3_request_seconds_bucket{exported_job="seaweedfs"}[5m])
+            )
+          ) > 2
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: SeaweedFS S3 p95 processing time is high
+          description: SeaweedFS server-side p95 request processing time has exceeded two seconds for ten minutes.
       - alert: MyOTAActivityQueueBacklog
         expr: myota_activity_jobs_queued_total{job="myota-otel-collector"} > 100
         for: 10m
@@ -43,6 +75,34 @@ groups:
         annotations:
           summary: Activity database metrics are unavailable
           description: Activity domain gauges cannot currently be read from PostgreSQL.
+      - alert: MyOTAOutboxRelayMetricsUnavailable
+        expr: up{job="myota-otel-collector", exported_job="myota-outbox"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: An outbox relay metrics endpoint is unavailable
+          description: Check the affected core, activity, or geo relay pod and its database/NATS connectivity.
+      - alert: MyOTAOutboxOldestPendingEvent
+        expr: myota_outbox_oldest_pending_age_seconds{job="myota-otel-collector"} > 120
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: An outbox event is waiting to publish
+          description: Inspect the matching relay's outbox backlog, database connectivity, NATS status, and retry errors.
+      - alert: MyOTAOutboxDeadLetterUnresolved
+        expr: myota_outbox_unresolved_dead_letters{job="myota-otel-collector"} > 0
+        for: 1m
+        labels: {severity: warning}
+        annotations:
+          summary: An outbox event needs operator review
+          description: Inspect redacted dead-letter metadata and redrive from the owning database only after the cause is understood.
+      - alert: MyOTAOutboxRetriesSustained
+        expr: sum by (worker) (rate(myota_outbox_retries_total{job="myota-otel-collector"}[5m])) > 0
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: An outbox relay is retrying continuously
+          description: Inspect the relay's database and NATS connectivity, error logs, and oldest pending event before retry exhaustion.
       - alert: MyOTAApiErrorRateHigh
         expr: |
           (

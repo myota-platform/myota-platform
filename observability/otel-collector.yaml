@@ -12,6 +12,14 @@ receivers:
           scrape_interval: 15s
           static_configs:
             - targets: [gateway:8080, identity:8001, programmes:8002, geodata:8003, activity:8004, operations:8005]
+        - job_name: myota-outbox
+          scrape_interval: 15s
+          static_configs:
+            - targets: [outbox-core:9108, outbox-activity:9108, outbox-geo:9108]
+        - job_name: seaweedfs
+          scrape_interval: 15s
+          static_configs:
+            - targets: [seaweedfs:9324]
 processors:
   memory_limiter:
     check_interval: 1s

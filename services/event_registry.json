@@ -1,0 +1,613 @@
+{
+  "registryVersion": 1,
+  "events": {
+    "activity.activation.closed.v1": {
+      "subject": "myota.events.activity.activation.closed.v1",
+      "owner": "activity-service",
+      "producers": [
+        "activity",
+        "activity-service",
+        "awards"
+      ],
+      "dataClassification": "personal"
+    },
+    "activity.activation.created.v1": {
+      "subject": "myota.events.activity.activation.created.v1",
+      "owner": "activity-service",
+      "producers": [
+        "activity",
+        "activity-service",
+        "awards"
+      ],
+      "dataClassification": "personal"
+    },
+    "activity.adif.queued.v1": {
+      "subject": "myota.events.activity.adif.queued.v1",
+      "owner": "activity-service",
+      "producers": [
+        "activity",
+        "activity-service",
+        "awards"
+      ],
+      "dataClassification": "personal-and-operational-data"
+    },
+    "activity.entity.cascade-deleted.v1": {
+      "subject": "myota.events.activity.entity.cascade-deleted.v1",
+      "owner": "activity-service",
+      "producers": [
+        "activity",
+        "activity-service",
+        "awards"
+      ],
+      "dataClassification": "personal"
+    },
+    "activity.qso.recorded.v1": {
+      "subject": "myota.events.activity.qso.recorded.v1",
+      "owner": "activity-service",
+      "producers": [
+        "activity",
+        "activity-service",
+        "awards"
+      ],
+      "dataClassification": "personal"
+    },
+    "awards.definition.published.v1": {
+      "subject": "myota.events.awards.definition.published.v1",
+      "owner": "activity-service",
+      "producers": [
+        "activity",
+        "activity-service",
+        "awards"
+      ],
+      "dataClassification": "internal-configuration-and-personal"
+    },
+    "awards.definition.saved.v1": {
+      "subject": "myota.events.awards.definition.saved.v1",
+      "owner": "activity-service",
+      "producers": [
+        "activity",
+        "activity-service",
+        "awards"
+      ],
+      "dataClassification": "internal-configuration-and-personal"
+    },
+    "awards.issued.v1": {
+      "subject": "myota.events.awards.issued.v1",
+      "owner": "activity-service",
+      "producers": [
+        "activity",
+        "activity-service",
+        "awards"
+      ],
+      "dataClassification": "personal-and-certificate-metadata"
+    },
+    "awards.rendered.v1": {
+      "subject": "myota.events.awards.rendered.v1",
+      "owner": "activity-service",
+      "producers": [
+        "activity",
+        "activity-service",
+        "awards"
+      ],
+      "dataClassification": "personal-and-certificate-metadata"
+    },
+    "awards.request.created.v1": {
+      "subject": "myota.events.awards.request.created.v1",
+      "owner": "activity-service",
+      "producers": [
+        "activity",
+        "activity-service",
+        "awards"
+      ],
+      "dataClassification": "personal-and-certificate-metadata"
+    },
+    "geodata.conflation.resolved.v1": {
+      "subject": "myota.events.geodata.conflation.resolved.v1",
+      "owner": "geodata-service",
+      "producers": [
+        "geodata"
+      ],
+      "dataClassification": "geospatial-and-review-metadata"
+    },
+    "geodata.entity-deletion-job.completed.v1": {
+      "subject": "myota.events.geodata.entity-deletion-job.completed.v1",
+      "owner": "geodata-service",
+      "producers": [
+        "geodata"
+      ],
+      "dataClassification": "personal-and-operational-data"
+    },
+    "geodata.entity-deletion-job.created.v1": {
+      "subject": "myota.events.geodata.entity-deletion-job.created.v1",
+      "owner": "geodata-service",
+      "producers": [
+        "geodata"
+      ],
+      "dataClassification": "personal-and-operational-data"
+    },
+    "geodata.entity-deletion-job.failed.v1": {
+      "subject": "myota.events.geodata.entity-deletion-job.failed.v1",
+      "owner": "geodata-service",
+      "producers": [
+        "geodata"
+      ],
+      "dataClassification": "personal-and-operational-data"
+    },
+    "geodata.entity.candidate.created.v1": {
+      "subject": "myota.events.geodata.entity.candidate.created.v1",
+      "owner": "geodata-service",
+      "producers": [
+        "geodata"
+      ],
+      "dataClassification": "geospatial-and-operational-data"
+    },
+    "geodata.entity.deleted.v1": {
+      "subject": "myota.events.geodata.entity.deleted.v1",
+      "owner": "geodata-service",
+      "producers": [
+        "geodata"
+      ],
+      "dataClassification": "geospatial-and-review-metadata"
+    },
+    "geodata.entity.entity-type-changed.v1": {
+      "subject": "myota.events.geodata.entity.entity-type-changed.v1",
+      "owner": "geodata-service",
+      "producers": [
+        "geodata"
+      ],
+      "dataClassification": "geospatial-and-review-metadata"
+    },
+    "geodata.entity.geometry-type-changed.v1": {
+      "subject": "myota.events.geodata.entity.geometry-type-changed.v1",
+      "owner": "geodata-service",
+      "producers": [
+        "geodata"
+      ],
+      "dataClassification": "geospatial-and-review-metadata"
+    },
+    "geodata.entity.geometry-updated.v1": {
+      "subject": "myota.events.geodata.entity.geometry-updated.v1",
+      "owner": "geodata-service",
+      "producers": [
+        "geodata"
+      ],
+      "dataClassification": "geospatial-and-review-metadata"
+    },
+    "geodata.entity.import-approved.v1": {
+      "subject": "myota.events.geodata.entity.import-approved.v1",
+      "owner": "geodata-service",
+      "producers": [
+        "geodata"
+      ],
+      "dataClassification": "geospatial-and-operational-data"
+    },
+    "geodata.entity.import-updated.v1": {
+      "subject": "myota.events.geodata.entity.import-updated.v1",
+      "owner": "geodata-service",
+      "producers": [
+        "geodata"
+      ],
+      "dataClassification": "geospatial-and-operational-data"
+    },
+    "geodata.entity.location-enriched.v1": {
+      "subject": "myota.events.geodata.entity.location-enriched.v1",
+      "owner": "geodata-service",
+      "producers": [
+        "geodata"
+      ],
+      "dataClassification": "geospatial-and-review-metadata"
+    },
+    "geodata.entity.location-updated.v1": {
+      "subject": "myota.events.geodata.entity.location-updated.v1",
+      "owner": "geodata-service",
+      "producers": [
+        "geodata"
+      ],
+      "dataClassification": "geospatial-and-review-metadata"
+    },
+    "geodata.entity.name-changed.v1": {
+      "subject": "myota.events.geodata.entity.name-changed.v1",
+      "owner": "geodata-service",
+      "producers": [
+        "geodata"
+      ],
+      "dataClassification": "geospatial-and-review-metadata"
+    },
+    "geodata.entity.reviewed.v1": {
+      "subject": "myota.events.geodata.entity.reviewed.v1",
+      "owner": "geodata-service",
+      "producers": [
+        "geodata"
+      ],
+      "dataClassification": "geospatial-and-review-metadata"
+    },
+    "geodata.entity.source-disappeared.v1": {
+      "subject": "myota.events.geodata.entity.source-disappeared.v1",
+      "owner": "geodata-service",
+      "producers": [
+        "geodata"
+      ],
+      "dataClassification": "geospatial-and-operational-data"
+    },
+    "geodata.entity.status-changed.v1": {
+      "subject": "myota.events.geodata.entity.status-changed.v1",
+      "owner": "geodata-service",
+      "producers": [
+        "geodata"
+      ],
+      "dataClassification": "geospatial-and-review-metadata"
+    },
+    "geodata.import.cancellation-requested.v1": {
+      "subject": "myota.events.geodata.import.cancellation-requested.v1",
+      "owner": "geodata-service",
+      "producers": [
+        "geodata"
+      ],
+      "dataClassification": "internal-operational-metadata"
+    },
+    "geodata.import.cancelled.v1": {
+      "subject": "myota.events.geodata.import.cancelled.v1",
+      "owner": "geodata-service",
+      "producers": [
+        "geodata"
+      ],
+      "dataClassification": "internal-operational-metadata"
+    },
+    "geodata.import.candidates.rejected.v1": {
+      "subject": "myota.events.geodata.import.candidates.rejected.v1",
+      "owner": "geodata-service",
+      "producers": [
+        "geodata"
+      ],
+      "dataClassification": "geospatial-and-review-metadata"
+    },
+    "geodata.import.candidates.validated.v1": {
+      "subject": "myota.events.geodata.import.candidates.validated.v1",
+      "owner": "geodata-service",
+      "producers": [
+        "geodata"
+      ],
+      "dataClassification": "geospatial-and-review-metadata"
+    },
+    "geodata.import.failed.v1": {
+      "subject": "myota.events.geodata.import.failed.v1",
+      "owner": "geodata-service",
+      "producers": [
+        "geodata"
+      ],
+      "dataClassification": "internal-operational-metadata"
+    },
+    "geodata.import.preprocessed.v1": {
+      "subject": "myota.events.geodata.import.preprocessed.v1",
+      "owner": "geodata-service",
+      "producers": [
+        "geodata"
+      ],
+      "dataClassification": "geospatial-and-source-data"
+    },
+    "geodata.import.processed.v1": {
+      "subject": "myota.events.geodata.import.processed.v1",
+      "owner": "geodata-service",
+      "producers": [
+        "geodata"
+      ],
+      "dataClassification": "internal-operational-metadata"
+    },
+    "geodata.import.processing.completed.v1": {
+      "subject": "myota.events.geodata.import.processing.completed.v1",
+      "owner": "geodata-service",
+      "producers": [
+        "geodata"
+      ],
+      "dataClassification": "geospatial-and-operational-data"
+    },
+    "geodata.loadtest.cleaned.v1": {
+      "subject": "myota.events.geodata.loadtest.cleaned.v1",
+      "owner": "geodata-service",
+      "producers": [
+        "geodata"
+      ],
+      "dataClassification": "internal-operational-metadata"
+    },
+    "geodata.refresh-schedule.created.v1": {
+      "subject": "myota.events.geodata.refresh-schedule.created.v1",
+      "owner": "geodata-service",
+      "producers": [
+        "geodata"
+      ],
+      "dataClassification": "internal-configuration-and-source-metadata"
+    },
+    "identity.account.admin-updated.v1": {
+      "subject": "myota.events.identity.account.admin-updated.v1",
+      "owner": "identity-service",
+      "producers": [
+        "identity"
+      ],
+      "dataClassification": "personal"
+    },
+    "identity.account.created.v1": {
+      "subject": "myota.events.identity.account.created.v1",
+      "owner": "identity-service",
+      "producers": [
+        "identity"
+      ],
+      "dataClassification": "personal"
+    },
+    "identity.account.deactivated.v1": {
+      "subject": "myota.events.identity.account.deactivated.v1",
+      "owner": "identity-service",
+      "producers": [
+        "identity"
+      ],
+      "dataClassification": "personal"
+    },
+    "identity.bootstrap-admin.created.v1": {
+      "subject": "myota.events.identity.bootstrap-admin.created.v1",
+      "owner": "identity-service",
+      "producers": [
+        "identity"
+      ],
+      "dataClassification": "personal"
+    },
+    "identity.callsign.added.v1": {
+      "subject": "myota.events.identity.callsign.added.v1",
+      "owner": "identity-service",
+      "producers": [
+        "identity"
+      ],
+      "dataClassification": "personal"
+    },
+    "identity.callsign.evidence-submitted.v1": {
+      "subject": "myota.events.identity.callsign.evidence-submitted.v1",
+      "owner": "identity-service",
+      "producers": [
+        "identity"
+      ],
+      "dataClassification": "personal"
+    },
+    "identity.callsign.primary-changed.v1": {
+      "subject": "myota.events.identity.callsign.primary-changed.v1",
+      "owner": "identity-service",
+      "producers": [
+        "identity"
+      ],
+      "dataClassification": "personal"
+    },
+    "identity.callsign.retired.v1": {
+      "subject": "myota.events.identity.callsign.retired.v1",
+      "owner": "identity-service",
+      "producers": [
+        "identity"
+      ],
+      "dataClassification": "personal"
+    },
+    "identity.callsign.verified.v1": {
+      "subject": "myota.events.identity.callsign.verified.v1",
+      "owner": "identity-service",
+      "producers": [
+        "identity"
+      ],
+      "dataClassification": "personal"
+    },
+    "identity.login.failed.v1": {
+      "subject": "myota.events.identity.login.failed.v1",
+      "owner": "identity-service",
+      "producers": [
+        "identity"
+      ],
+      "dataClassification": "personal-and-security"
+    },
+    "identity.login.succeeded.v1": {
+      "subject": "myota.events.identity.login.succeeded.v1",
+      "owner": "identity-service",
+      "producers": [
+        "identity"
+      ],
+      "dataClassification": "personal-and-security"
+    },
+    "identity.oidc.mapping.updated.v1": {
+      "subject": "myota.events.identity.oidc.mapping.updated.v1",
+      "owner": "identity-service",
+      "producers": [
+        "identity"
+      ],
+      "dataClassification": "internal-configuration"
+    },
+    "identity.recovery.completed.v1": {
+      "subject": "myota.events.identity.recovery.completed.v1",
+      "owner": "identity-service",
+      "producers": [
+        "identity"
+      ],
+      "dataClassification": "personal-and-security"
+    },
+    "identity.recovery.requested.v1": {
+      "subject": "myota.events.identity.recovery.requested.v1",
+      "owner": "identity-service",
+      "producers": [
+        "identity"
+      ],
+      "dataClassification": "personal-and-security"
+    },
+    "identity.role-definition.created.v1": {
+      "subject": "myota.events.identity.role-definition.created.v1",
+      "owner": "identity-service",
+      "producers": [
+        "identity"
+      ],
+      "dataClassification": "internal-authorization"
+    },
+    "identity.role-definition.updated.v1": {
+      "subject": "myota.events.identity.role-definition.updated.v1",
+      "owner": "identity-service",
+      "producers": [
+        "identity"
+      ],
+      "dataClassification": "internal-authorization"
+    },
+    "identity.role.assigned.v1": {
+      "subject": "myota.events.identity.role.assigned.v1",
+      "owner": "identity-service",
+      "producers": [
+        "identity"
+      ],
+      "dataClassification": "personal-and-security"
+    },
+    "identity.roles.replaced.v1": {
+      "subject": "myota.events.identity.roles.replaced.v1",
+      "owner": "identity-service",
+      "producers": [
+        "identity"
+      ],
+      "dataClassification": "personal-and-security"
+    },
+    "identity.service-token.issued.v1": {
+      "subject": "myota.events.identity.service-token.issued.v1",
+      "owner": "identity-service",
+      "producers": [
+        "identity"
+      ],
+      "dataClassification": "security-sensitive"
+    },
+    "programme.archived.v1": {
+      "subject": "myota.events.programme.archived.v1",
+      "owner": "programme-service",
+      "producers": [
+        "programmes"
+      ],
+      "dataClassification": "internal-configuration"
+    },
+    "programme.content.published.v1": {
+      "subject": "myota.events.programme.content.published.v1",
+      "owner": "programme-service",
+      "producers": [
+        "programmes"
+      ],
+      "dataClassification": "internal-configuration-and-user-metadata"
+    },
+    "programme.content.reviewed.v1": {
+      "subject": "myota.events.programme.content.reviewed.v1",
+      "owner": "programme-service",
+      "producers": [
+        "programmes"
+      ],
+      "dataClassification": "internal-configuration-and-user-metadata"
+    },
+    "programme.content.saved.v1": {
+      "subject": "myota.events.programme.content.saved.v1",
+      "owner": "programme-service",
+      "producers": [
+        "programmes"
+      ],
+      "dataClassification": "internal-configuration-and-user-metadata"
+    },
+    "programme.content.submitted.v1": {
+      "subject": "myota.events.programme.content.submitted.v1",
+      "owner": "programme-service",
+      "producers": [
+        "programmes"
+      ],
+      "dataClassification": "internal-configuration-and-user-metadata"
+    },
+    "programme.created.v1": {
+      "subject": "myota.events.programme.created.v1",
+      "owner": "programme-service",
+      "producers": [
+        "programmes"
+      ],
+      "dataClassification": "internal-configuration"
+    },
+    "programme.entity-type.assigned.v1": {
+      "subject": "myota.events.programme.entity-type.assigned.v1",
+      "owner": "programme-service",
+      "producers": [
+        "programmes"
+      ],
+      "dataClassification": "internal-configuration"
+    },
+    "programme.entity-type.catalog-saved.v1": {
+      "subject": "myota.events.programme.entity-type.catalog-saved.v1",
+      "owner": "programme-service",
+      "producers": [
+        "programmes"
+      ],
+      "dataClassification": "internal-configuration-and-user-metadata"
+    },
+    "programme.entity-type.unassigned.v1": {
+      "subject": "myota.events.programme.entity-type.unassigned.v1",
+      "owner": "programme-service",
+      "producers": [
+        "programmes"
+      ],
+      "dataClassification": "internal-configuration"
+    },
+    "programme.policy-draft.published.v1": {
+      "subject": "myota.events.programme.policy-draft.published.v1",
+      "owner": "programme-service",
+      "producers": [
+        "programmes"
+      ],
+      "dataClassification": "internal-configuration-and-user-metadata"
+    },
+    "programme.policy-draft.saved.v1": {
+      "subject": "myota.events.programme.policy-draft.saved.v1",
+      "owner": "programme-service",
+      "producers": [
+        "programmes"
+      ],
+      "dataClassification": "internal-configuration-and-user-metadata"
+    },
+    "programme.updated.v1": {
+      "subject": "myota.events.programme.updated.v1",
+      "owner": "programme-service",
+      "producers": [
+        "programmes"
+      ],
+      "dataClassification": "internal-configuration"
+    }
+  },
+  "legacyWorkRoutes": {
+    "geodata.import.queued.v1": {
+      "subject": "myota.geodata.import.preprocess.v1",
+      "workType": "geodata.import-preprocess.v1",
+      "producers": [
+        "geodata"
+      ]
+    },
+    "geodata.import.recovered.v1": {
+      "subject": "myota.geodata.import.preprocess.v1",
+      "workType": "geodata.import-preprocess.v1",
+      "producers": [
+        "geodata"
+      ]
+    },
+    "geodata.import.processing.queued.v1": {
+      "subject": "myota.geodata.import.process.v1",
+      "workType": "geodata.import-promotion.v1",
+      "producers": [
+        "geodata"
+      ]
+    },
+    "geodata.import.processing.recovered.v1": {
+      "subject": "myota.geodata.import.process.v1",
+      "workType": "geodata.import-promotion.v1",
+      "producers": [
+        "geodata"
+      ]
+    },
+    "geodata.entity-deletion-job.queued.v1": {
+      "subject": "myota.geodata.entity.delete.v1",
+      "workType": "geodata.entity-delete.v1",
+      "producers": [
+        "geodata"
+      ]
+    },
+    "geodata.entity.location-enrichment-requested.v1": {
+      "subject": "myota.geodata.entity.location-enrichment.v1",
+      "workType": "geodata.location-enrichment.v1",
+      "producers": [
+        "geodata"
+      ]
+    }
+  }
+}

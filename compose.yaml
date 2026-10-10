@@ -121,6 +121,8 @@ services:
       MYOTA_LOAD_TEST_CLEANUP_ENABLED: "1"
       MYOTA_MAX_BODY_BYTES: "1073741824"
       MYOTA_UPLOAD_MAX_BYTES: "1073741824"
+      MYOTA_DB_POOL_MAX: "8"
+      MYOTA_HTTP_MAX_WORKERS: "64"
       # Upload and import work is consumed from durable JetStream queues by a
       # separately scalable geodata-owned worker process.
       MYOTA_UPLOAD_PART_MAX_BYTES: "16777216"
@@ -136,6 +138,9 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
     depends_on: {migrations: {condition: service_completed_successfully}, seaweedfs: {condition: service_healthy}, nats: {condition: service_started}}
     ports: ["8003:8003"]
+    cpus: 1.0
+    mem_limit: 1g
+    mem_reservation: 256m
   geodata-import-retention:
     build: ../myota-geodata-service
     restart: unless-stopped
@@ -230,6 +235,9 @@ services:
       NATS_URL: nats://nats:4222
       OPERATIONS_POLL_SECONDS: "30"
       OPERATIONS_HISTORY_DAYS: "7"
+      MYOTA_IDENTITY_URL: http://identity:8001
+      OPERATIONS_STORAGE_HEALTH_URL: http://seaweedfs:8333/status
+      OPERATIONS_STORAGE_METRICS_URL: http://seaweedfs:9324/metrics
       MYOTA_OTEL_ENABLED: "1"
       OTEL_SERVICE_NAME: myota-operations
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
@@ -245,6 +253,7 @@ services:
       MYOTA_ACTIVITY_URL: http://activity:8004
       MYOTA_OPERATIONS_URL: http://operations:8005
       MYOTA_PROXY_UPLOAD_TIMEOUT_SECONDS: "3600"
+      MYOTA_ENV: ${MYOTA_ENV:-development}
       MYOTA_OTEL_ENABLED: "1"
       OTEL_SERVICE_NAME: myota-gateway
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
@@ -292,12 +301,12 @@ services:
   seaweedfs:
     image: chrislusf/seaweedfs:latest@sha256:ce9e796f1fe6f06968f4c04bdaf8f678dad9c8acdfef3d244133d71bfa6bf882
     restart: unless-stopped
-    command: ["mini", "-dir=/data", "-ip.bind=0.0.0.0"]
+    command: ["mini", "-dir=/data", "-ip.bind=0.0.0.0", "-metricsPort=9324"]
     environment:
       AWS_ACCESS_KEY_ID: myota-s3
       AWS_SECRET_ACCESS_KEY: myota-s3-dev-only
     volumes: ["seaweedfs-data:/data"]
-    ports: ["8333:8333", "8888:8888"]
+    ports: ["8333:8333", "8888:8888", "9324:9324"]
     healthcheck:
       # Probe the S3 status endpoint. Probing the filer HTML root with
       # wget --spider makes the template writer log a broken pipe because the
@@ -309,31 +318,40 @@ services:
   outbox-core:
     build: .
     restart: unless-stopped
+    expose: ["9108"]
     command: ["python3", "services/outbox_worker.py"]
     environment:
       OUTBOX_DATABASE_URL: postgresql://myota:myota-dev-only@core-db:5432/myota_core
       MYOTA_REQUIRE_DURABILITY: "1"
       NATS_URL: nats://nats:4222
+      OUTBOX_MAX_MESSAGE_BYTES: 1048576
+      OUTBOX_METRICS_PORT: 9108
       OUTBOX_WORKER: core-outbox
     depends_on: {migrations: {condition: service_completed_successfully}, nats: {condition: service_started}}
   outbox-activity:
     build: .
     restart: unless-stopped
+    expose: ["9108"]
     command: ["python3", "services/outbox_worker.py"]
     environment:
       OUTBOX_DATABASE_URL: postgresql://myota:myota-dev-only@activity-db:5432/myota_activity
       MYOTA_REQUIRE_DURABILITY: "1"
       NATS_URL: nats://nats:4222
+      OUTBOX_MAX_MESSAGE_BYTES: 1048576
+      OUTBOX_METRICS_PORT: 9108
       OUTBOX_WORKER: activity-outbox
     depends_on: {migrations: {condition: service_completed_successfully}, nats: {condition: service_started}}
   outbox-geo:
     build: .
     restart: unless-stopped
+    expose: ["9108"]
     command: ["python3", "services/outbox_worker.py"]
     environment:
       OUTBOX_DATABASE_URL: postgresql://myota:myota-dev-only@geo-db:5432/myota_geo
       MYOTA_REQUIRE_DURABILITY: "1"
       NATS_URL: nats://nats:4222
+      OUTBOX_MAX_MESSAGE_BYTES: 1048576
+      OUTBOX_METRICS_PORT: 9108
       OUTBOX_WORKER: geo-outbox
     depends_on: {migrations: {condition: service_completed_successfully}, nats: {condition: service_started}}
   geodata-import-processing:
@@ -345,16 +363,24 @@ services:
       MYOTA_ACTIVITY_URL: http://activity:8004
       GEO_DATABASE_URL: postgresql://myota:myota-dev-only@geo-db:5432/myota_geo
       MYOTA_REQUIRE_DURABILITY: "1"
+      MYOTA_DB_POOL_MAX: "4"
       MYOTA_AUTH_SIGNING_KEY: myota-local-development-signing-key
       NATS_URL: nats://nats:4222
       MYOTA_OBJECT_STORAGE_ENDPOINT: http://seaweedfs:8333
       MYOTA_OBJECT_STORAGE_ACCESS_KEY: myota-s3
       MYOTA_OBJECT_STORAGE_SECRET_KEY: myota-s3-dev-only
       MYOTA_GEODATA_IMPORT_BUCKET: myota-geodata-imports
+      BIGDATACLOUD_API_KEY: ${BIGDATACLOUD_API_KEY:-}
+      BIGDATACLOUD_LOCALITY_LANGUAGE: ${BIGDATACLOUD_LOCALITY_LANGUAGE:-en}
       MYOTA_IMPORT_WORKERS: "1"
+      MYOTA_IMPORT_BATCH_SIZE: "100"
       GEODATA_WORKER_MAX_DELIVERIES: "100"
-      GEODATA_WORKER_MAX_ACK_PENDING: "1"
+      GEODATA_WORKER_MAX_ACK_PENDING: "4"
+      GEODATA_DELETION_RECONCILE_SECONDS: "15"
     depends_on: {migrations: {condition: service_completed_successfully}, nats: {condition: service_started}, seaweedfs: {condition: service_healthy}}
+    cpus: 1.0
+    mem_limit: 1g
+    mem_reservation: 256m
   prometheus:
     image: prom/prometheus:v2.55.1
     profiles: [observability]
@@ -405,6 +431,7 @@ services:
       GF_AUTH_PROXY_HEADER_PROPERTY: username
       GF_AUTH_PROXY_AUTO_SIGN_UP: "true"
       GF_AUTH_PROXY_ENABLE_LOGIN_TOKEN: "false"
+      GF_AUTH_PROXY_SYNC_TTL: "0"
       GF_AUTH_PROXY_HEADERS: "Name:X-WEBAUTH-NAME Email:X-WEBAUTH-EMAIL Role:X-WEBAUTH-ROLE"
       GF_USERS_AUTO_ASSIGN_ORG_ROLE: Viewer
     volumes:

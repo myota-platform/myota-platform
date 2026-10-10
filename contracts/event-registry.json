@@ -4692,7 +4692,8 @@
       ],
       "consumerSources": [
         "myota-geodata-service/geodata_import_worker.py"
-      ]
+      ],
+      "legacySubject": "myota.geodata.import.preprocess.v1"
     },
     {
       "workType": "geodata.import-promotion.v1",
@@ -4727,7 +4728,8 @@
       ],
       "consumerSources": [
         "myota-geodata-service/geodata_import_worker.py"
-      ]
+      ],
+      "legacySubject": "myota.geodata.import.process.v1"
     },
     {
       "workType": "geodata.entity-delete.v1",
@@ -4761,7 +4763,8 @@
       ],
       "consumerSources": [
         "myota-geodata-service/geodata_import_worker.py"
-      ]
+      ],
+      "legacySubject": "myota.geodata.entity.delete.v1"
     },
     {
       "workType": "geodata.location-enrichment.v1",
@@ -4818,7 +4821,24 @@
       ],
       "consumerSources": [
         "myota-geodata-service/geodata_import_worker.py"
-      ]
+      ],
+      "legacySubject": "myota.geodata.entity.location-enrichment.v1"
     }
-  ]
+  ],
+  "producerNamesByOwner": {
+    "identity-service": [
+      "identity"
+    ],
+    "programme-service": [
+      "programmes"
+    ],
+    "activity-service": [
+      "activity",
+      "activity-service",
+      "awards"
+    ],
+    "geodata-service": [
+      "geodata"
+    ]
+  }
 }

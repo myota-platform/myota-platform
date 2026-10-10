@@ -22,18 +22,22 @@ stale preprocessing projections under a row lock. See the
 [operations runbook](https://github.com/myota-platform/myota-docs/blob/main/docs/operations.md#activity-notification-consumer-rollouts)
 for rollout and retry behavior.
 
-The synchronized outbox relay currently provisions the supported legacy durable
-consumers before publishing and leaves deployed `MYOTA_EVENTS` on Interest
-retention. NATS remains cluster-internal through a ClusterIP service; auth/TLS is
-not required while the cluster workload boundary remains trusted. The selected
-migration to bounded Limits facts plus separate Activity and Geodata WorkQueue
-streams is not deployed. Phase 1 contract/topology and isolated safety
-qualification are complete; the opt-in Helm pre-upgrade gate remains disabled
-until Phase 2 compatibility checks pass. Initial finite limits are accepted for
-the current single-node scope with a documented short-sample caveat. See the
+The synchronized relay source now uses the event registry for dotted fact
+subjects, stable message IDs, size bounds, retries, dead-letter recovery, and
+backlog metrics. It validates the legacy `MYOTA_EVENTS` stream read-only. The
+live stream remains on Interest retention with the existing durable consumers;
+the relay does not provision target streams. NATS remains cluster-internal
+through a ClusterIP service without auth/TLS under the trusted workload
+boundary. The selected bounded fact stream and separate Activity/Geodata
+WorkQueue streams are not a production cutover. Phase 1 contracts/topology and
+Phase 2 relay hardening passed isolated checks; the opt-in Helm pre-upgrade gate
+remains disabled until compatibility gates pass. Initial finite limits are
+accepted for the current single-node scope with a documented short-sample
+caveat. See the
 [event registry](contracts/event-registry.json),
 [migration plan](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/nats-event-migration-plan.md),
-and [Phase 1 completion evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase1-completion-2026-10-10.md).
+the [Phase 1 completion evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase1-completion-2026-10-10.md),
+and [Phase 2 relay evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase2-relay-hardening-2026-10-10.md).
 The deployment mirror contains the matching [explicit provisioning guide](deploy/docs/jetstream-topology.md).
 
 ## What works now

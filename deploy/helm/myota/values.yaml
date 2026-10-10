@@ -245,6 +245,8 @@ jetstreamProvisioner:
 outbox:
   enabled: true
   maxAttempts: 12
+  maxMessageBytes: 1048576
+  metricsPort: 9108
 observability:
   enabled: true
   storageClassName: ""

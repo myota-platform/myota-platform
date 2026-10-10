@@ -2,23 +2,39 @@
 
 ## Current behavior
 
-Services persist versioned events in transactional outboxes in their owned
-databases. The current shared relay publishes to a file-backed `MYOTA_EVENTS`
-stream with Interest retention. That stream currently mixes committed facts and
-Geodata work subjects. The relay currently provisions consumers itself and can
-change stream retention at startup. The shared envelope has no `envelopeVersion`
-and includes a relay `attempts` field; the subject helper currently replaces
-dots in event types with underscores. These are current-state observations, not
-the selected target contract. See the [Phase 0 inventory](../../myota-docs/docs/operations/messaging/nats-event-migration-inventory.md)
-for repository evidence.
+The Phase 0 inventory records the 9 October pre-Phase-2 baseline. The relay
+source now on `main` has the following behavior:
+
+- Registered fact types route to `myota.events.<eventType>` with dotted event
+  type tokens preserved. Producer identity, UUID event IDs, timezone-aware
+  timestamps, object payloads, and exact registry membership are checked.
+- Fact envelopes carry `envelopeVersion: 1`; mutable relay attempts are not
+  serialized. `Nats-Msg-Id` is the stable event ID. Legacy Geodata work source
+  types remain on their existing allowlisted `myota.geodata.*` subjects until
+  the controlled work-stream migration.
+- The configured serialized-message cap is enforced before publish. This is a
+  size bound, not JSON Schema, prohibited-field, or purpose-limitation
+  enforcement. Geodata preprocessing still needs a compatible payload
+  minimization decision.
+- Startup validates the existing mixed stream and its durables read-only. The
+  relay no longer creates or changes broker topology. The Geodata worker also
+  leaves retired durable removal to a reviewed deployment-owned cutover.
+
+The live broker remains on the legacy file-backed `MYOTA_EVENTS` stream with
+Interest retention and the existing Activity/Geodata durable set, as confirmed
+by a read-only inspection on 10 October. No producer or consumer path changed
+in that inspection. See the [Phase 0 inventory](../../myota-docs/docs/operations/messaging/nats-event-migration-inventory.md)
+and [Phase 2 evidence](../../myota-docs/docs/operations/messaging/evidence/phase2-relay-hardening-2026-10-10.md)
+for the dated source and live-state distinction.
 
 ## Selected target contract (Phase 1 contract/topology complete)
 
 The [machine-readable registry](event-registry.json) enumerates the Phase 0
 event facts and selected work commands. Per-event schemas are under
 [`schemas/`](schemas/). All schemas constrain the immutable outer envelope and
-event identity. The 19 Identity, 12 Programme, 10 Activity, and 27 Geodata fact payload schemas
-are derived from producer call sites in `myota-identity-service/identity.py`,
+event identity. Source-derived fact schemas cover 19 Identity, 12 Programme,
+10 Activity, and 27 Geodata events. They are derived from producer call sites in
+`myota-identity-service/identity.py`,
 `myota-programme-service/programmes.py`, `myota-activity-service/activity.py`,
 `myota-activity-service/activity_repository.py`, and
 `myota-activity-service/awards.py`; additive fields remain accepted. Activity
@@ -27,10 +43,10 @@ internal award configuration, and certificate details. Dynamic rule/configuratio
 objects and nested award assets remain unconstrained where source code accepts
 caller-defined structures. The project team's joint review accepts these as
 source-derived inventory contracts, not as authorization to publish every
-current field. Runtime enforcement remains gated on projection, compatibility,
-privacy, and size checks. Operations has no event-producing call site in the
-Phase 0 audit, so no Operations fact schema is required unless it becomes a
-producer.
+current field. The relay source enforces the configured serialized-size cap;
+JSON Schema and prohibited-field/purpose checks remain separate enforcement
+gates. Operations has no event-producing call site in the Phase 0 audit, so no
+Operations fact schema is required unless it becomes a producer.
 
 Target domain events use `envelopeVersion: 1`, a stable UUID `eventId`, dotted
 `eventType` with its `.vN` suffix, UTC `occurredAt`, producer, aggregate identity,
@@ -78,19 +94,38 @@ must be implemented and tested before a path publishes them.
 }
 ```
 
-The JSON above illustrates the target envelope and is not a claim that all
-current producers emit it. The source-derived Identity, Programme, Activity,
-and Geodata schemas describe observed payload shapes, including review metadata
-and sensitive fields. `geodata.import.preprocessed.v1` currently records the
-producer result object, including internal `_records` and `_status` fields and
-potential source features. Preserve v1 meaning; before publishing a minimized
-projection, define a compatible successor event version and consumer disposition.
-Operations has no event-producing call site. The target work payload shapes are
-defined, but transactional publication, idempotent handling, and recovery from
-the owning row remain runtime implementation gates before any work path uses
-these schemas.
+The JSON above illustrates the envelope currently emitted by Phase 2 relay
+source for registered facts; it does not describe the still-deployed relay or
+claim schema enforcement. Source-derived Identity, Programme, Activity, and
+Geodata schemas describe observed payload shapes, including review metadata and
+sensitive fields. In particular:
 
-Important events include `identity.account.created.v1`, `identity.callsign.verified.v1`, `programme.created.v1`, `geodata.import.queued.v1`, `geodata.import.cancellation-requested.v1`, `geodata.import.cancelled.v1`, `geodata.import.preprocessed.v1`, `geodata.import.candidates.validated.v1`, `geodata.import.processing.queued.v1`, `geodata.import.processing.completed.v1`, `geodata.import.processed.v1`, `geodata.entity.candidate.created.v1`, `geodata.entity.reviewed.v1`, `geodata.entity.location-enrichment-requested.v1`, `geodata.entity.location-enriched.v1`, `activity.activation.created.v1`, `activity.qso.recorded.v1`, `awards.definition.saved.v1`, `awards.definition.published.v1`, `awards.request.created.v1`, `awards.issued.v1`, and `awards.rendered.v1`.
+- `geodata.import.preprocessed.v1` includes the complete result object with
+  internal `_records` and `_status` fields and potential source features.
+- Preserve v1 meaning. Define a compatible successor version and consumer
+  disposition before publishing a minimized projection.
+- Operations has no event-producing call site. Target work payload shapes are
+  defined, but transactional publication, idempotent handling, and recovery
+  from the owning row remain runtime gates before work paths use them.
+
+Representative registered facts include:
+
+- **Identity and Programme:** `identity.account.created.v1`,
+  `identity.callsign.verified.v1`, and `programme.created.v1`.
+- **Geodata imports and review:** `geodata.import.queued.v1`,
+  `geodata.import.cancellation-requested.v1`,
+  `geodata.import.cancelled.v1`, `geodata.import.preprocessed.v1`,
+  `geodata.import.candidates.validated.v1`,
+  `geodata.import.processing.queued.v1`,
+  `geodata.import.processing.completed.v1`, `geodata.import.processed.v1`,
+  `geodata.entity.candidate.created.v1`, and `geodata.entity.reviewed.v1`.
+- **Geodata enrichment:**
+  `geodata.entity.location-enrichment-requested.v1` and
+  `geodata.entity.location-enriched.v1`.
+- **Activity and Awards:** `activity.activation.created.v1`,
+  `activity.qso.recorded.v1`, `awards.definition.saved.v1`,
+  `awards.definition.published.v1`, `awards.request.created.v1`,
+  `awards.issued.v1`, and `awards.rendered.v1`.
 
 File and pasted imports stop at `PREPROCESSED`. The administrator validation
 queue is paged and selection-based. Processing publishes the selected IDs to

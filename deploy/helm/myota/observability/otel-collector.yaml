@@ -10,6 +10,14 @@ receivers:
           scrape_interval: 15s
           static_configs:
             - targets: [myota-gateway:8080, myota-identity:8001, myota-programmes:8002, myota-geodata:8003, myota-activity:8004, myota-operations:8005]
+        - job_name: myota-outbox
+          scrape_interval: 15s
+          static_configs:
+            - targets: [myota-core-outbox-metrics:9108, myota-activity-outbox-metrics:9108, myota-geo-outbox-metrics:9108]
+        - job_name: seaweedfs
+          scrape_interval: 15s
+          static_configs:
+            - targets: [myota-seaweedfs:{{ .Values.seaweedfs.metricsPort }}]
 processors:
   memory_limiter: {check_interval: 1s, limit_mib: 256, spike_limit_mib: 64}
   batch: {timeout: 5s, send_batch_size: 512}
