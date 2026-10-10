@@ -11,8 +11,41 @@
       "properties": {
         "eventType": {
           "const": "geodata.entity.status-changed.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "entityId": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "previousStatus": {
+              "type": "string"
+            },
+            "reviewerId": {
+              "type": "string"
+            },
+            "note": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "entityId",
+            "status",
+            "previousStatus",
+            "reviewerId",
+            "note"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-geodata-callsite",
+  "x-data-classification": "geospatial-and-review-metadata"
 }
