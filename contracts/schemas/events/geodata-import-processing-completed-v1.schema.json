@@ -11,8 +11,49 @@
       "properties": {
         "eventType": {
           "const": "geodata.import.processing.completed.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "queueId": {
+              "type": "string"
+            },
+            "importRunId": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "targetStatus": {
+              "type": "string"
+            },
+            "created": {
+              "type": "array",
+              "items": {}
+            },
+            "updated": {
+              "type": "array",
+              "items": {}
+            },
+            "errors": {
+              "type": "array",
+              "items": {}
+            }
+          },
+          "required": [
+            "queueId",
+            "importRunId",
+            "status",
+            "targetStatus",
+            "created",
+            "updated",
+            "errors"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-geodata-callsite",
+  "x-data-classification": "geospatial-and-operational-data"
 }
