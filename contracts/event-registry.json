@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 26704)
+Total output lines: 3692
+
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "registryVersion": 1,
@@ -17,7 +20,111 @@
       "schema": "schemas/events/activity-activation-closed-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-activity-callsite",
+      "dataClassification": "personal",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "programmeSlug": {
+            "type": "string"
+          },
+          "entityId": {
+            "type": "string"
+          },
+          "entityType": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "jurisdiction": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "operatorId": {
+            "type": "string"
+          },
+          "operatorCallsign": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "startedAt": {
+            "type": "string"
+          },
+          "endedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "validityExpiresAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "location": {
+            "type": "object"
+          },
+          "programmeRules": {
+            "type": "object"
+          },
+          "ruleEvaluation": {
+            "type": "object"
+          },
+          "qsoCount": {
+            "type": "integer"
+          },
+          "uniqueCallsignCount": {
+            "type": "integer"
+          },
+          "uniqueEntityCount": {
+            "type": "integer"
+          },
+          "qsos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": true
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "programmeSlug",
+          "entityId",
+          "operatorId",
+          "startedAt",
+          "status",
+          "location",
+          "programmeRules",
+          "ruleEvaluation",
+          "qsoCount",
+          "uniqueCallsignCount",
+          "uniqueEntityCount",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": true
+      },
       "producerSources": [
         "myota-activity-service/activity.py",
         "myota-activity-service/activity_repository.py"
@@ -31,7 +138,111 @@
       "schema": "schemas/events/activity-activation-created-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-activity-callsite",
+      "dataClassification": "personal",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "programmeSlug": {
+            "type": "string"
+          },
+          "entityId": {
+            "type": "string"
+          },
+          "entityType": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "jurisdiction": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "operatorId": {
+            "type": "string"
+          },
+          "operatorCallsign": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "startedAt": {
+            "type": "string"
+          },
+          "endedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "validityExpiresAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "location": {
+            "type": "object"
+          },
+          "programmeRules": {
+            "type": "object"
+          },
+          "ruleEvaluation": {
+            "type": "object"
+          },
+          "qsoCount": {
+            "type": "integer"
+          },
+          "uniqueCallsignCount": {
+            "type": "integer"
+          },
+          "uniqueEntityCount": {
+            "type": "integer"
+          },
+          "qsos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": true
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "programmeSlug",
+          "entityId",
+          "operatorId",
+          "startedAt",
+          "status",
+          "location",
+          "programmeRules",
+          "ruleEvaluation",
+          "qsoCount",
+          "uniqueCallsignCount",
+          "uniqueEntityCount",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": true
+      },
       "producerSources": [
         "myota-activity-service/activity.py",
         "myota-activity-service/activity_repository.py"
@@ -45,7 +256,79 @@
       "schema": "schemas/events/activity-adif-queued-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-activity-callsite",
+      "dataClassification": "personal-and-operational-data",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "activationId": {
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "objectKey": {
+            "type": "string"
+          },
+          "bucket": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "contentSize": {
+            "type": "integer"
+          },
+          "scan": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+            "additionalProperties": true
+          },
+          "status": {
+            "type": "string"
+          },
+          "malwareStatus": {
+            "type": "string"
+          },
+          "recordsSeen": {
+            "type": "integer"
+          },
+          "recordsAccepted": {
+            "type": "integer"
+          },
+          "recordsRejected": {
+            "type": "integer"
+          },
+          "errors": {
+            "type": "array",
+            "items": {}
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "activationId",
+          "filename",
+          "objectKey",
+          "bucket",
+          "sha256",
+          "contentSize",
+          "status",
+          "malwareStatus",
+          "recordsSeen",
+          "recordsAccepted",
+          "recordsRejected",
+          "errors",
+          "createdAt"
+        ],
+        "additionalProperties": true
+      },
       "producerSources": [
         "myota-activity-service/activity_repository.py"
       ]
@@ -58,2471 +341,45 @@
       "schema": "schemas/events/activity-entity-cascade-deleted-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
+      "payloadEvidence": "source-derived-activity-callsite",
+      "dataClassification": "personal",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "entityId": {
+            "type": "string"
+          },
+          "deletedBy": {
+            "type": "string"
+          },
+          "qsoCount": {
+            "type": "integer"
+          },
+          "awardRecalculationJobs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": true
+            }
+          }
+        },
+        "required": [
+          "entityId",
+          "deletedBy",
+          "qsoCount",
+          "awardRecalculationJobs"
+        ],
+        "additionalProperties": true
+      },
       "producerSources": [
         "myota-activity-service/activity_repository.py"
       ]
     },
     {
       "eventType": "activity.qso.recorded.v1",
-      "owner": "activity-service",
-      "class": "domain-fact",
-      "subject": "myota.events.activity.qso.recorded.v1",
-      "schema": "schemas/events/activity-qso-recorded-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-activity-service/activity.py",
-        "myota-activity-service/activity_repository.py"
-      ]
-    },
-    {
-      "eventType": "awards.definition.published.v1",
-      "owner": "activity-service",
-      "class": "domain-fact",
-      "subject": "myota.events.awards.definition.published.v1",
-      "schema": "schemas/events/awards-definition-published-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-activity-service/awards.py"
-      ]
-    },
-    {
-      "eventType": "awards.definition.saved.v1",
-      "owner": "activity-service",
-      "class": "domain-fact",
-      "subject": "myota.events.awards.definition.saved.v1",
-      "schema": "schemas/events/awards-definition-saved-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-activity-service/awards.py"
-      ]
-    },
-    {
-      "eventType": "awards.issued.v1",
-      "owner": "activity-service",
-      "class": "domain-fact",
-      "subject": "myota.events.awards.issued.v1",
-      "schema": "schemas/events/awards-issued-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-activity-service/awards.py"
-      ]
-    },
-    {
-      "eventType": "awards.rendered.v1",
-      "owner": "activity-service",
-      "class": "domain-fact",
-      "subject": "myota.events.awards.rendered.v1",
-      "schema": "schemas/events/awards-rendered-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-activity-service/awards.py"
-      ]
-    },
-    {
-      "eventType": "awards.request.created.v1",
-      "owner": "activity-service",
-      "class": "domain-fact",
-      "subject": "myota.events.awards.request.created.v1",
-      "schema": "schemas/events/awards-request-created-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-activity-service/awards.py"
-      ]
-    },
-    {
-      "eventType": "geodata.conflation.resolved.v1",
-      "owner": "geodata-service",
-      "class": "domain-fact",
-      "subject": "myota.events.geodata.conflation.resolved.v1",
-      "schema": "schemas/events/geodata-conflation-resolved-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-geodata-service/geodata.py"
-      ]
-    },
-    {
-      "eventType": "geodata.entity-deletion-job.completed.v1",
-      "owner": "geodata-service",
-      "class": "domain-fact",
-      "subject": "myota.events.geodata.entity-deletion-job.completed.v1",
-      "schema": "schemas/events/geodata-entity-deletion-job-completed-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-geodata-service/geodata.py"
-      ]
-    },
-    {
-      "eventType": "geodata.entity-deletion-job.created.v1",
-      "owner": "geodata-service",
-      "class": "domain-fact",
-      "subject": "myota.events.geodata.entity-deletion-job.created.v1",
-      "schema": "schemas/events/geodata-entity-deletion-job-created-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-geodata-service/geodata.py"
-      ]
-    },
-    {
-      "eventType": "geodata.entity-deletion-job.failed.v1",
-      "owner": "geodata-service",
-      "class": "domain-fact",
-      "subject": "myota.events.geodata.entity-deletion-job.failed.v1",
-      "schema": "schemas/events/geodata-entity-deletion-job-failed-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-geodata-service/geodata.py"
-      ]
-    },
-    {
-      "eventType": "geodata.entity.candidate.created.v1",
-      "owner": "geodata-service",
-      "class": "domain-fact",
-      "subject": "myota.events.geodata.entity.candidate.created.v1",
-      "schema": "schemas/events/geodata-entity-candidate-created-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-geodata-service/geodata.py"
-      ]
-    },
-    {
-      "eventType": "geodata.entity.deleted.v1",
-      "owner": "geodata-service",
-      "class": "domain-fact",
-      "subject": "myota.events.geodata.entity.deleted.v1",
-      "schema": "schemas/events/geodata-entity-deleted-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-geodata-service/geodata.py"
-      ]
-    },
-    {
-      "eventType": "geodata.entity.entity-type-changed.v1",
-      "owner": "geodata-service",
-      "class": "domain-fact",
-      "subject": "myota.events.geodata.entity.entity-type-changed.v1",
-      "schema": "schemas/events/geodata-entity-entity-type-changed-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-geodata-service/geodata.py"
-      ]
-    },
-    {
-      "eventType": "geodata.entity.geometry-type-changed.v1",
-      "owner": "geodata-service",
-      "class": "domain-fact",
-      "subject": "myota.events.geodata.entity.geometry-type-changed.v1",
-      "schema": "schemas/events/geodata-entity-geometry-type-changed-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-geodata-service/geodata.py"
-      ]
-    },
-    {
-      "eventType": "geodata.entity.geometry-updated.v1",
-      "owner": "geodata-service",
-      "class": "domain-fact",
-      "subject": "myota.events.geodata.entity.geometry-updated.v1",
-      "schema": "schemas/events/geodata-entity-geometry-updated-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-geodata-service/geodata.py"
-      ]
-    },
-    {
-      "eventType": "geodata.entity.import-approved.v1",
-      "owner": "geodata-service",
-      "class": "domain-fact",
-      "subject": "myota.events.geodata.entity.import-approved.v1",
-      "schema": "schemas/events/geodata-entity-import-approved-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-geodata-service/geodata.py"
-      ]
-    },
-    {
-      "eventType": "geodata.entity.import-updated.v1",
-      "owner": "geodata-service",
-      "class": "domain-fact",
-      "subject": "myota.events.geodata.entity.import-updated.v1",
-      "schema": "schemas/events/geodata-entity-import-updated-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-geodata-service/geodata.py"
-      ]
-    },
-    {
-      "eventType": "geodata.entity.location-enriched.v1",
-      "owner": "geodata-service",
-      "class": "domain-fact",
-      "subject": "myota.events.geodata.entity.location-enriched.v1",
-      "schema": "schemas/events/geodata-entity-location-enriched-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-geodata-service/geodata.py"
-      ]
-    },
-    {
-      "eventType": "geodata.entity.location-updated.v1",
-      "owner": "geodata-service",
-      "class": "domain-fact",
-      "subject": "myota.events.geodata.entity.location-updated.v1",
-      "schema": "schemas/events/geodata-entity-location-updated-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-geodata-service/geodata.py"
-      ]
-    },
-    {
-      "eventType": "geodata.entity.name-changed.v1",
-      "owner": "geodata-service",
-      "class": "domain-fact",
-      "subject": "myota.events.geodata.entity.name-changed.v1",
-      "schema": "schemas/events/geodata-entity-name-changed-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-geodata-service/geodata.py"
-      ]
-    },
-    {
-      "eventType": "geodata.entity.reviewed.v1",
-      "owner": "geodata-service",
-      "class": "domain-fact",
-      "subject": "myota.events.geodata.entity.reviewed.v1",
-      "schema": "schemas/events/geodata-entity-reviewed-v1.schema.json",
-      "consumerGroups": [
-        "activity-notifications-v1"
-      ],
-      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-geodata-service/geodata.py"
-      ]
-    },
-    {
-      "eventType": "geodata.entity.source-disappeared.v1",
-      "owner": "geodata-service",
-      "class": "domain-fact",
-      "subject": "myota.events.geodata.entity.source-disappeared.v1",
-      "schema": "schemas/events/geodata-entity-source-disappeared-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-geodata-service/geodata.py"
-      ]
-    },
-    {
-      "eventType": "geodata.entity.status-changed.v1",
-      "owner": "geodata-service",
-      "class": "domain-fact",
-      "subject": "myota.events.geodata.entity.status-changed.v1",
-      "schema": "schemas/events/geodata-entity-status-changed-v1.schema.json",
-      "consumerGroups": [
-        "activity-notifications-v1"
-      ],
-      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-geodata-service/geodata.py"
-      ]
-    },
-    {
-      "eventType": "geodata.import.cancellation-requested.v1",
-      "owner": "geodata-service",
-      "class": "domain-fact",
-      "subject": "myota.events.geodata.import.cancellation-requested.v1",
-      "schema": "schemas/events/geodata-import-cancellation-requested-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-geodata-service/geodata.py"
-      ]
-    },
-    {
-      "eventType": "geodata.import.cancelled.v1",
-      "owner": "geodata-service",
-      "class": "domain-fact",
-      "subject": "myota.events.geodata.import.cancelled.v1",
-      "schema": "schemas/events/geodata-import-cancelled-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-geodata-service/geodata.py"
-      ]
-    },
-    {
-      "eventType": "geodata.import.candidates.rejected.v1",
-      "owner": "geodata-service",
-      "class": "domain-fact",
-      "subject": "myota.events.geodata.import.candidates.rejected.v1",
-      "schema": "schemas/events/geodata-import-candidates-rejected-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-geodata-service/geodata.py"
-      ]
-    },
-    {
-      "eventType": "geodata.import.candidates.validated.v1",
-      "owner": "geodata-service",
-      "class": "domain-fact",
-      "subject": "myota.events.geodata.import.candidates.validated.v1",
-      "schema": "schemas/events/geodata-import-candidates-validated-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-geodata-service/geodata.py"
-      ]
-    },
-    {
-      "eventType": "geodata.import.failed.v1",
-      "owner": "geodata-service",
-      "class": "domain-fact",
-      "subject": "myota.events.geodata.import.failed.v1",
-      "schema": "schemas/events/geodata-import-failed-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-geodata-service/geodata.py"
-      ]
-    },
-    {
-      "eventType": "geodata.import.preprocessed.v1",
-      "owner": "geodata-service",
-      "class": "domain-fact",
-      "subject": "myota.events.geodata.import.preprocessed.v1",
-      "schema": "schemas/events/geodata-import-preprocessed-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-geodata-service/geodata.py"
-      ]
-    },
-    {
-      "eventType": "geodata.import.processed.v1",
-      "owner": "geodata-service",
-      "class": "domain-fact",
-      "subject": "myota.events.geodata.import.processed.v1",
-      "schema": "schemas/events/geodata-import-processed-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-geodata-service/geodata.py"
-      ]
-    },
-    {
-      "eventType": "geodata.import.processing.completed.v1",
-      "owner": "geodata-service",
-      "class": "domain-fact",
-      "subject": "myota.events.geodata.import.processing.completed.v1",
-      "schema": "schemas/events/geodata-import-processing-completed-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-geodata-service/geodata.py"
-      ]
-    },
-    {
-      "eventType": "geodata.loadtest.cleaned.v1",
-      "owner": "geodata-service",
-      "class": "domain-fact",
-      "subject": "myota.events.geodata.loadtest.cleaned.v1",
-      "schema": "schemas/events/geodata-loadtest-cleaned-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-geodata-service/geodata.py"
-      ]
-    },
-    {
-      "eventType": "geodata.refresh-schedule.created.v1",
-      "owner": "geodata-service",
-      "class": "domain-fact",
-      "subject": "myota.events.geodata.refresh-schedule.created.v1",
-      "schema": "schemas/events/geodata-refresh-schedule-created-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-source-payload-review",
-      "producerSources": [
-        "myota-geodata-service/geodata.py"
-      ]
-    },
-    {
-      "eventType": "identity.account.admin-updated.v1",
-      "owner": "identity-service",
-      "class": "domain-fact",
-      "subject": "myota.events.identity.account.admin-updated.v1",
-      "schema": "schemas/events/identity-account-admin-updated-v1.schema.json",
-      "consumerGroups": [
-        "activity-notifications-v1"
-      ],
-      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "source-derived-identity-callsite",
-      "producerSources": [
-        "myota-identity-service/identity.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "accountId": {
-            "type": "string"
-          },
-          "fields": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        "required": [
-          "accountId",
-          "fields"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "personal"
-    },
-    {
-      "eventType": "identity.account.created.v1",
-      "owner": "identity-service",
-      "class": "domain-fact",
-      "subject": "myota.events.identity.account.created.v1",
-      "schema": "schemas/events/identity-account-created-v1.schema.json",
-      "consumerGroups": [
-        "activity-notifications-v1"
-      ],
-      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "source-derived-identity-callsite",
-      "producerSources": [
-        "myota-identity-service/identity.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "account": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string"
-              },
-              "displayName": {
-                "type": "string"
-              },
-              "email": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              },
-              "participationType": {
-                "type": "string"
-              },
-              "status": {
-                "type": "string"
-              },
-              "callsigns": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string"
-                    },
-                    "value": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "string"
-                    },
-                    "source": {
-                      "type": "string"
-                    },
-                    "verificationSource": {
-                      "type": [
-                        "string",
-                        "null"
-                      ]
-                    },
-                    "verifiedAt": {
-                      "type": [
-                        "string",
-                        "null"
-                      ]
-                    },
-                    "validFrom": {
-                      "type": [
-                        "string",
-                        "null"
-                      ]
-                    },
-                    "validTo": {
-                      "type": [
-                        "string",
-                        "null"
-                      ]
-                    },
-                    "evidenceIds": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
-                    "createdAt": {
-                      "type": "string"
-                    },
-                    "updatedAt": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "value",
-                    "status",
-                    "source",
-                    "verificationSource",
-                    "verifiedAt",
-                    "validFrom",
-                    "validTo",
-                    "evidenceIds",
-                    "createdAt",
-                    "updatedAt"
-                  ],
-                  "additionalProperties": true
-                }
-              },
-              "primaryCallsignId": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              },
-              "createdAt": {
-                "type": "string"
-              },
-              "updatedAt": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "id",
-              "displayName",
-              "email",
-              "participationType",
-              "status",
-              "callsigns",
-              "primaryCallsignId",
-              "createdAt",
-              "updatedAt"
-            ],
-            "additionalProperties": true
-          },
-          "source": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "account"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "personal"
-    },
-    {
-      "eventType": "identity.account.deactivated.v1",
-      "owner": "identity-service",
-      "class": "domain-fact",
-      "subject": "myota.events.identity.account.deactivated.v1",
-      "schema": "schemas/events/identity-account-deactivated-v1.schema.json",
-      "consumerGroups": [
-        "activity-notifications-v1"
-      ],
-      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "source-derived-identity-callsite",
-      "producerSources": [
-        "myota-identity-service/identity.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "accountId": {
-            "type": "string"
-          },
-          "anonymized": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "accountId",
-          "anonymized"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "personal"
-    },
-    {
-      "eventType": "identity.bootstrap-admin.created.v1",
-      "owner": "identity-service",
-      "class": "domain-fact",
-      "subject": "myota.events.identity.bootstrap-admin.created.v1",
-      "schema": "schemas/events/identity-bootstrap-admin-created-v1.schema.json",
-      "consumerGroups": [
-        "activity-notifications-v1"
-      ],
-      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "source-derived-identity-callsite",
-      "producerSources": [
-        "myota-identity-service/identity.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "accountId": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "accountId",
-          "email"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "personal"
-    },
-    {
-      "eventType": "identity.callsign.added.v1",
-      "owner": "identity-service",
-      "class": "domain-fact",
-      "subject": "myota.events.identity.callsign.added.v1",
-      "schema": "schemas/events/identity-callsign-added-v1.schema.json",
-      "consumerGroups": [
-        "activity-notifications-v1"
-      ],
-      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "source-derived-identity-callsite",
-      "producerSources": [
-        "myota-identity-service/identity.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "accountId": {
-            "type": "string"
-          },
-          "id": {
-            "type": "string"
-          },
-          "value": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          },
-          "source": {
-            "type": "string"
-          },
-          "verificationSource": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "verifiedAt": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "validFrom": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "validTo": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "evidenceIds": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "createdAt": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "accountId",
-          "id",
-          "value",
-          "status",
-          "source",
-          "verificationSource",
-          "verifiedAt",
-          "validFrom",
-          "validTo",
-          "evidenceIds",
-          "createdAt",
-          "updatedAt"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "personal"
-    },
-    {
-      "eventType": "identity.callsign.evidence-submitted.v1",
-      "owner": "identity-service",
-      "class": "domain-fact",
-      "subject": "myota.events.identity.callsign.evidence-submitted.v1",
-      "schema": "schemas/events/identity-callsign-evidence-submitted-v1.schema.json",
-      "consumerGroups": [
-        "activity-notifications-v1"
-      ],
-      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "source-derived-identity-callsite",
-      "producerSources": [
-        "myota-identity-service/identity.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "callsignId": {
-            "type": "string"
-          },
-          "accountId": {
-            "type": "string"
-          },
-          "evidenceType": {
-            "type": "string"
-          },
-          "source": {
-            "type": "string"
-          },
-          "checksum": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "metadata": {
-            "type": "object",
-            "properties": {},
-            "required": [],
-            "additionalProperties": true
-          },
-          "submittedAt": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "callsignId",
-          "accountId",
-          "evidenceType",
-          "source",
-          "checksum",
-          "metadata",
-          "submittedAt",
-          "status"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "personal"
-    },
-    {
-      "eventType": "identity.callsign.primary-changed.v1",
-      "owner": "identity-service",
-      "class": "domain-fact",
-      "subject": "myota.events.identity.callsign.primary-changed.v1",
-      "schema": "schemas/events/identity-callsign-primary-changed-v1.schema.json",
-      "consumerGroups": [
-        "activity-notifications-v1"
-      ],
-      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "source-derived-identity-callsite",
-      "producerSources": [
-        "myota-identity-service/identity.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "callsignId": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "callsignId"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "personal"
-    },
-    {
-      "eventType": "identity.callsign.retired.v1",
-      "owner": "identity-service",
-      "class": "domain-fact",
-      "subject": "myota.events.identity.callsign.retired.v1",
-      "schema": "schemas/events/identity-callsign-retired-v1.schema.json",
-      "consumerGroups": [
-        "activity-notifications-v1"
-      ],
-      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "source-derived-identity-callsite",
-      "producerSources": [
-        "myota-identity-service/identity.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "value": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          },
-          "source": {
-            "type": "string"
-          },
-          "verificationSource": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "verifiedAt": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "validFrom": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "validTo": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "evidenceIds": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "createdAt": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "value",
-          "status",
-          "source",
-          "verificationSource",
-          "verifiedAt",
-          "validFrom",
-          "validTo",
-          "evidenceIds",
-          "createdAt",
-          "updatedAt"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "personal"
-    },
-    {
-      "eventType": "identity.callsign.verified.v1",
-      "owner": "identity-service",
-      "class": "domain-fact",
-      "subject": "myota.events.identity.callsign.verified.v1",
-      "schema": "schemas/events/identity-callsign-verified-v1.schema.json",
-      "consumerGroups": [
-        "activity-notifications-v1"
-      ],
-      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "source-derived-identity-callsite",
-      "producerSources": [
-        "myota-identity-service/identity.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "value": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          },
-          "source": {
-            "type": "string"
-          },
-          "verificationSource": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "verifiedAt": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "validFrom": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "validTo": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "evidenceIds": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "createdAt": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "value",
-          "status",
-          "source",
-          "verificationSource",
-          "verifiedAt",
-          "validFrom",
-          "validTo",
-          "evidenceIds",
-          "createdAt",
-          "updatedAt"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "personal"
-    },
-    {
-      "eventType": "identity.login.failed.v1",
-      "owner": "identity-service",
-      "class": "domain-fact",
-      "subject": "myota.events.identity.login.failed.v1",
-      "schema": "schemas/events/identity-login-failed-v1.schema.json",
-      "consumerGroups": [
-        "activity-notifications-v1"
-      ],
-      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "source-derived-identity-callsite",
-      "producerSources": [
-        "myota-identity-service/identity.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "email": {
-            "type": "string"
-          },
-          "remoteAddr": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        },
-        "required": [
-          "email",
-          "remoteAddr"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "personal-and-security"
-    },
-    {
-      "eventType": "identity.login.succeeded.v1",
-      "owner": "identity-service",
-      "class": "domain-fact",
-      "subject": "myota.events.identity.login.succeeded.v1",
-      "schema": "schemas/events/identity-login-succeeded-v1.schema.json",
-      "consumerGroups": [
-        "activity-notifications-v1"
-      ],
-      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "source-derived-identity-callsite",
-      "producerSources": [
-        "myota-identity-service/identity.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "accountId": {
-            "type": "string"
-          },
-          "remoteAddr": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        },
-        "required": [
-          "accountId",
-          "remoteAddr"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "personal-and-security"
-    },
-    {
-      "eventType": "identity.oidc.mapping.updated.v1",
-      "owner": "identity-service",
-      "class": "domain-fact",
-      "subject": "myota.events.identity.oidc.mapping.updated.v1",
-      "schema": "schemas/events/identity-oidc-mapping-updated-v1.schema.json",
-      "consumerGroups": [
-        "activity-notifications-v1"
-      ],
-      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "source-derived-identity-callsite",
-      "producerSources": [
-        "myota-identity-service/identity.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "programmeSlug": {
-            "type": "string"
-          },
-          "issuer": {
-            "type": "string"
-          },
-          "clientId": {
-            "type": "string"
-          },
-          "scopes": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "enabled": {
-            "type": "boolean"
-          },
-          "createdAt": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "programmeSlug",
-          "issuer",
-          "clientId",
-          "scopes",
-          "enabled",
-          "createdAt",
-          "updatedAt"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "internal-configuration"
-    },
-    {
-      "eventType": "identity.recovery.completed.v1",
-      "owner": "identity-service",
-      "class": "domain-fact",
-      "subject": "myota.events.identity.recovery.completed.v1",
-      "schema": "schemas/events/identity-recovery-completed-v1.schema.json",
-      "consumerGroups": [
-        "activity-notifications-v1"
-      ],
-      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "source-derived-identity-callsite",
-      "producerSources": [
-        "myota-identity-service/identity.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "accountId": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "accountId"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "personal-and-security"
-    },
-    {
-      "eventType": "identity.recovery.requested.v1",
-      "owner": "identity-service",
-      "class": "domain-fact",
-      "subject": "myota.events.identity.recovery.requested.v1",
-      "schema": "schemas/events/identity-recovery-requested-v1.schema.json",
-      "consumerGroups": [
-        "activity-notifications-v1"
-      ],
-      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "source-derived-identity-callsite",
-      "producerSources": [
-        "myota-identity-service/identity.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "accountId": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "accountId"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "personal-and-security"
-    },
-    {
-      "eventType": "identity.role-definition.created.v1",
-      "owner": "identity-service",
-      "class": "domain-fact",
-      "subject": "myota.events.identity.role-definition.created.v1",
-      "schema": "schemas/events/identity-role-definition-created-v1.schema.json",
-      "consumerGroups": [
-        "activity-notifications-v1"
-      ],
-      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "source-derived-identity-callsite",
-      "producerSources": [
-        "myota-identity-service/identity.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "scopes": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "system": {
-            "type": "boolean"
-          },
-          "createdAt": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "code",
-          "name",
-          "description",
-          "scopes",
-          "system",
-          "createdAt",
-          "updatedAt"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "internal-authorization"
-    },
-    {
-      "eventType": "identity.role-definition.updated.v1",
-      "owner": "identity-service",
-      "class": "domain-fact",
-      "subject": "myota.events.identity.role-definition.updated.v1",
-      "schema": "schemas/events/identity-role-definition-updated-v1.schema.json",
-      "consumerGroups": [
-        "activity-notifications-v1"
-      ],
-      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "source-derived-identity-callsite",
-      "producerSources": [
-        "myota-identity-service/identity.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "scopes": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "system": {
-            "type": "boolean"
-          },
-          "createdAt": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "code",
-          "name",
-          "description",
-          "scopes",
-          "system",
-          "createdAt",
-          "updatedAt"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "internal-authorization"
-    },
-    {
-      "eventType": "identity.role.assigned.v1",
-      "owner": "identity-service",
-      "class": "domain-fact",
-      "subject": "myota.events.identity.role.assigned.v1",
-      "schema": "schemas/events/identity-role-assigned-v1.schema.json",
-      "consumerGroups": [
-        "activity-notifications-v1"
-      ],
-      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "source-derived-identity-callsite",
-      "producerSources": [
-        "myota-identity-service/identity.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "accountId": {
-            "type": "string"
-          },
-          "role": {
-            "type": "string"
-          },
-          "programmeSlug": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "jurisdiction": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "entityType": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "scopes": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "createdAt": {
-            "type": "string"
-          },
-          "validTo": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "accountId",
-          "role",
-          "programmeSlug",
-          "jurisdiction",
-          "entityType",
-          "scopes",
-          "createdAt",
-          "validTo"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "personal-and-security"
-    },
-    {
-      "eventType": "identity.roles.replaced.v1",
-      "owner": "identity-service",
-      "class": "domain-fact",
-      "subject": "myota.events.identity.roles.replaced.v1",
-      "schema": "schemas/events/identity-roles-replaced-v1.schema.json",
-      "consumerGroups": [
-        "activity-notifications-v1"
-      ],
-      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "source-derived-identity-callsite",
-      "producerSources": [
-        "myota-identity-service/identity.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "accountId": {
-            "type": "string"
-          },
-          "roles": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string"
-                },
-                "accountId": {
-                  "type": "string"
-                },
-                "role": {
-                  "type": "string"
-                },
-                "programmeSlug": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "jurisdiction": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "entityType": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "scopes": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                },
-                "createdAt": {
-                  "type": "string"
-                },
-                "validTo": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                }
-              },
-              "required": [
-                "id",
-                "accountId",
-                "role",
-                "programmeSlug",
-                "jurisdiction",
-                "entityType",
-                "scopes",
-                "createdAt",
-                "validTo"
-              ],
-              "additionalProperties": true
-            }
-          }
-        },
-        "required": [
-          "accountId",
-          "roles"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "personal-and-security"
-    },
-    {
-      "eventType": "identity.service-token.issued.v1",
-      "owner": "identity-service",
-      "class": "domain-fact",
-      "subject": "myota.events.identity.service-token.issued.v1",
-      "schema": "schemas/events/identity-service-token-issued-v1.schema.json",
-      "consumerGroups": [
-        "activity-notifications-v1"
-      ],
-      "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "source-derived-identity-callsite",
-      "producerSources": [
-        "myota-identity-service/identity.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "service": {
-            "type": "string"
-          },
-          "scopes": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        "required": [
-          "service",
-          "scopes"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "security-sensitive"
-    },
-    {
-      "eventType": "programme.archived.v1",
-      "owner": "programme-service",
-      "class": "domain-fact",
-      "subject": "myota.events.programme.archived.v1",
-      "schema": "schemas/events/programme-archived-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "source-derived-programme-callsite",
-      "producerSources": [
-        "myota-programme-service/programmes.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "slug": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "slug"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "internal-configuration"
-    },
-    {
-      "eventType": "programme.content.published.v1",
-      "owner": "programme-service",
-      "class": "domain-fact",
-      "subject": "myota.events.programme.content.published.v1",
-      "schema": "schemas/events/programme-content-published-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "source-derived-programme-callsite",
-      "producerSources": [
-        "myota-programme-service/programmes.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "programmeSlug": {
-            "type": "string"
-          },
-          "key": {
-            "type": "string"
-          },
-          "locale": {
-            "type": "string"
-          },
-          "value": {},
-          "fallbackLocale": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "status": {
-            "type": "string"
-          },
-          "reviewHistory": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "action": {
-                  "type": "string"
-                },
-                "occurredAt": {
-                  "type": "string"
-                },
-                "reviewerId": {
-                  "type": "string"
-                },
-                "publisherId": {
-                  "type": "string"
-                },
-                "note": {},
-                "effectiveFrom": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "action",
-                "occurredAt"
-              ],
-              "additionalProperties": true
-            }
-          },
-          "createdAt": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "type": "string"
-          },
-          "submittedAt": {
-            "type": "string"
-          },
-          "reviewedAt": {
-            "type": "string"
-          },
-          "effectiveFrom": {
-            "type": "string"
-          },
-          "publishedAt": {
-            "type": "string"
-          },
-          "reviewerId": {
-            "type": "string"
-          },
-          "publisherId": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "programmeSlug",
-          "key",
-          "locale",
-          "value",
-          "fallbackLocale",
-          "status",
-          "reviewHistory",
-          "createdAt",
-          "updatedAt"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "internal-configuration-and-user-metadata"
-    },
-    {
-      "eventType": "programme.content.reviewed.v1",
-      "owner": "programme-service",
-      "class": "domain-fact",
-      "subject": "myota.events.programme.content.reviewed.v1",
-      "schema": "schemas/events/programme-content-reviewed-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "source-derived-programme-callsite",
-      "producerSources": [
-        "myota-programme-service/programmes.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "programmeSlug": {
-            "type": "string"
-          },
-          "key": {
-            "type": "string"
-          },
-          "locale": {
-            "type": "string"
-          },
-          "value": {},
-          "fallbackLocale": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "status": {
-            "type": "string"
-          },
-          "reviewHistory": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "action": {
-                  "type": "string"
-                },
-                "occurredAt": {
-                  "type": "string"
-                },
-                "reviewerId": {
-                  "type": "string"
-                },
-                "publisherId": {
-                  "type": "string"
-                },
-                "note": {},
-                "effectiveFrom": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "action",
-                "occurredAt"
-              ],
-              "additionalProperties": true
-            }
-          },
-          "createdAt": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "type": "string"
-          },
-          "submittedAt": {
-            "type": "string"
-          },
-          "reviewedAt": {
-            "type": "string"
-          },
-          "effectiveFrom": {
-            "type": "string"
-          },
-          "publishedAt": {
-            "type": "string"
-          },
-          "reviewerId": {
-            "type": "string"
-          },
-          "publisherId": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "programmeSlug",
-          "key",
-          "locale",
-          "value",
-          "fallbackLocale",
-          "status",
-          "reviewHistory",
-          "createdAt",
-          "updatedAt"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "internal-configuration-and-user-metadata"
-    },
-    {
-      "eventType": "programme.content.saved.v1",
-      "owner": "programme-service",
-      "class": "domain-fact",
-      "subject": "myota.events.programme.content.saved.v1",
-      "schema": "schemas/events/programme-content-saved-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "source-derived-programme-callsite",
-      "producerSources": [
-        "myota-programme-service/programmes.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "programmeSlug": {
-            "type": "string"
-          },
-          "key": {
-            "type": "string"
-          },
-          "locale": {
-            "type": "string"
-          },
-          "value": {},
-          "fallbackLocale": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "status": {
-            "type": "string"
-          },
-          "reviewHistory": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "action": {
-                  "type": "string"
-                },
-                "occurredAt": {
-                  "type": "string"
-                },
-                "reviewerId": {
-                  "type": "string"
-                },
-                "publisherId": {
-                  "type": "string"
-                },
-                "note": {},
-                "effectiveFrom": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "action",
-                "occurredAt"
-              ],
-              "additionalProperties": true
-            }
-          },
-          "createdAt": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "type": "string"
-          },
-          "submittedAt": {
-            "type": "string"
-          },
-          "reviewedAt": {
-            "type": "string"
-          },
-          "effectiveFrom": {
-            "type": "string"
-          },
-          "publishedAt": {
-            "type": "string"
-          },
-          "reviewerId": {
-            "type": "string"
-          },
-          "publisherId": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "programmeSlug",
-          "key",
-          "locale",
-          "value",
-          "fallbackLocale",
-          "status",
-          "reviewHistory",
-          "createdAt",
-          "updatedAt"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "internal-configuration-and-user-metadata"
-    },
-    {
-      "eventType": "programme.content.submitted.v1",
-      "owner": "programme-service",
-      "class": "domain-fact",
-      "subject": "myota.events.programme.content.submitted.v1",
-      "schema": "schemas/events/programme-content-submitted-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "source-derived-programme-callsite",
-      "producerSources": [
-        "myota-programme-service/programmes.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "programmeSlug": {
-            "type": "string"
-          },
-          "key": {
-            "type": "string"
-          },
-          "locale": {
-            "type": "string"
-          },
-          "value": {},
-          "fallbackLocale": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "status": {
-            "type": "string"
-          },
-          "reviewHistory": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "action": {
-                  "type": "string"
-                },
-                "occurredAt": {
-                  "type": "string"
-                },
-                "reviewerId": {
-                  "type": "string"
-                },
-                "publisherId": {
-                  "type": "string"
-                },
-                "note": {},
-                "effectiveFrom": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "action",
-                "occurredAt"
-              ],
-              "additionalProperties": true
-            }
-          },
-          "createdAt": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "type": "string"
-          },
-          "submittedAt": {
-            "type": "string"
-          },
-          "reviewedAt": {
-            "type": "string"
-          },
-          "effectiveFrom": {
-            "type": "string"
-          },
-          "publishedAt": {
-            "type": "string"
-          },
-          "reviewerId": {
-            "type": "string"
-          },
-          "publisherId": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "programmeSlug",
-          "key",
-          "locale",
-          "value",
-          "fallbackLocale",
-          "status",
-          "reviewHistory",
-          "createdAt",
-          "updatedAt"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "internal-configuration-and-user-metadata"
-    },
-    {
-      "eventType": "programme.created.v1",
-      "owner": "programme-service",
-      "class": "domain-fact",
-      "subject": "myota.events.programme.created.v1",
-      "schema": "schemas/events/programme-created-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "source-derived-programme-callsite",
-      "producerSources": [
-        "myota-programme-service/programmes.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "slug": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "entityTypeCodes": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "entityTypes": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "code": {
-                  "type": "string"
-                },
-                "label": {
-                  "type": "string"
-                },
-                "geometry": {
-                  "type": "string"
-                },
-                "geometryTypes": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                },
-                "description": {
-                  "type": "string"
-                },
-                "active": {
-                  "type": "boolean"
-                },
-                "createdAt": {
-                  "type": "string"
-                },
-                "updatedAt": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "code"
-              ],
-              "additionalProperties": true
-            }
-          },
-          "rules": {},
-          "policyVersion": {
-            "type": "integer"
-          },
-          "theme": {},
-          "oidc": {},
-          "status": {
-            "type": "string"
-          },
-          "createdAt": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "slug",
-          "name",
-          "description",
-          "entityTypeCodes",
-          "entityTypes",
-          "rules",
-          "policyVersion",
-          "theme",
-          "oidc",
-          "status",
-          "createdAt",
-          "updatedAt"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "internal-configuration"
-    },
-    {
-      "eventType": "programme.entity-type.assigned.v1",
-      "owner": "programme-service",
-      "class": "domain-fact",
-      "subject": "myota.events.programme.entity-type.assigned.v1",
-      "schema": "schemas/events/programme-entity-type-assigned-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "source-derived-programme-callsite",
-      "producerSources": [
-        "myota-programme-service/programmes.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "programmeSlug": {
-            "type": "string"
-          },
-          "code": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "programmeSlug",
-          "code"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "internal-configuration"
-    },
-    {
-      "eventType": "programme.entity-type.catalog-saved.v1",
-      "owner": "programme-service",
-      "class": "domain-fact",
-      "subject": "myota.events.programme.entity-type.catalog-saved.v1",
-      "schema": "schemas/events/programme-entity-type-catalog-saved-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "source-derived-programme-callsite",
-      "producerSources": [
-        "myota-programme-service/programmes.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "entityType": {
-            "type": "object",
-            "properties": {
-              "code": {
-                "type": "string"
-              },
-              "label": {
-                "type": "string"
-              },
-              "geometry": {
-                "type": "string"
-              },
-              "geometryTypes": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "description": {
-                "type": "string"
-              },
-              "active": {
-                "type": "boolean"
-              },
-              "createdAt": {
-                "type": "string"
-              },
-              "updatedAt": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "code",
-              "label",
-              "geometry",
-              "geometryTypes",
-              "description",
-              "active",
-              "updatedAt"
-            ],
-            "additionalProperties": true
-          },
-          "previous": {
-            "anyOf": [
-              {
-                "type": "object",
-                "properties": {
-                  "code": {
-                    "type": "string"
-                  },
-                  "label": {
-                    "type": "string"
-                  },
-                  "geometry": {
-                    "type": "string"
-                  },
-                  "geometryTypes": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  "description": {
-                    "type": "string"
-                  },
-                  "active": {
-                    "type": "boolean"
-                  },
-                  "createdAt": {
-                    "type": "string"
-                  },
-                  "updatedAt": {
-                    "type": "string"
-                  }
-                },
-                "required": [],
-                "additionalProperties": true
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "entityType",
-          "previous"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "internal-configuration-and-user-metadata"
-    },
-    {
-      "eventType": "programme.entity-type.unassigned.v1",
-      "owner": "programme-service",
-      "class": "domain-fact",
-      "subject": "myota.events.programme.entity-type.unassigned.v1",
-      "schema": "schemas/events/programme-entity-type-unassigned-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "source-derived-programme-callsite",
-      "producerSources": [
-        "myota-programme-service/programmes.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "programmeSlug": {
-            "type": "string"
-          },
-          "code": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "programmeSlug",
-          "code"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "internal-configuration"
-    },
-    {
-      "eventType": "programme.policy-draft.published.v1",
-      "owner": "programme-service",
-      "class": "domain-fact",
-      "subject": "myota.events.programme.policy-draft.published.v1",
-      "schema": "schemas/events/programme-policy-draft-published-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "source-derived-programme-callsite",
-      "producerSources": [
-        "myota-programme-service/programmes.py"
-      ],
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "draft": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string"
-              },
-              "programmeSlug": {
-                "type": "string"
-              },
-              "status": {
-                "type": "string"
-              },
-              "reviewHistory": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "action": {
-                      "type": "string"
-                    },
-                    "occurredAt": {
-                      "type": "string"
-                    },
-                    "reviewerId": {
-                      "type": "string"
-                    },
-                    "publisherId": {
-                      "type": "string"
-                    },
-                    "note": {},
-                    "effectiveFrom": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "action",
-                    "occurredAt"
-                  ],
-                  "additionalProperties": true
-                }
-              },
-              "createdAt": {
-                "type": "string"
-              },
-              "type": {
-                "type": "string"
-              },
-              "name": {
-                "type": "string"
-              },
-              "schema": {
-                "type": "object",
-                "properties": {},
-                "required": [],
-                "additionalProperties": true
-              },
-              "effectiveFrom": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              },
-              "updatedAt": {
-                "type": "string"
-              },
-              "submittedAt": {
-                "type": "string"
-              },
-              "reviewedAt": {
-                "type": "string"
-              },
-              "publishedAt": {
-                "type": "string"
-              },
-              "publisherId": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "id",
-              "programmeSlug",
-              "status",
-              "reviewHistory",
-              "createdAt",
-              "type",
-              "name",
-              "schema",
-              "effectiveFrom",
-              "updatedAt"
-            ],
-            "additionalProperties": true
-          },
-          "programme": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string"
-              },
-              "slug": {
-                "type": "string"
-              },
-              "name": {
-                "type": "string"
-              },
-              "description": {
-                "type": "string"
-              },
-              "entityTypeCodes": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "entityTypes": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "label": {
-                      "type": "string"
-                    },
-                    "geometry": {
-                      "type": "string"
-                    },
-                    "geometryTypes": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
-                    "description": {
-                      "type": "string"
-                    },
-                    "active": {
-                      "type": "boolean"
-                    },
-                    "createdAt": {
-                      "type": "string"
-                    },
-                    "updatedAt": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "code"
-                  ],
-                  "additionalProperties": true
-                }
-              },
-              "rules": {},
-              "policyVersion": {
-                "type": "integer"
-              },
-              "theme": {},
-              "oidc": {},
-              "status": {
-                "type": "string"
-              },
-              "createdAt": {
-                "type": "string"
-              },
-              "updatedAt": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "id",
-              "slug",
-              "name",
-              "description",
-              "entityTypeCodes",
-              "entityTypes",
-              "rules",
-              "policyVersion",
-              "theme",
-              "oidc",
-              "status",
-              "createdAt",
-              "updatedAt"
-            ],
-            "additionalProperties": true
-          }
-        },
-        "required": [
-          "draft",
-          "programme"
-        ],
-        "additionalProperties": true
-      },
-      "dataClassification": "internal-configuration-and-user-metadata"
-    },
-    {
-      "eventType": "programme.policy-draft.saved.v1",
+      "owner": "…21704 tokens truncated…licy-draft.saved.v1",
       "owner": "programme-service",
       "class": "domain-fact",
       "subject": "myota.events.programme.policy-draft.saved.v1",
