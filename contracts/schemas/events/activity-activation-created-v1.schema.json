@@ -64,7 +64,10 @@
               "type": "string"
             },
             "location": {
-              "type": "object"
+              "type": [
+                "object",
+                "null"
+              ]
             },
             "programmeRules": {
               "type": "object"
@@ -104,12 +107,6 @@
             "operatorId",
             "startedAt",
             "status",
-            "location",
-            "programmeRules",
-            "ruleEvaluation",
-            "qsoCount",
-            "uniqueCallsignCount",
-            "uniqueEntityCount",
             "createdAt",
             "updatedAt"
           ],
