@@ -11,8 +11,81 @@
       "properties": {
         "eventType": {
           "const": "geodata.import.preprocessed.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "importRunId": {
+              "type": "string"
+            },
+            "adapter": {
+              "type": "string"
+            },
+            "preprocessed": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "created": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "updated": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "skipped": {
+              "type": "array",
+              "items": {}
+            },
+            "errors": {
+              "type": "array",
+              "items": {}
+            },
+            "disappeared": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "conflationCandidates": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "manifest": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "importRunId",
+            "adapter",
+            "preprocessed",
+            "created",
+            "updated",
+            "skipped",
+            "errors",
+            "disappeared",
+            "conflationCandidates",
+            "manifest"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-geodata-callsite",
+  "x-data-classification": "geospatial-and-source-data"
 }
