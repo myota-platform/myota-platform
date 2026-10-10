@@ -76,7 +76,7 @@ jetstreamProvisioner:
 activityWorkers:
   enabled: true
   replicas: 2
-  legacyReconciliationEnabled: true
+  legacyReconciliationEnabled: false
 
 objectStorage:
   endpoint: http://myota-seaweedfs:8333
