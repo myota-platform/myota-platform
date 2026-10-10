@@ -326,7 +326,9 @@ class EventRegistryTests(unittest.TestCase):
                     )
                     source_root = ROOT.parent / repository
                     if source_root.is_dir():
-                        self.assertTrue((source_root / relative_path).is_file())
+                        self.assertTrue(
+                            (source_root / relative_path).is_file()
+                        )
             if work["owner"] == "activity-service":
                 self.assertEqual(set(payload["properties"]), {"jobId"})
                 self.assertLessEqual(
