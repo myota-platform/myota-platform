@@ -11,8 +11,61 @@
       "properties": {
         "eventType": {
           "const": "geodata.entity-deletion-job.completed.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "entityId": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "requestedBy": {
+              "type": "string"
+            },
+            "impact": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "confirmationRequired": {
+              "type": "boolean"
+            },
+            "createdAt": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            },
+            "cascade": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "deleted": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "id",
+            "entityId",
+            "status",
+            "requestedBy",
+            "impact",
+            "confirmationRequired",
+            "createdAt",
+            "updatedAt",
+            "cascade",
+            "deleted"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-geodata-callsite",
+  "x-data-classification": "personal-and-operational-data"
 }
