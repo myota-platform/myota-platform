@@ -17,7 +17,11 @@
       "schema": "schemas/events/activity-activation-closed-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-activity-service/activity.py",
+        "myota-activity-service/activity_repository.py"
+      ]
     },
     {
       "eventType": "activity.activation.created.v1",
@@ -27,7 +31,11 @@
       "schema": "schemas/events/activity-activation-created-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-activity-service/activity.py",
+        "myota-activity-service/activity_repository.py"
+      ]
     },
     {
       "eventType": "activity.adif.queued.v1",
@@ -37,7 +45,10 @@
       "schema": "schemas/events/activity-adif-queued-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-activity-service/activity_repository.py"
+      ]
     },
     {
       "eventType": "activity.entity.cascade-deleted.v1",
@@ -47,7 +58,10 @@
       "schema": "schemas/events/activity-entity-cascade-deleted-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-activity-service/activity_repository.py"
+      ]
     },
     {
       "eventType": "activity.qso.recorded.v1",
@@ -57,7 +71,11 @@
       "schema": "schemas/events/activity-qso-recorded-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-activity-service/activity.py",
+        "myota-activity-service/activity_repository.py"
+      ]
     },
     {
       "eventType": "awards.definition.published.v1",
@@ -67,7 +85,10 @@
       "schema": "schemas/events/awards-definition-published-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-activity-service/awards.py"
+      ]
     },
     {
       "eventType": "awards.definition.saved.v1",
@@ -77,7 +98,10 @@
       "schema": "schemas/events/awards-definition-saved-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-activity-service/awards.py"
+      ]
     },
     {
       "eventType": "awards.issued.v1",
@@ -87,7 +111,10 @@
       "schema": "schemas/events/awards-issued-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-activity-service/awards.py"
+      ]
     },
     {
       "eventType": "awards.rendered.v1",
@@ -97,7 +124,10 @@
       "schema": "schemas/events/awards-rendered-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-activity-service/awards.py"
+      ]
     },
     {
       "eventType": "awards.request.created.v1",
@@ -107,7 +137,10 @@
       "schema": "schemas/events/awards-request-created-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-activity-service/awards.py"
+      ]
     },
     {
       "eventType": "geodata.conflation.resolved.v1",
@@ -117,7 +150,10 @@
       "schema": "schemas/events/geodata-conflation-resolved-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ]
     },
     {
       "eventType": "geodata.entity-deletion-job.completed.v1",
@@ -127,7 +163,10 @@
       "schema": "schemas/events/geodata-entity-deletion-job-completed-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ]
     },
     {
       "eventType": "geodata.entity-deletion-job.created.v1",
@@ -137,7 +176,10 @@
       "schema": "schemas/events/geodata-entity-deletion-job-created-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ]
     },
     {
       "eventType": "geodata.entity-deletion-job.failed.v1",
@@ -147,7 +189,10 @@
       "schema": "schemas/events/geodata-entity-deletion-job-failed-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ]
     },
     {
       "eventType": "geodata.entity.candidate.created.v1",
@@ -157,7 +202,10 @@
       "schema": "schemas/events/geodata-entity-candidate-created-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ]
     },
     {
       "eventType": "geodata.entity.deleted.v1",
@@ -167,7 +215,10 @@
       "schema": "schemas/events/geodata-entity-deleted-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ]
     },
     {
       "eventType": "geodata.entity.entity-type-changed.v1",
@@ -177,7 +228,10 @@
       "schema": "schemas/events/geodata-entity-entity-type-changed-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ]
     },
     {
       "eventType": "geodata.entity.geometry-type-changed.v1",
@@ -187,7 +241,10 @@
       "schema": "schemas/events/geodata-entity-geometry-type-changed-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ]
     },
     {
       "eventType": "geodata.entity.geometry-updated.v1",
@@ -197,7 +254,10 @@
       "schema": "schemas/events/geodata-entity-geometry-updated-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ]
     },
     {
       "eventType": "geodata.entity.import-approved.v1",
@@ -207,7 +267,10 @@
       "schema": "schemas/events/geodata-entity-import-approved-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ]
     },
     {
       "eventType": "geodata.entity.import-updated.v1",
@@ -217,7 +280,10 @@
       "schema": "schemas/events/geodata-entity-import-updated-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ]
     },
     {
       "eventType": "geodata.entity.location-enriched.v1",
@@ -227,7 +293,10 @@
       "schema": "schemas/events/geodata-entity-location-enriched-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ]
     },
     {
       "eventType": "geodata.entity.location-updated.v1",
@@ -237,7 +306,10 @@
       "schema": "schemas/events/geodata-entity-location-updated-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ]
     },
     {
       "eventType": "geodata.entity.name-changed.v1",
@@ -247,7 +319,10 @@
       "schema": "schemas/events/geodata-entity-name-changed-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ]
     },
     {
       "eventType": "geodata.entity.reviewed.v1",
@@ -259,7 +334,10 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ]
     },
     {
       "eventType": "geodata.entity.source-disappeared.v1",
@@ -269,7 +347,10 @@
       "schema": "schemas/events/geodata-entity-source-disappeared-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ]
     },
     {
       "eventType": "geodata.entity.status-changed.v1",
@@ -281,7 +362,10 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ]
     },
     {
       "eventType": "geodata.import.cancellation-requested.v1",
@@ -291,7 +375,10 @@
       "schema": "schemas/events/geodata-import-cancellation-requested-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ]
     },
     {
       "eventType": "geodata.import.cancelled.v1",
@@ -301,7 +388,10 @@
       "schema": "schemas/events/geodata-import-cancelled-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ]
     },
     {
       "eventType": "geodata.import.candidates.rejected.v1",
@@ -311,7 +401,10 @@
       "schema": "schemas/events/geodata-import-candidates-rejected-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ]
     },
     {
       "eventType": "geodata.import.candidates.validated.v1",
@@ -321,7 +414,10 @@
       "schema": "schemas/events/geodata-import-candidates-validated-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ]
     },
     {
       "eventType": "geodata.import.failed.v1",
@@ -331,7 +427,10 @@
       "schema": "schemas/events/geodata-import-failed-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ]
     },
     {
       "eventType": "geodata.import.preprocessed.v1",
@@ -341,7 +440,10 @@
       "schema": "schemas/events/geodata-import-preprocessed-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ]
     },
     {
       "eventType": "geodata.import.processed.v1",
@@ -351,7 +453,10 @@
       "schema": "schemas/events/geodata-import-processed-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ]
     },
     {
       "eventType": "geodata.import.processing.completed.v1",
@@ -361,7 +466,10 @@
       "schema": "schemas/events/geodata-import-processing-completed-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ]
     },
     {
       "eventType": "geodata.loadtest.cleaned.v1",
@@ -371,7 +479,10 @@
       "schema": "schemas/events/geodata-loadtest-cleaned-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ]
     },
     {
       "eventType": "geodata.refresh-schedule.created.v1",
@@ -381,7 +492,10 @@
       "schema": "schemas/events/geodata-refresh-schedule-created-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ]
     },
     {
       "eventType": "identity.account.admin-updated.v1",
@@ -393,7 +507,10 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-identity-service/identity.py"
+      ]
     },
     {
       "eventType": "identity.account.created.v1",
@@ -405,7 +522,10 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-identity-service/identity.py"
+      ]
     },
     {
       "eventType": "identity.account.deactivated.v1",
@@ -417,7 +537,10 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-identity-service/identity.py"
+      ]
     },
     {
       "eventType": "identity.bootstrap-admin.created.v1",
@@ -429,7 +552,10 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-identity-service/identity.py"
+      ]
     },
     {
       "eventType": "identity.callsign.added.v1",
@@ -441,7 +567,10 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-identity-service/identity.py"
+      ]
     },
     {
       "eventType": "identity.callsign.evidence-submitted.v1",
@@ -453,7 +582,10 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-identity-service/identity.py"
+      ]
     },
     {
       "eventType": "identity.callsign.primary-changed.v1",
@@ -465,7 +597,10 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-identity-service/identity.py"
+      ]
     },
     {
       "eventType": "identity.callsign.retired.v1",
@@ -477,7 +612,10 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-identity-service/identity.py"
+      ]
     },
     {
       "eventType": "identity.callsign.verified.v1",
@@ -489,7 +627,10 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-identity-service/identity.py"
+      ]
     },
     {
       "eventType": "identity.login.failed.v1",
@@ -501,7 +642,10 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-identity-service/identity.py"
+      ]
     },
     {
       "eventType": "identity.login.succeeded.v1",
@@ -513,7 +657,10 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-identity-service/identity.py"
+      ]
     },
     {
       "eventType": "identity.oidc.mapping.updated.v1",
@@ -525,7 +672,10 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-identity-service/identity.py"
+      ]
     },
     {
       "eventType": "identity.recovery.completed.v1",
@@ -537,7 +687,10 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-identity-service/identity.py"
+      ]
     },
     {
       "eventType": "identity.recovery.requested.v1",
@@ -549,7 +702,10 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-identity-service/identity.py"
+      ]
     },
     {
       "eventType": "identity.role-definition.created.v1",
@@ -561,7 +717,10 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-identity-service/identity.py"
+      ]
     },
     {
       "eventType": "identity.role-definition.updated.v1",
@@ -573,7 +732,10 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-identity-service/identity.py"
+      ]
     },
     {
       "eventType": "identity.role.assigned.v1",
@@ -585,7 +747,10 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-identity-service/identity.py"
+      ]
     },
     {
       "eventType": "identity.roles.replaced.v1",
@@ -597,7 +762,10 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-identity-service/identity.py"
+      ]
     },
     {
       "eventType": "identity.service-token.issued.v1",
@@ -609,7 +777,10 @@
         "activity-notifications-v1"
       ],
       "disposition": "Activity notification projection; current broad durable will be narrowed to registered event families",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-identity-service/identity.py"
+      ]
     },
     {
       "eventType": "programme.archived.v1",
@@ -619,7 +790,10 @@
       "schema": "schemas/events/programme-archived-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-programme-service/programmes.py"
+      ]
     },
     {
       "eventType": "programme.content.published.v1",
@@ -629,7 +803,10 @@
       "schema": "schemas/events/programme-content-published-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-programme-service/programmes.py"
+      ]
     },
     {
       "eventType": "programme.content.reviewed.v1",
@@ -639,7 +816,10 @@
       "schema": "schemas/events/programme-content-reviewed-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-programme-service/programmes.py"
+      ]
     },
     {
       "eventType": "programme.content.saved.v1",
@@ -649,7 +829,10 @@
       "schema": "schemas/events/programme-content-saved-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-programme-service/programmes.py"
+      ]
     },
     {
       "eventType": "programme.content.submitted.v1",
@@ -659,7 +842,10 @@
       "schema": "schemas/events/programme-content-submitted-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-programme-service/programmes.py"
+      ]
     },
     {
       "eventType": "programme.created.v1",
@@ -669,7 +855,10 @@
       "schema": "schemas/events/programme-created-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-programme-service/programmes.py"
+      ]
     },
     {
       "eventType": "programme.entity-type.assigned.v1",
@@ -679,7 +868,10 @@
       "schema": "schemas/events/programme-entity-type-assigned-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-programme-service/programmes.py"
+      ]
     },
     {
       "eventType": "programme.entity-type.catalog-saved.v1",
@@ -689,7 +881,10 @@
       "schema": "schemas/events/programme-entity-type-catalog-saved-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-programme-service/programmes.py"
+      ]
     },
     {
       "eventType": "programme.entity-type.unassigned.v1",
@@ -699,7 +894,10 @@
       "schema": "schemas/events/programme-entity-type-unassigned-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-programme-service/programmes.py"
+      ]
     },
     {
       "eventType": "programme.policy-draft.published.v1",
@@ -709,7 +907,10 @@
       "schema": "schemas/events/programme-policy-draft-published-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-programme-service/programmes.py"
+      ]
     },
     {
       "eventType": "programme.policy-draft.saved.v1",
@@ -719,7 +920,10 @@
       "schema": "schemas/events/programme-policy-draft-saved-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-programme-service/programmes.py"
+      ]
     },
     {
       "eventType": "programme.updated.v1",
@@ -729,7 +933,10 @@
       "schema": "schemas/events/programme-updated-v1.schema.json",
       "consumerGroups": [],
       "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "pending-owner-schema-review"
+      "payloadEvidence": "pending-source-payload-review",
+      "producerSources": [
+        "myota-programme-service/programmes.py"
+      ]
     }
   ],
   "work": [
