@@ -11,8 +11,88 @@
       "properties": {
         "eventType": {
           "const": "awards.issued.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "requestId": {
+              "type": "string"
+            },
+            "awardId": {
+              "type": "string"
+            },
+            "programmeSlug": {
+              "type": "string"
+            },
+            "levelId": {
+              "type": "string"
+            },
+            "category": {
+              "type": "string"
+            },
+            "subjectId": {
+              "type": "string"
+            },
+            "callsign": {
+              "type": "string"
+            },
+            "personName": {
+              "type": "string"
+            },
+            "awardName": {
+              "type": "string"
+            },
+            "dateObtained": {
+              "type": "string"
+            },
+            "managerName": {
+              "type": "string"
+            },
+            "signatureAssetId": {
+              "type": "string"
+            },
+            "issuedAt": {
+              "type": "string"
+            },
+            "artifact": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": true
+            },
+            "renderSpec": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "id",
+            "requestId",
+            "awardId",
+            "programmeSlug",
+            "levelId",
+            "category",
+            "subjectId",
+            "callsign",
+            "personName",
+            "awardName",
+            "dateObtained",
+            "managerName",
+            "signatureAssetId",
+            "issuedAt",
+            "artifact",
+            "renderSpec"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-activity-callsite",
+  "x-data-classification": "personal-and-certificate-metadata"
 }
