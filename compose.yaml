@@ -232,7 +232,6 @@ services:
       CORE_DATABASE_URL: postgresql://myota:myota-dev-only@core-db:5432/myota_core
       MYOTA_REQUIRE_DURABILITY: "1"
       MYOTA_AUTH_SIGNING_KEY: myota-local-development-signing-key
-      NATS_URL: nats://nats:4222
       OPERATIONS_POLL_SECONDS: "30"
       OPERATIONS_HISTORY_DAYS: "7"
       MYOTA_IDENTITY_URL: http://identity:8001
@@ -241,7 +240,7 @@ services:
       MYOTA_OTEL_ENABLED: "1"
       OTEL_SERVICE_NAME: myota-operations
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
-    depends_on: {migrations: {condition: service_completed_successfully}, nats: {condition: service_started}}
+    depends_on: {migrations: {condition: service_completed_successfully}, seaweedfs: {condition: service_healthy}}
   gateway:
     build: .
     restart: unless-stopped
@@ -275,9 +274,28 @@ services:
   nats:
     image: nats:2.10-alpine
     restart: unless-stopped
-    command: ["-js", "-sd", "/data"]
-    volumes: ["nats-data:/data"]
-    ports: ["4222:4222"]
+    command: ["-c", "/etc/nats/nats.conf"]
+    environment:
+      NATS_SURVEYOR_PASSWORD: ${NATS_SURVEYOR_PASSWORD:?set NATS_SURVEYOR_PASSWORD in the local environment}
+    volumes:
+      - nats-data:/data
+      - ./observability/nats-compose.conf:/etc/nats/nats.conf:ro
+    ports: ["127.0.0.1:4222:4222"]
+  nats-surveyor:
+    image: natsio/nats-surveyor:0.9.11
+    profiles: [observability]
+    restart: unless-stopped
+    command:
+      - "--servers=nats://nats:4222"
+      - "--port=7777"
+      - "--jsz=all"
+      - "--jsz-leaders-only"
+      - "--jsz-filter=consumer_num_pending,consumer_num_ack_pending,consumer_num_waiting"
+      - "--accounts"
+    environment:
+      NATS_SURVEYOR_USER: surveyor
+      NATS_SURVEYOR_PASSWORD: ${NATS_SURVEYOR_PASSWORD:?set NATS_SURVEYOR_PASSWORD in the local environment}
+    depends_on: [nats]
   nats-provisioner:
     profiles: ["nats-topology"]
     build: .
@@ -390,7 +408,7 @@ services:
       - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./observability/rules.yml:/etc/prometheus/rules.yml:ro
       - prometheus-data:/prometheus
-    depends_on: [otel-collector]
+    depends_on: [otel-collector, nats-surveyor]
   alertmanager:
     image: prom/alertmanager:v0.28.1
     profiles: [observability]

@@ -1,41 +1,68 @@
 groups:
   - name: myota-observability
     rules:
-      - alert: MyOTAOutboxOldestPendingEvent
-        expr: myota_outbox_oldest_pending_age_seconds > 120
-        for: 5m
-        labels: {severity: warning}
-        annotations:
-          summary: An outbox event is waiting to publish
-          description: Inspect the matching relay's outbox backlog, database connectivity, NATS status, and retry errors.
-      - alert: MyOTAOutboxDeadLetterUnresolved
-        expr: myota_outbox_unresolved_dead_letters > 0
-        for: 1m
-        labels: {severity: warning}
-        annotations:
-          summary: An outbox event needs operator review
-          description: Inspect redacted dead-letter metadata and redrive from the owning database only after the cause is understood.
-      - alert: MyOTAOutboxRetriesSustained
-        expr: sum by (worker) (rate(myota_outbox_retries_total[5m])) > 0
-        for: 5m
-        labels: {severity: warning}
-        annotations:
-          summary: An outbox relay is retrying continuously
-          description: Inspect the relay's database and NATS connectivity, error logs, and oldest pending event before retry exhaustion.
-      - alert: MyOTAJetStreamStatusUnavailable
-        expr: myota_operations_jetstream_up == 0
+      - alert: MyOTANATSSurveyorUnavailable
+        expr: up{job="nats-surveyor"} == 0
         for: 2m
-        labels: {severity: warning}
+        labels: {severity: critical}
         annotations:
-          summary: Operational JetStream inspection is unavailable or partial
-          description: Check the operations service, broker permissions and inspection limits; this is not a zero-backlog reading.
-      - alert: MyOTAJetStreamStatusSamplesStale
-        expr: time() - myota_operations_jetstream_last_sample_timestamp_seconds > 120
+          summary: NATS Surveyor metrics endpoint is unavailable
+          description: Prometheus cannot scrape the cluster-local NATS Surveyor service.
+      - alert: MyOTAServerMonitoringUnavailable
+        expr: nats_up{job="nats-surveyor"} == 0
         for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: NATS Surveyor cannot reach the NATS server
+          description: Check NATS health, system-account credentials, and the cluster-local route.
+      - alert: MyOTAJetStreamFileStoreCapacityWarning
+        expr: |
+          (
+            max by (server_cluster) (nats_core_jetstream_filestore_used_bytes{job="nats-surveyor"})
+            /
+            clamp_min(max by (server_cluster) (nats_core_jetstream_filestore_size_bytes{job="nats-surveyor"}), 1)
+          ) >= 0.80
+        for: 10m
         labels: {severity: warning}
         annotations:
-          summary: JetStream status history is no longer being recorded
-          description: Check the operations sampler and its core database connection.
+          summary: JetStream file store has reached 80% of its configured capacity
+          description: Review stream limits and the single-node storage budget before further growth.
+      - alert: MyOTAJetStreamFileStoreCapacityCritical
+        expr: |
+          (
+            max by (server_cluster) (nats_core_jetstream_filestore_used_bytes{job="nats-surveyor"})
+            /
+            clamp_min(max by (server_cluster) (nats_core_jetstream_filestore_size_bytes{job="nats-surveyor"}), 1)
+          ) >= 0.90
+        for: 10m
+        labels: {severity: critical}
+        annotations:
+          summary: JetStream file store has reached 90% of its configured capacity
+          description: Reduce retained work, enforce stream capacity, or expand the single-node storage budget.
+      - alert: MyOTAJetStreamMemoryStoreCapacityWarning
+        expr: |
+          (
+            max by (server_cluster) (nats_core_jetstream_memstore_used_bytes{job="nats-surveyor"})
+            /
+            clamp_min(max by (server_cluster) (nats_core_jetstream_memstore_size_bytes{job="nats-surveyor"}), 1)
+          ) >= 0.80
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: JetStream memory store has reached 80% of its configured capacity
+          description: Review memory-backed stream limits against the single-node memory budget.
+      - alert: MyOTAJetStreamMemoryStoreCapacityCritical
+        expr: |
+          (
+            max by (server_cluster) (nats_core_jetstream_memstore_used_bytes{job="nats-surveyor"})
+            /
+            clamp_min(max by (server_cluster) (nats_core_jetstream_memstore_size_bytes{job="nats-surveyor"}), 1)
+          ) >= 0.90
+        for: 10m
+        labels: {severity: critical}
+        annotations:
+          summary: JetStream memory store has reached 90% of its configured capacity
+          description: Stop memory-backed growth or increase the server memory budget.
       - alert: MyOTAMetricsCollectorDown
         expr: up{job="myota-otel-collector"} == 0
         for: 2m
@@ -50,6 +77,38 @@ groups:
         annotations:
           summary: MyOTA service metrics are unavailable
           description: A service is not responding at its metrics endpoint.
+      - alert: MyOTASeaweedMetricsUnavailable
+        expr: up{job="myota-otel-collector", exported_job="seaweedfs"} == 0
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: SeaweedFS Prometheus metrics endpoint is unavailable
+          description: Check the SeaweedFS mini metrics listener and Collector scrape target; missing metrics are not zero storage activity.
+      - alert: MyOTASeaweedS3ErrorRateHigh
+        expr: |
+          (
+            sum(rate(SeaweedFS_s3_request_total{exported_job="seaweedfs",code!~"2.."}[5m]))
+            /
+            clamp_min(sum(rate(SeaweedFS_s3_request_total{exported_job="seaweedfs"}[5m])), 0.1)
+          ) > 0.05
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: SeaweedFS S3 error rate is high
+          description: More than 5% of observed S3 requests have returned non-2xx responses for five minutes.
+      - alert: MyOTASeaweedS3LatencyHigh
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (
+              rate(SeaweedFS_s3_request_seconds_bucket{exported_job="seaweedfs"}[5m])
+            )
+          ) > 2
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: SeaweedFS S3 p95 processing time is high
+          description: SeaweedFS server-side p95 request processing time has exceeded two seconds for ten minutes.
       - alert: MyOTAActivityQueueBacklog
         expr: myota_activity_jobs_queued_total{job="myota-otel-collector"} > 100
         for: 10m
@@ -57,6 +116,34 @@ groups:
         annotations:
           summary: MyOTA activity queue backlog is high
           description: More than 100 activity jobs have been queued for 10 minutes.
+      - alert: MyOTAActivityWorkQueueOldestAge
+        expr: max(myota_activity_job_queue_age_seconds{job="myota-otel-collector"}) > 300
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: An Activity work command is waiting too long
+          description: Inspect Activity work durable pending state, the owning job row, and outbox relay backlog.
+      - alert: MyOTAActivityWorkFailedJobs
+        expr: sum(myota_activity_jobs_total{job="myota-otel-collector",status="failed"}) > 0
+        for: 1m
+        labels: {severity: warning}
+        annotations:
+          summary: An Activity work command reached its retry limit
+          description: Inspect the Activity job record and redrive it only after the failure cause is understood.
+      - alert: MyOTAActivityWorkRetriesSustained
+        expr: sum by (kind) (increase(myota_activity_work_retries_total{job="myota-otel-collector"}[5m])) > 0
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: Activity work is retrying continuously
+          description: Inspect the matching job's bounded error class, consumer durable, database health, and outbox backlog.
+      - alert: MyOTAActivityWorkDeadLetter
+        expr: myota_activity_work_dead_letters_unresolved{job="myota-otel-collector"} > 0
+        for: 1m
+        labels: {severity: warning}
+        annotations:
+          summary: An Activity work envelope was rejected
+          description: Inspect the bounded dead-letter metadata and recover through the owning job record.
       - alert: MyOTAActivityDatabaseMetricsUnavailable
         expr: myota_activity_metrics_database_unavailable{job="myota-otel-collector"} > 0
         for: 2m
@@ -64,19 +151,34 @@ groups:
         annotations:
           summary: Activity database metrics are unavailable
           description: Activity domain gauges cannot currently be read from PostgreSQL.
-      - alert: MyOTAActivityNotificationDeadLetter
-        expr: myota_activity_notification_unresolved_dead_letters > 0
-        labels: {severity: warning}
-        annotations:
-          summary: Activity notification poison events need operator review
-          description: Inspect the redacted Activity dead-letter record and use the audited notification redrive after remediation.
-      - alert: MyOTAActivityNotificationRetries
-        expr: increase(myota_activity_notification_outcomes_total{outcome="retry"}[10m]) > 5
+      - alert: MyOTAOutboxRelayMetricsUnavailable
+        expr: up{job="myota-otel-collector", exported_job="myota-outbox"} == 0
         for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: An outbox relay metrics endpoint is unavailable
+          description: Check the affected core, activity, or geo relay pod and its database/NATS connectivity.
+      - alert: MyOTAOutboxOldestPendingEvent
+        expr: myota_outbox_oldest_pending_age_seconds{job="myota-otel-collector"} > 120
+        for: 5m
         labels: {severity: warning}
         annotations:
-          summary: Activity notification delivery is retrying
-          description: Check Activity PostgreSQL availability, NATS delivery state, and notification worker logs.
+          summary: An outbox event is waiting to publish
+          description: Inspect the matching relay's outbox backlog, database connectivity, NATS status, and retry errors.
+      - alert: MyOTAOutboxDeadLetterUnresolved
+        expr: myota_outbox_unresolved_dead_letters{job="myota-otel-collector"} > 0
+        for: 1m
+        labels: {severity: warning}
+        annotations:
+          summary: An outbox event needs operator review
+          description: Inspect redacted dead-letter metadata and redrive from the owning database only after the cause is understood.
+      - alert: MyOTAOutboxRetriesSustained
+        expr: sum by (worker) (rate(myota_outbox_retries_total{job="myota-otel-collector"}[5m])) > 0
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: An outbox relay is retrying continuously
+          description: Inspect the relay's database and NATS connectivity, error logs, and oldest pending event before retry exhaustion.
       - alert: MyOTAApiErrorRateHigh
         expr: |
           (

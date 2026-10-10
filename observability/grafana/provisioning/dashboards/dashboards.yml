@@ -4,7 +4,18 @@ providers:
     orgId: 1
     folder: MyOTA
     type: file
-    disableDeletion: true
-    editable: false
+    disableDeletion: false
+    editable: true
+    allowUiUpdates: true
     options:
       path: /etc/grafana/dashboards
+
+  - name: NATS
+    orgId: 1
+    folder: NATS
+    type: file
+    disableDeletion: false
+    editable: false
+    allowUiUpdates: false
+    options:
+      path: /etc/grafana/dashboards/nats

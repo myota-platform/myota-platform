@@ -74,8 +74,6 @@ spec:
               value: {{ $cfg.storageHealthUrl | default (printf "%s/status" $.Values.objectStorage.endpoint) | quote }}
             - name: OPERATIONS_STORAGE_METRICS_URL
               value: {{ $cfg.storageMetricsUrl | default (printf "http://myota-seaweedfs:%v/metrics" $.Values.seaweedfs.metricsPort) | quote }}
-            - name: NATS_URL
-              value: {{ $.Values.nats.url | default "nats://myota-nats:4222" | quote }}
             - name: OPERATIONS_POLL_SECONDS
               value: {{ $cfg.pollSeconds | default 30 | quote }}
             - name: OPERATIONS_HISTORY_DAYS

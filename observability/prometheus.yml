@@ -11,6 +11,11 @@ alerting:
         - targets: [alertmanager:9093]
 
 scrape_configs:
+  - job_name: nats-surveyor
+    scrape_interval: 15s
+    scrape_timeout: 5s
+    static_configs:
+      - targets: [nats-surveyor:7777]
   # The collector is the single scrape boundary. It combines service-owned
   # Prometheus endpoints with OTLP metrics before Prometheus stores them.
   - job_name: myota-otel-collector

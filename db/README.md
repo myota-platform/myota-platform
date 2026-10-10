@@ -2,7 +2,7 @@
 
 The deployment uses three service-owned database targets:
 
-- `myota_core` on plain PostgreSQL: identity, programme configuration, permissions, core audit/outbox data, and the operations service's JetStream status samples.
+- `myota_core` on plain PostgreSQL: identity, programme configuration, permissions, core audit/outbox data, and the operations service's Operations storage-status samples.
 - `myota_activity` on plain PostgreSQL: activations, QSOs, aggregates, awards, activity jobs, and notifications.
 - `myota_geo` on PostgreSQL with PostGIS: geodata entities, geometries, source snapshots, import runs, conflation candidates, review records, and relational entity-to-category assignments.
 
