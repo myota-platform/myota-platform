@@ -28,13 +28,15 @@ backlog metrics. It validates the legacy `MYOTA_EVENTS` stream read-only. The
 live stream remains on Interest retention with the existing durable consumers;
 the relay does not provision target streams. NATS remains cluster-internal
 through a ClusterIP service without auth/TLS under the trusted workload
-boundary. The selected bounded fact stream and separate Activity/Geodata
-WorkQueue streams are not a production cutover. Phase 1 contracts/topology and
-Phase 2 relay hardening passed isolated checks; the opt-in Helm pre-upgrade gate
-remains disabled until compatibility gates pass. Initial finite limits are
-accepted for the current single-node scope with a documented short-sample
-caveat. See the
+boundary. Phases 0–4 of the migration are complete within their evidence
+bounds. Phase 5 Geodata source and isolated reliability checks pass. Helm 183
+pre-provisioned the target WorkQueue and four exact durables, but the live
+worker still subscribes to legacy subjects and migration 021 is not installed.
+Do not change routing or retire old durables before the image/schema rollout,
+recovery gates, and rollback window pass. Initial finite limits are accepted
+for the current single-node scope with a documented short-sample caveat. See the
 [event registry](contracts/event-registry.json),
+[Phase 5 evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase5-geodata-work-2026-10-10.md),
 [migration plan](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/nats-event-migration-plan.md),
 the [Phase 1 completion evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase1-completion-2026-10-10.md),
 and [Phase 2 relay evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase2-relay-hardening-2026-10-10.md).
