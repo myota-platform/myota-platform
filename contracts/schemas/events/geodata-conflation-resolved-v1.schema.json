@@ -11,8 +11,38 @@
       "properties": {
         "eventType": {
           "const": "geodata.conflation.resolved.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "resolution": {
+              "type": "string"
+            },
+            "resolutionHistory": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "updatedAt": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "resolution",
+            "resolutionHistory",
+            "updatedAt"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-geodata-callsite",
+  "x-data-classification": "geospatial-and-review-metadata"
 }
