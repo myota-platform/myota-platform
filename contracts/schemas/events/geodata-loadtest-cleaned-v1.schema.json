@@ -11,8 +11,38 @@
       "properties": {
         "eventType": {
           "const": "geodata.loadtest.cleaned.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "testRunId": {
+              "type": "string"
+            },
+            "importsDeleted": {
+              "type": "integer"
+            },
+            "entitiesDeleted": {
+              "type": "integer"
+            },
+            "objectsDeleted": {
+              "type": "integer"
+            },
+            "uploadSessionsDeleted": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "testRunId",
+            "importsDeleted",
+            "entitiesDeleted",
+            "objectsDeleted",
+            "uploadSessionsDeleted"
+          ],
+          "additionalProperties": true
         }
       }
     }
-  ]
+  ],
+  "x-payload-evidence": "source-derived-geodata-callsite",
+  "x-data-classification": "internal-operational-metadata"
 }
