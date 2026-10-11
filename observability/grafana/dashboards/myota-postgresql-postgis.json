@@ -6,13 +6,34 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
   "id": null,
-  "links": [],
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "title": "Geodata operations runbook",
+      "tooltip": "Geodata import and PostgreSQL runbook",
+      "type": "link",
+      "url": "https://github.com/myota-platform/myota-docs/blob/main/docs/operations/runbooks.md"
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "title": "Geodata capacity dashboard",
+      "tooltip": "Geodata workload and PostGIS service metrics",
+      "type": "link",
+      "url": "/observability/d/myota-geodata-capacity"
+    }
+  ],
   "panels": [
     {
       "id": 1,
       "type": "timeseries",
       "title": "Database connections",
-      "description": "Current client backends per MyOTA database.",
+      "description": "Current client backend count from the bounded read-only Operations sampler; labels use only the fixed database names.",
       "gridPos": {
         "h": 8,
         "w": 12,
@@ -31,18 +52,18 @@
       },
       "targets": [
         {
-          "expr": "postgresql_backends{postgresql_database_name=\"myota_core\"}",
-          "legendFormat": "myota_core",
+          "expr": "myota_postgresql_connections{database=\"core\"}",
+          "legendFormat": "core",
           "refId": "A"
         },
         {
-          "expr": "postgresql_backends{postgresql_database_name=\"myota_activity\"}",
-          "legendFormat": "myota_activity",
+          "expr": "myota_postgresql_connections{database=\"activity\"}",
+          "legendFormat": "activity",
           "refId": "B"
         },
         {
-          "expr": "postgresql_backends{postgresql_database_name=\"myota_geo\"}",
-          "legendFormat": "myota_geo",
+          "expr": "myota_postgresql_connections{database=\"geo\"}",
+          "legendFormat": "geo",
           "refId": "C"
         }
       ]
@@ -70,18 +91,18 @@
       },
       "targets": [
         {
-          "expr": "postgresql_db_size{postgresql_database_name=\"myota_core\"}",
-          "legendFormat": "myota_core",
+          "expr": "myota_postgresql_database_size_bytes{database=\"core\"}",
+          "legendFormat": "core",
           "refId": "A"
         },
         {
-          "expr": "postgresql_db_size{postgresql_database_name=\"myota_activity\"}",
-          "legendFormat": "myota_activity",
+          "expr": "myota_postgresql_database_size_bytes{database=\"activity\"}",
+          "legendFormat": "activity",
           "refId": "B"
         },
         {
-          "expr": "postgresql_db_size{postgresql_database_name=\"myota_geo\"}",
-          "legendFormat": "myota_geo",
+          "expr": "myota_postgresql_database_size_bytes{database=\"geo\"}",
+          "legendFormat": "geo",
           "refId": "C"
         }
       ]
@@ -108,18 +129,18 @@
       },
       "targets": [
         {
-          "expr": "rate(postgresql_commits_total{postgresql_database_name=\"myota_core\"}[5m])",
-          "legendFormat": "myota_core",
+          "expr": "rate(myota_postgresql_commits_total{database=\"core\"}[5m])",
+          "legendFormat": "core",
           "refId": "A"
         },
         {
-          "expr": "rate(postgresql_commits_total{postgresql_database_name=\"myota_activity\"}[5m])",
-          "legendFormat": "myota_activity",
+          "expr": "rate(myota_postgresql_commits_total{database=\"activity\"}[5m])",
+          "legendFormat": "activity",
           "refId": "B"
         },
         {
-          "expr": "rate(postgresql_commits_total{postgresql_database_name=\"myota_geo\"}[5m])",
-          "legendFormat": "myota_geo",
+          "expr": "rate(myota_postgresql_commits_total{database=\"geo\"}[5m])",
+          "legendFormat": "geo",
           "refId": "C"
         }
       ]
@@ -146,18 +167,18 @@
       },
       "targets": [
         {
-          "expr": "rate(postgresql_rollbacks_total{postgresql_database_name=\"myota_core\"}[5m])",
-          "legendFormat": "myota_core",
+          "expr": "rate(myota_postgresql_rollbacks_total{database=\"core\"}[5m])",
+          "legendFormat": "core",
           "refId": "A"
         },
         {
-          "expr": "rate(postgresql_rollbacks_total{postgresql_database_name=\"myota_activity\"}[5m])",
-          "legendFormat": "myota_activity",
+          "expr": "rate(myota_postgresql_rollbacks_total{database=\"activity\"}[5m])",
+          "legendFormat": "activity",
           "refId": "B"
         },
         {
-          "expr": "rate(postgresql_rollbacks_total{postgresql_database_name=\"myota_geo\"}[5m])",
-          "legendFormat": "myota_geo",
+          "expr": "rate(myota_postgresql_rollbacks_total{database=\"geo\"}[5m])",
+          "legendFormat": "geo",
           "refId": "C"
         }
       ]
@@ -184,18 +205,18 @@
       },
       "targets": [
         {
-          "expr": "rate(postgresql_deadlocks_total{postgresql_database_name=\"myota_core\"}[5m])",
-          "legendFormat": "myota_core",
+          "expr": "rate(myota_postgresql_deadlocks_total{database=\"core\"}[5m])",
+          "legendFormat": "core",
           "refId": "A"
         },
         {
-          "expr": "rate(postgresql_deadlocks_total{postgresql_database_name=\"myota_activity\"}[5m])",
-          "legendFormat": "myota_activity",
+          "expr": "rate(myota_postgresql_deadlocks_total{database=\"activity\"}[5m])",
+          "legendFormat": "activity",
           "refId": "B"
         },
         {
-          "expr": "rate(postgresql_deadlocks_total{postgresql_database_name=\"myota_geo\"}[5m])",
-          "legendFormat": "myota_geo",
+          "expr": "rate(myota_postgresql_deadlocks_total{database=\"geo\"}[5m])",
+          "legendFormat": "geo",
           "refId": "C"
         }
       ]
@@ -204,7 +225,7 @@
       "id": 6,
       "type": "timeseries",
       "title": "PostGIS query latency p95",
-      "description": "Existing bounded application histogram; query remains a bounded operation label.",
+      "description": "Bounded Geodata application histogram; it reports Geo query latency only and never contains SQL text.",
       "gridPos": {
         "h": 8,
         "w": 12,
@@ -228,6 +249,144 @@
           "refId": "A"
         }
       ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Connection utilization",
+      "description": "Connections divided by configured max_connections from the same bounded DB sampler. Missing series are not zero.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "100 * myota_postgresql_connections / on(database) myota_postgresql_max_connections",
+          "legendFormat": "{{database}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Geodata connection pool waiters",
+      "description": "Current application-side pool waiters; this is a Geodata pool value, not all database clients.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "myota_geodata_postgres_pool_waiting_requests",
+          "legendFormat": "waiting requests",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Geodata PostgreSQL lock waits",
+      "description": "Current connections waiting on database locks, measured by the Geodata application.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "myota_geodata_postgres_lock_waiting_connections",
+          "legendFormat": "waiting connections",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Geodata connection pool wait duration",
+      "description": "Five-minute rate of application-observed pool wait time, converted from milliseconds to seconds per second.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "rate(myota_geodata_postgres_pool_wait_milliseconds_total[5m]) / 1000",
+          "legendFormat": "Geodata pool wait seconds/second",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "text",
+      "title": "Unsupported database signals",
+      "description": "Metrics intentionally absent from the current least-privilege source are identified explicitly.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "The current supported metric source does **not** export transaction age, cache hit ratio, autovacuum/freeze age, or per-table maintenance state. They are unavailable, not zero. No panel is drawn for these signals. PostgreSQL panels use fixed database labels and no SQL text, parameters, credentials, or user identifiers. The read-only Operations sampler remains the source while its migration/retirement work is tracked separately."
+      }
     }
   ],
   "refresh": "30s",
@@ -241,12 +400,12 @@
     "list": []
   },
   "time": {
-    "from": "now-6h",
+    "from": "now-30m",
     "to": "now"
   },
   "timepicker": {},
-  "timezone": "UTC",
+  "timezone": "utc",
   "title": "MyOTA PostgreSQL and PostGIS",
   "uid": "myota-postgresql-postgis",
-  "version": 1
+  "version": 2
 }

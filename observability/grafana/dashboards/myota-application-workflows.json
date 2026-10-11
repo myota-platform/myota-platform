@@ -1,0 +1,416 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "title": "NATS Surveyor",
+      "tooltip": "NATS server and stream dashboard",
+      "type": "link",
+      "url": "/observability/d/GGxJ_5oZy"
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "title": "JetStream State and Metrics",
+      "tooltip": "JetStream stream and delivery detail",
+      "type": "link",
+      "url": "/observability/d/fLxkFSIVk"
+    }
+  ],
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Outbox unpublished events",
+      "description": "Persisted outbox rows awaiting publication, by bounded relay worker label.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "myota_outbox_pending_events",
+          "legendFormat": "{{worker}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Oldest unpublished outbox age",
+      "description": "Age of oldest pending outbox row; zero is valid only when a source sample exists.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "myota_outbox_oldest_pending_age_seconds",
+          "legendFormat": "{{worker}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Outbox publish operations per second",
+      "description": "Publish attempts observed by the relay duration histogram.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum by (worker) (rate(myota_outbox_publish_duration_seconds_count[5m]))",
+          "legendFormat": "{{worker}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Unresolved outbox dead letters",
+      "description": "Unresolved persisted outbox dead-letter rows by relay worker.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "myota_outbox_unresolved_dead_letters",
+          "legendFormat": "{{worker}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Activity asynchronous jobs",
+      "description": "Database-backed Activity work state by fixed work kind and status.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum by (kind) (myota_activity_jobs_total{status=\"queued\"})",
+          "legendFormat": "{{kind}} queued",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (kind) (myota_activity_jobs_total{status=\"running\"})",
+          "legendFormat": "{{kind}} running",
+          "refId": "B"
+        },
+        {
+          "expr": "sum by (kind) (myota_activity_jobs_total{status=\"failed\"})",
+          "legendFormat": "{{kind}} failed",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Activity oldest queued job age",
+      "description": "Age of the oldest queued Activity job for each fixed work kind.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "myota_activity_job_queue_age_seconds",
+          "legendFormat": "{{kind}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Activity work and notification dead letters",
+      "description": "Unresolved dead-letter rows by work subsystem; source absence is not zero.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "myota_activity_work_dead_letters_unresolved",
+          "legendFormat": "Activity work",
+          "refId": "A"
+        },
+        {
+          "expr": "myota_activity_notification_unresolved_dead_letters",
+          "legendFormat": "Activity notifications",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Geodata import work",
+      "description": "Current database-owned import queue and processing run counts.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "myota_geodata_import_queue_depth",
+          "legendFormat": "queued",
+          "refId": "A"
+        },
+        {
+          "expr": "myota_geodata_import_processing_runs",
+          "legendFormat": "processing",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Geodata oldest work age",
+      "description": "Age of oldest queued run and processing heartbeat age.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "myota_geodata_import_oldest_queued_age_seconds",
+          "legendFormat": "oldest queued",
+          "refId": "A"
+        },
+        {
+          "expr": "myota_geodata_import_oldest_processing_heartbeat_age_seconds",
+          "legendFormat": "oldest processing heartbeat",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "JetStream consumer count by stream",
+      "description": "Surveyor's live aggregate consumer count per stream; this is not a per-durable backlog measure.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "nats_core_account_jetstream_consumer_count{account=\"$G\"}",
+          "legendFormat": "{{stream}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "JetStream server consumer count",
+      "description": "Live Surveyor server-level consumer count.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "nats_core_jetstream_server_total_consumers",
+          "legendFormat": "server",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "text",
+      "title": "Per-durable delivery metrics unavailable",
+      "description": "Current Surveyor export has no per-durable pending, ack-pending, redelivery, or oldest-message age samples.",
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 40
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**Per-durable JetStream pending, ACK-pending, redelivery, and oldest-message age metrics are unavailable in the current live Surveyor export.** This dashboard does not turn missing series into zero. Use the linked NATS Surveyor dashboards for broker and stream details; they do not currently provide those absent Prometheus samples either. Do not infer queue health from consumer counts."
+      }
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": [
+    "myota",
+    "async-workflows",
+    "real-data"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "utc",
+  "title": "MyOTA application workflows and JetStream",
+  "uid": "myota-application-workflows",
+  "version": 1
+}

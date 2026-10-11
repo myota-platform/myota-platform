@@ -52,6 +52,8 @@ data:
 {{ .Files.Get "observability/grafana/dashboards/myota-postgresql-postgis.json" | indent 4 }}
   myota-k3s-workload.json: |
 {{ .Files.Get "observability/grafana/dashboards/myota-k3s-workload.json" | indent 4 }}
+  myota-application-workflows.json: |
+{{ .Files.Get "observability/grafana/dashboards/myota-application-workflows.json" | indent 4 }}
   alert-rules.yml: |
 {{ .Files.Get "observability/grafana/provisioning/alerting/alert-rules.yml" | indent 4 }}
   contact-points.yml: |
@@ -460,6 +462,7 @@ spec:
             - {name: config, mountPath: /etc/grafana/dashboards/myota-logs-failures.json, subPath: myota-logs-failures.json}
             - {name: config, mountPath: /etc/grafana/dashboards/myota-postgresql-postgis.json, subPath: myota-postgresql-postgis.json}
             - {name: config, mountPath: /etc/grafana/dashboards-k3s/myota-k3s-workload.json, subPath: myota-k3s-workload.json}
+            - {name: config, mountPath: /etc/grafana/dashboards/myota-application-workflows.json, subPath: myota-application-workflows.json}
             - {name: nats-dashboards, mountPath: /etc/grafana/dashboards-nats}
             - {name: data, mountPath: /var/lib/grafana}
       volumes:
