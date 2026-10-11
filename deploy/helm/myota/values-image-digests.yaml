@@ -3,7 +3,7 @@
 # makes digest changes explicit in each pod template.
 imageRollout:
   digests:
-    operations: "sha256:a2613a9c3688323b4812ea436b825e985c3fa0d463a61b9cb1e78032b4bbc2cd"
+    operations: "sha256:b50b4666919e1f4046067129abd95993d371093088ea5e5f7633fd5ced163af4"
     identity: "sha256:bd8b6b507614c4924a12061051b456690ca68bc66740dbc0f7a4e907ca1175c7"
     programmes: "sha256:891c02d3a94ce751a52fdeda90e356d2319639e419642d0ce44686489bd7a765"
     geodata: "sha256:4c7c65a51a983f760176b6149ad389102a4a65b31cb4b2fc39a180008dfd86eb"
