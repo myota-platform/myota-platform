@@ -188,9 +188,9 @@ async def ensure_stream(nc: NATS) -> None:
 
     subjects = set(stream.config.subjects or [])
     required_subjects = set(STREAM_SUBJECTS)
-    if not required_subjects.issubset(subjects):
+    if subjects != required_subjects:
         raise RuntimeError(
-            f"legacy {STREAM_NAME} is missing required subject coverage"
+            f"{STREAM_NAME} subjects must exactly match the registered fact capture"
         )
 
     for consumer in required_consumers():
@@ -199,13 +199,24 @@ async def ensure_stream(nc: NATS) -> None:
     retention = getattr(
         stream.config.retention, "value", stream.config.retention
     )
-    if str(retention).lower() != RetentionPolicy.INTEREST.value:
+    if str(retention).lower() != RetentionPolicy.LIMITS.value:
         raise RuntimeError(
-            f"legacy {STREAM_NAME} must retain its current Interest policy; "
-            f"found {retention}"
+            f"{STREAM_NAME} must use bounded Limits retention; found {retention}"
         )
-    if stream.config.storage != StorageType.FILE:
-        raise RuntimeError(f"legacy {STREAM_NAME} must use file storage")
+    if (
+        stream.config.storage != StorageType.FILE
+        or stream.config.num_replicas != 1
+        or getattr(stream.config.discard, "value", stream.config.discard) != "new"
+        or min(
+            stream.config.max_age,
+            stream.config.max_bytes,
+            stream.config.max_msgs,
+            stream.config.max_msg_size,
+        ) <= 0
+    ):
+        raise RuntimeError(
+            f"{STREAM_NAME} storage, replica, or finite capacity policy drifted"
+        )
 
     if WORKER_NAME == "activity-outbox":
         await validate_target_work_topology(
