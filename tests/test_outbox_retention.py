@@ -74,9 +74,15 @@ class OutboxRetentionTests(unittest.IsolatedAsyncioTestCase):
             SimpleNamespace(
                 config=SimpleNamespace(
                     name=STREAM_NAME,
-                    subjects=["myota.events.>", "myota.geodata.>"],
-                    retention=RetentionPolicy.INTEREST,
+                    subjects=["myota.events.>"],
+                    retention=RetentionPolicy.LIMITS,
                     storage=StorageType.FILE,
+                    num_replicas=1,
+                    discard="new",
+                    max_age=86400,
+                    max_bytes=1048576,
+                    max_msgs=10000,
+                    max_msg_size=1048576,
                 )
             ),
             {
@@ -87,7 +93,7 @@ class OutboxRetentionTests(unittest.IsolatedAsyncioTestCase):
 
         await ensure_stream(FakeNats(js))
 
-        self.assertEqual(js.stream.config.retention, RetentionPolicy.INTEREST)
+        self.assertEqual(js.stream.config.retention, RetentionPolicy.LIMITS)
         self.assertEqual(len(js.consumers), len(required_consumers()))
         self.assertEqual(js.calls, [])
 
@@ -102,9 +108,15 @@ class OutboxRetentionTests(unittest.IsolatedAsyncioTestCase):
             SimpleNamespace(
                 config=SimpleNamespace(
                     name=STREAM_NAME,
-                    subjects=["myota.events.>", "myota.geodata.>"],
-                    retention=RetentionPolicy.INTEREST,
+                    subjects=["myota.events.>"],
+                    retention=RetentionPolicy.LIMITS,
                     storage=StorageType.FILE,
+                    num_replicas=1,
+                    discard="new",
+                    max_age=86400,
+                    max_bytes=1048576,
+                    max_msgs=10000,
+                    max_msg_size=1048576,
                 )
             )
         )
