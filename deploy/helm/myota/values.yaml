@@ -10,7 +10,7 @@ imageRollout:
     programmes: ""
     geodata: ""
     activity: ""
-    operations: "sha256:8791af907bd7a4d328d7c30daf1e18fbbe64509f174851e63fff20bfe4ba7beb"
+    operations: ""
     gateway: ""
     adminWeb: ""
     platform: ""
