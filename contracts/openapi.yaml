@@ -16,7 +16,6 @@ tags:
   - name: Geodata
   - name: Activity
   - name: Awards
-  - name: Operations
 paths:
   /v1/identity/auth/register:
     post:
@@ -1303,32 +1302,6 @@ paths:
       summary: Retire an award definition
       parameters: [{ $ref: '#/components/parameters/AwardId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
       responses: { '200': { description: Award retired } }
-  /v1/operations/observability-session:
-    get:
-      operationId: getObservabilitySession
-      tags: [Operations]
-      security: [{ bearerAuth: [] }]
-      summary: Resolve the current authenticated Grafana identity and role
-      description: Checks the live identity API session. GLOBAL_OPERATOR and GLOBAL_ADMIN map to Editor; authorized observability readers map to Viewer. The trusted proxy overwrites incoming identity headers.
-      responses:
-        '200':
-          description: Current per-account Grafana identity; response headers are consumed by the Admin UI auth proxy
-          headers:
-            X-MyOTA-Grafana-User: { schema: { type: string } }
-            X-MyOTA-Grafana-Name: { schema: { type: string } }
-            X-MyOTA-Grafana-Email: { schema: { type: string } }
-            X-MyOTA-Grafana-Role: { schema: { type: string, enum: [Editor, Viewer] } }
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [username, displayName, email, role]
-                properties:
-                  username: { type: string }
-                  displayName: { type: string }
-                  email: { type: string }
-                  role: { type: string, enum: [Editor, Viewer] }
-        '403': { description: Missing or insufficient administrator authentication }
 components:
   securitySchemes:
     bearerAuth:
