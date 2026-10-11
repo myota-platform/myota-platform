@@ -25,6 +25,14 @@ processors:
     check_interval: 1s
     limit_mib: 256
     spike_limit_mib: 64
+  transform/drop_db_query_text:
+    error_mode: ignore
+    trace_statements:
+      - context: span
+        statements:
+          - delete_key(attributes, "db.statement")
+          - delete_key(attributes, "db.query.text")
+          - delete_key(attributes, "db.query.parameters")
   batch:
     timeout: 5s
     send_batch_size: 512
@@ -53,7 +61,7 @@ service:
       exporters: [prometheus]
     traces:
       receivers: [otlp]
-      processors: [memory_limiter, batch]
+      processors: [memory_limiter, transform/drop_db_query_text, batch]
       exporters: [otlp/tempo]
     logs:
       receivers: [otlp]
