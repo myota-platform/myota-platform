@@ -95,11 +95,12 @@ class Telemetry:
         )
 
     def start_request(
-        self, method: str, path: str, request_body_size: int = 0
+        self, method: str, path: str, request_body_size: int = 0,
+        create_span: bool = True,
     ) -> Request:
         span = None
         try:
-            if self.tracer:
+            if self.tracer and create_span:
                 span = self.tracer.start_span(f"{method} {path}")
         except Exception:
             pass
