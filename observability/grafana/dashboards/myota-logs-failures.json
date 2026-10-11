@@ -428,7 +428,7 @@
       "15m"
     ]
   },
-  "timezone": "browser",
+  "timezone": "utc",
   "title": "MyOTA Logs / Failures",
   "uid": "myota-logs-failures",
   "version": 2,
