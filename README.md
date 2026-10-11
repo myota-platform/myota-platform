@@ -121,9 +121,7 @@ values.
 The **MyOTA Geodata capacity baseline** dashboard adds per-instance process
 CPU/memory, request-size and in-flight measurements, PostgreSQL pool and lock
 pressure, and durable import/outbox queue age and throughput signals.
-The **MyOTA JetStream backlog and PostGIS query performance** dashboard shows
-broker-side pending/ack-pending, redelivery, and oldest-message-age signals,
-alongside slow-query counts and actual PostGIS query latency. Grafana's
+Grafana folder **NATS** contains dashboard 16256 and ten vendored Surveyor dashboards. Cluster, gateway, multi-node Raft, and service-observation panels show no data when their features are absent. The retired combined broker/PostGIS dashboard and its two PostGIS panels are not provisioned. Grafana's
 provisioned dashboard directory matches the mounted dashboard files for both
 Compose and Helm. The **MyOTA Object Storage** dashboard shows SeaweedFS S3
 request rates, latency, errors, and in-flight uploads. Helm hashes Grafana's
