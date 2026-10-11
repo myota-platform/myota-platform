@@ -186,7 +186,15 @@ class EventStreamMigrationTests(unittest.IsolatedAsyncioTestCase):
         js.stream_info.assert_not_awaited()
 
     async def test_migration_refuses_nonempty_legacy_stream(self):
-        with patch.dict(os.environ, {**CAPACITY, "NATS_EVENTS_RETENTION_MIGRATION": "1", "NATS_TOPOLOGY_SCOPE": "all"}, clear=True):
+        with patch.dict(
+            os.environ,
+            {
+                **CAPACITY,
+                "NATS_EVENTS_RETENTION_MIGRATION": "1",
+                "NATS_TOPOLOGY_SCOPE": "all",
+            },
+            clear=True,
+        ):
             streams, consumers = desired_topology()
         target = streams[0]
         js = SimpleNamespace(
