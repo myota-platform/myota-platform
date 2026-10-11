@@ -180,12 +180,36 @@ class JetStreamTopologyTests(unittest.TestCase):
 class EventStreamMigrationTests(unittest.IsolatedAsyncioTestCase):
     async def test_migration_is_disabled_without_explicit_gate(self):
         js = SimpleNamespace(stream_info=AsyncMock())
-        stream = None
         with patch.dict(os.environ, {}, clear=True):
-            await migrate_shared_event_stream(js, stream, ())
+            await migrate_shared_event_stream(js, None, ())
         js.stream_info.assert_not_awaited()
 
     async def test_migration_refuses_nonempty_legacy_stream(self):
+        with patch.dict(os.environ, CAPACITY, clear=True):
+            streams, consumers = desired_topology()
+        target = streams[0]
+        legacy_info = SimpleNamespace(
+            config=SimpleNamespace(
+                subjects=["myota.events.>", "myota.geodata.>"],
+                retention="interest",
+                storage="file",
+                num_replicas=1,
+                max_bytes=-1,
+                max_msgs=-1,
+                max_msg_size=-1,
+                discard="old",
+                max_age=target.max_age_seconds,
+            ),
+            state=SimpleNamespace(
+                messages=1,
+                bytes=100,
+                consumer_count=1,
+            ),
+        )
+        js = SimpleNamespace(
+            stream_info=AsyncMock(return_value=legacy_info),
+            update_stream=AsyncMock(),
+        )
         with patch.dict(
             os.environ,
             {
@@ -195,25 +219,6 @@ class EventStreamMigrationTests(unittest.IsolatedAsyncioTestCase):
             },
             clear=True,
         ):
-            streams, consumers = desired_topology()
-        target = streams[0]
-        js = SimpleNamespace(
-            stream_info=AsyncMock(return_value=SimpleNamespace(
-                config=SimpleNamespace(
-                    subjects=["myota.events.>", "myota.geodata.>"],
-                    retention="interest", storage="file", num_replicas=1,
-                    max_bytes=-1, max_msgs=-1, max_msg_size=-1,
-                    discard="old", max_age=target.max_age_seconds,
-                ),
-                state=SimpleNamespace(messages=1, bytes=100, consumer_count=1),
-            )),
-            update_stream=AsyncMock(),
-        )
-        with patch.dict(os.environ, {
-            **CAPACITY,
-            "NATS_EVENTS_RETENTION_MIGRATION": "1",
-            "NATS_TOPOLOGY_SCOPE": "all",
-        }, clear=True):
             with self.assertRaisesRegex(RuntimeError, "zero messages"):
                 await migrate_shared_event_stream(js, target, consumers)
         js.update_stream.assert_not_awaited()
