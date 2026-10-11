@@ -83,29 +83,6 @@ paths:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PageSize'
       responses: { '200': { description: Account page } }
-  /v1/identity/admin/accounts/{accountId}/update:
-    post:
-      tags: [Identity]
-      security: [{ bearerAuth: [] }]
-      deprecated: true
-      summary: Edit an account and replace its active administrative roles
-      parameters: [{ $ref: '#/components/parameters/AccountId' }]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                displayName: { type: string }
-                email: { type: string, format: email, nullable: true }
-                participationType: { type: string, enum: [OPERATOR, SWL] }
-                status: { type: string, enum: [ACTIVE, DEACTIVATED] }
-                password: { type: string, minLength: 12, writeOnly: true }
-                roles:
-                  type: array
-                  items: { $ref: '#/components/schemas/RoleAssignment' }
-      responses: { '200': { description: Updated account and active roles } }
   /v1/identity/admin/roles:
     get:
       tags: [Identity]
@@ -131,21 +108,6 @@ paths:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/AdminRoleDefinition' } } }
       responses: { '201': { description: Created role definition } }
-  /v1/identity/admin/roles/{roleCode}/update:
-    post:
-      tags: [Identity]
-      security: [{ bearerAuth: [] }]
-      deprecated: true
-      summary: Edit a custom administrative role
-      parameters:
-        - in: path
-          name: roleCode
-          required: true
-          schema: { type: string }
-      requestBody:
-        required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/AdminRoleDefinition' } } }
-      responses: { '200': { description: Updated role definition } }
   /v1/identity/admin/security-events:
     get:
       tags: [Identity]
@@ -212,27 +174,12 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/AccountId' }]
       responses: { '200': { description: Account roles } }
-    post:
-      tags: [Identity]
-      security: [{ bearerAuth: [] }]
-      deprecated: true
-      parameters: [{ $ref: '#/components/parameters/AccountId' }]
-      requestBody:
-        required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/RoleAssignment' } } }
-      responses: { '201': { description: Role assigned } }
   /v1/identity/accounts/{accountId}/export:
     get:
       tags: [Identity]
       security: [{ bearerAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/AccountId' }]
       responses: { '200': { description: Personal data export } }
-  /v1/identity/accounts/{accountId}/deactivate:
-    post:
-      tags: [Identity]
-      security: [{ bearerAuth: [] }]
-      parameters: [{ $ref: '#/components/parameters/AccountId' }]
-      responses: { '200': { description: Account deactivated and sessions revoked } }
   /v1/programmes:
     get:
       tags: [Programmes]
@@ -260,21 +207,6 @@ paths:
           schema: { type: string }
       responses:
         '200': { description: Effective programme policy }
-  /v1/programmes/{slug}/update:
-    post:
-      tags: [Programmes]
-      security: [{ bearerAuth: [] }]
-      deprecated: true
-      summary: Update programme-owned configuration
-      parameters:
-        - in: path
-          name: slug
-          required: true
-          schema: { type: string }
-        - $ref: '#/components/parameters/IdempotencyKey'
-      requestBody:
-        content: { application/json: { schema: { $ref: '#/components/schemas/ProgrammeUpdate' } } }
-      responses: { '200': { description: Updated programme } }
   /v1/entity-types:
     get:
       tags: [Programmes]
@@ -306,41 +238,6 @@ paths:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/EntityType' } } }
       responses: { '200': { description: Updated category }, '201': { description: Created category } }
-  /v1/programmes/{slug}/entity-types/assign:
-    post:
-      tags: [Programmes]
-      security: [{ bearerAuth: [] }]
-      deprecated: true
-      summary: Assign a shared entity category to a programme
-      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { $ref: '#/components/parameters/IdempotencyKey' }]
-      requestBody:
-        required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/EntityTypeAssignment' } } }
-      responses: { '200': { description: Updated programme assignments } }
-  /v1/programmes/{slug}/entity-types/unassign:
-    post:
-      tags: [Programmes]
-      security: [{ bearerAuth: [] }]
-      deprecated: true
-      summary: Remove a shared entity category from a programme
-      parameters: [{ in: path, name: slug, required: true, schema: { type: string } }, { $ref: '#/components/parameters/IdempotencyKey' }]
-      requestBody:
-        required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/EntityTypeAssignment' } } }
-      responses: { '200': { description: Updated programme assignments } }
-  /v1/programmes/{slug}/archive:
-    post:
-      tags: [Programmes]
-      security: [{ bearerAuth: [] }]
-      deprecated: true
-      summary: Archive a programme
-      parameters:
-        - in: path
-          name: slug
-          required: true
-          schema: { type: string }
-        - $ref: '#/components/parameters/IdempotencyKey'
-      responses: { '200': { description: Archived programme } }
   /v1/geodata/entities:
     get:
       tags: [Geodata]
@@ -383,17 +280,6 @@ paths:
                   page: { type: integer }
                   pageSize: { type: integer }
                   nextPage: { type: integer, nullable: true }
-  /v1/geodata/imports/manual:
-    post:
-      tags: [Geodata]
-      deprecated: true
-      summary: Import GeoJSON features as candidates
-      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
-      requestBody:
-        required: true
-        content:
-          application/json: { schema: { $ref: '#/components/schemas/GeoImport' } }
-      responses: { '202': { description: Import accepted } }
   /v1/geodata/imports:
     get:
       tags: [Geodata]
@@ -532,17 +418,6 @@ paths:
                   cleaned: { type: boolean, const: true }
         '400': { description: Active run, missing confirmation, or activity-impact safety refusal }
         '403': { description: Cleanup disabled, production acknowledgement missing, or caller is not a global administrator }
-  /v1/geodata/imports/upload:
-    post:
-      tags: [Geodata]
-      deprecated: true
-      security: [{ bearerAuth: [] }]
-      summary: Upload a binary or text source document and queue candidate import
-      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
-      requestBody:
-        required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/GeoImportUpload' } } }
-      responses: { '202': { description: Upload stored and import queued } }
   /v1/geodata/import-uploads:
     post:
       tags: [Geodata]
@@ -603,111 +478,6 @@ paths:
         '200':
           description: Searchable continent, country, subdivision, and province hierarchy
           content: { application/json: { schema: { $ref: '#/components/schemas/LocationOptions' } } }
-  /v1/geodata/entities/{entityId}/review:
-    post:
-      tags: [Geodata]
-      deprecated: true
-      summary: Review a candidate entity
-      parameters:
-        - $ref: '#/components/parameters/EntityId'
-        - $ref: '#/components/parameters/IdempotencyKey'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [decision, reviewerId]
-              properties:
-                decision: { type: string, enum: [APPROVED, REJECTED] }
-                reviewerId: { type: string }
-                note: { type: string }
-      responses: { '200': { description: Review recorded } }
-  /v1/geodata/entities/{entityId}/geometry-type:
-    post:
-      tags: [Geodata]
-      security: [{ bearerAuth: [] }]
-      summary: Convert a geodata entity between point, way, and polygon geometry
-      parameters:
-        - $ref: '#/components/parameters/EntityId'
-        - $ref: '#/components/parameters/IdempotencyKey'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [geometryType, editorId]
-              properties:
-                geometryType: { type: string, enum: [POINT, LINESTRING, MULTILINESTRING, POLYGON, MULTIPOLYGON, WAY] }
-                editorId: { type: string }
-                note: { type: string }
-      responses: { '200': { description: Geometry type changed and audited } }
-  /v1/geodata/entities/{entityId}/location:
-    post:
-      tags: [Geodata]
-      deprecated: true
-      security: [{ bearerAuth: [] }]
-      summary: Save manual location metadata and its provider precedence
-      parameters:
-        - $ref: '#/components/parameters/EntityId'
-        - $ref: '#/components/parameters/IdempotencyKey'
-      requestBody:
-        required: true
-        content:
-          application/json: { schema: { $ref: '#/components/schemas/LocationMetadataEdit' } }
-      responses: { '200': { description: Location metadata saved and audited } }
-  /v1/geodata/entities/{entityId}/entity-type:
-    post:
-      tags: [Geodata]
-      deprecated: true
-      security: [{ bearerAuth: [] }]
-      summary: Change an entity category and record an audit entry
-      parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
-      requestBody:
-        required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/EntityTypeChange' } } }
-      responses: { '200': { description: Category changed and audited } }
-  /v1/geodata/entities/{entityId}/name:
-    post:
-      tags: [Geodata]
-      deprecated: true
-      security: [{ bearerAuth: [] }]
-      summary: Change an entity display name and record an audit entry
-      parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
-      requestBody:
-        required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/EntityNameChange' } } }
-      responses: { '200': { description: Name changed and audited } }
-  /v1/geodata/entities/{entityId}/delete:
-    post:
-      tags: [Geodata]
-      deprecated: true
-      security: [{ bearerAuth: [] }]
-      summary: Permanently delete an entity and its audit record; global deletion also requires activity cascade first
-      parameters:
-        - $ref: '#/components/parameters/EntityId'
-        - $ref: '#/components/parameters/IdempotencyKey'
-      requestBody:
-        required: true
-        content: { application/json: { schema: { type: object, required: [deletedBy], properties: { deletedBy: { type: string } } } } }
-      responses: { '204': { description: Entity and audit record deleted } }
-  /v1/activations/admin/entities/{entityId}/deletion-impact:
-    get:
-      tags: [Activity]
-      deprecated: true
-      security: [{ bearerAuth: [] }]
-      summary: Calculate the QSO and award impact of deleting an entity
-      parameters: [{ $ref: '#/components/parameters/EntityId' }]
-      responses: { '200': { description: Deletion impact } }
-  /v1/activations/admin/entities/{entityId}/cascade-delete:
-    post:
-      tags: [Activity]
-      deprecated: true
-      security: [{ bearerAuth: [] }]
-      summary: Delete linked valid QSOs and queue award recalculation
-      parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
-      responses: { '200': { description: QSO cascade and award recalculation result } }
   /v1/activations/entity-deletion-impacts/{entityId}:
     get:
       tags: [Activity]
@@ -780,14 +550,6 @@ paths:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/Qso' } } }
       responses: { '201': { description: QSO recorded } }
-  /v1/activations/{activationId}/close:
-    post:
-      tags: [Activity]
-      security: [{ bearerAuth: [] }]
-      deprecated: true
-      summary: Close an activation
-      parameters: [{ $ref: '#/components/parameters/ActivationId' }]
-      responses: { '200': { description: Activation closed } }
   /v1/awards:
     get:
       tags: [Awards]
@@ -868,13 +630,6 @@ paths:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/AwardAsset' } } }
       responses: { '201': { description: Asset registered } }
-  /v1/awards/assets/{assetId}/upload-url:
-    post:
-      tags: [Awards]
-      security: [{ bearerAuth: [] }]
-      summary: Create a short-lived direct upload URL for an image asset
-      parameters: [{ $ref: '#/components/parameters/AssetId' }]
-      responses: { '200': { description: Presigned object upload URL } }
   /v1/awards/assets/{assetId}/content:
     get:
       tags: [Awards]
@@ -900,15 +655,6 @@ paths:
       responses:
         '200': { description: Stored asset metadata with actual image dimensions }
         '400': { description: Invalid image, over 20 MiB, or over 16 million pixels }
-    post:
-      tags: [Awards]
-      security: [{ bearerAuth: [] }]
-      summary: Legacy small JSON/base64 upload; prefer PUT of binary content
-      parameters: [{ $ref: '#/components/parameters/AssetId' }]
-      requestBody:
-        required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/AssetContent' } } }
-      responses: { '200': { description: Stored asset metadata } }
   /v1/awards/previews:
     post:
       tags: [Awards]
@@ -924,16 +670,6 @@ paths:
           content: { application/json: { schema: { $ref: '#/components/schemas/AwardPreview' } } }
         '400': { description: Invalid layout, missing asset content or unsupported print specification }
         '429': { description: One preview is already rendering in this API pod; retry shortly }
-  /v1/awards/evaluate:
-    post:
-      tags: [Awards]
-      security: [{ bearerAuth: [] }]
-      deprecated: true
-      summary: Evaluate award conditions and eligible levels for a subject
-      requestBody:
-        required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/AwardEvaluationRequest' } } }
-      responses: { '200': { description: Evaluation result } }
   /v1/awards/evaluation-jobs:
     post:
       tags: [Awards]
@@ -954,15 +690,6 @@ paths:
       parameters: [{ in: path, name: jobId, required: true, schema: { type: string, format: uuid } }]
       responses: { '200': { description: Evaluation job status and retry information } }
   /v1/awards/progress:
-    post:
-      tags: [Awards]
-      security: [{ bearerAuth: [] }]
-      deprecated: true
-      summary: Calculate server-side award progress for the authenticated participant
-      requestBody:
-        required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/AwardProgressRequest' } } }
-      responses: { '200': { description: Progress and eligible levels } }
     get:
       tags: [Awards]
       security: [{ bearerAuth: [] }]
@@ -990,17 +717,6 @@ paths:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/AwardRequest' } } }
       responses: { '201': { description: Award request created } }
-  /v1/awards/requests/{requestId}/issue:
-    post:
-      tags: [Awards]
-      security: [{ bearerAuth: [] }]
-      deprecated: true
-      summary: Issue and permanently record a certificate request
-      parameters: [{ $ref: '#/components/parameters/RequestId' }]
-      requestBody:
-        required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/AwardIssuanceRequest' } } }
-      responses: { '201': { description: Award issuance created } }
   /v1/awards/requests/{requestId}/issuances:
     post:
       tags: [Awards]
@@ -1018,14 +734,6 @@ paths:
       security: [{ bearerAuth: [] }]
       summary: List permanent award issuance records
       responses: { '200': { description: Award issuance page } }
-  /v1/awards/issuances/{issuanceId}/render:
-    post:
-      tags: [Awards]
-      security: [{ bearerAuth: [] }]
-      deprecated: true
-      summary: Retry rendering an issued certificate after its assets are available
-      parameters: [{ $ref: '#/components/parameters/IssuanceId' }]
-      responses: { '200': { description: Certificate rendered } }
   /v1/awards/issuances/{issuanceId}/render-jobs:
     post:
       tags: [Awards]
@@ -1042,13 +750,6 @@ paths:
       operationId: getCertificateRenderJob
       parameters: [{ $ref: '#/components/parameters/IssuanceId' }, { in: path, name: jobId, required: true, schema: { type: string, format: uuid } }]
       responses: { '200': { description: Render job status and retry information } }
-  /v1/awards/issuances/{issuanceId}/download:
-    get:
-      tags: [Awards]
-      security: [{ bearerAuth: [] }]
-      summary: Get a short-lived certificate download URL
-      parameters: [{ $ref: '#/components/parameters/IssuanceId' }]
-      responses: { '200': { description: Presigned certificate download URL } }
   /v1/awards/issuances/{issuanceId}/artifact:
     get:
       tags: [Awards]
@@ -1126,16 +827,6 @@ paths:
                   items: { $ref: '#/components/schemas/RoleAssignment' }
       responses: { '200': { description: Updated account and active roles } }
   /v1/identity/accounts/{accountId}/primary-callsign:
-    post:
-      tags: [Identity]
-      security: [{ bearerAuth: [] }]
-      deprecated: true
-      summary: Set an account's primary callsign
-      parameters: [{ $ref: '#/components/parameters/AccountId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
-      requestBody:
-        required: true
-        content: { application/json: { schema: { type: object, required: [callsignId], properties: { callsignId: { type: string, format: uuid } } } } }
-      responses: { '200': { description: Primary callsign changed } }
     put:
       tags: [Identity]
       security: [{ bearerAuth: [] }]
@@ -1388,17 +1079,6 @@ paths:
           content: { application/json: { schema: { $ref: '#/components/schemas/LocationEnrichmentReceipt' } } }
         '403': { description: GIS location-management permission required }
         '409': { description: Location metadata is complete or the entity version is stale }
-  /v1/geodata/bbox:
-    get:
-      tags: [Geodata]
-      deprecated: true
-      summary: List entities intersecting a map bounding box
-      parameters:
-        - { in: query, name: minLon, required: true, schema: { type: number, format: double } }
-        - { in: query, name: minLat, required: true, schema: { type: number, format: double } }
-        - { in: query, name: maxLon, required: true, schema: { type: number, format: double } }
-        - { in: query, name: maxLat, required: true, schema: { type: number, format: double } }
-      responses: { '200': { description: Bounded entity page } }
   /v1/geodata/tiles/{z}/{x}/{y}:
     get:
       tags: [Geodata]
@@ -1446,17 +1126,6 @@ paths:
         required: true
         content: { application/json: { schema: { type: object, additionalProperties: true } } }
       responses: { '200': { description: Conflation decision recorded } }
-  /v1/geodata/proposals/draw:
-    post:
-      tags: [Geodata]
-      deprecated: true
-      security: [{ bearerAuth: [] }]
-      summary: Create a manually drawn candidate proposal
-      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
-      requestBody:
-        required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/GeoImport' } } }
-      responses: { '201': { description: Candidate proposal created } }
   /v1/geodata/proposals:
     post:
       tags: [Geodata]
@@ -1468,28 +1137,7 @@ paths:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/GeodataProposal' } } }
       responses: { '201': { description: Candidate proposal created } }
-  /v1/geodata/entities/{entityId}/status:
-    post:
-      tags: [Geodata]
-      deprecated: true
-      security: [{ bearerAuth: [] }]
-      summary: Change an entity lifecycle status
-      parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
-      requestBody:
-        required: true
-        content: { application/json: { schema: { type: object, required: [status], properties: { status: { type: string, enum: [CANDIDATE, APPROVED, RETIRED, REJECTED] }, reviewerId: { type: string }, note: { type: string } } } } }
-      responses: { '200': { description: Status changed and audited } }
   /v1/geodata/entities/{entityId}/geometry:
-    post:
-      tags: [Geodata]
-      deprecated: true
-      security: [{ bearerAuth: [] }]
-      summary: Replace an entity geometry with validated GeoJSON
-      parameters: [{ $ref: '#/components/parameters/EntityId' }, { $ref: '#/components/parameters/IdempotencyKey' }, { $ref: '#/components/parameters/IfMatch' }]
-      requestBody:
-        required: true
-        content: { application/json: { schema: { type: object, required: [geometry, editorId], properties: { geometry: { type: object }, editorId: { type: string }, note: { type: string } } } } }
-      responses: { '409': { description: Stale version or conflicting concurrent update }, '200': { description: Geometry replaced and audited } }
     put:
       tags: [Geodata]
       security: [{ bearerAuth: [] }]
@@ -1552,17 +1200,6 @@ paths:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/GeodataEntityDeletionConfirmation' } } }
       responses: { '202': { description: Deletion queued; QSOs and derived award progress are recalculated by activity service } }
-  /v1/activations/{activationId}/qsos/batch:
-    post:
-      tags: [Activity]
-      security: [{ bearerAuth: [] }]
-      deprecated: true
-      summary: Record a batch of normalized QSOs
-      parameters: [{ $ref: '#/components/parameters/ActivationId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
-      requestBody:
-        required: true
-        content: { application/json: { schema: { type: object, required: [qsos], properties: { qsos: { type: array, items: { $ref: '#/components/schemas/Qso' } } } } } }
-      responses: { '201': { description: Batch accepted with duplicate counts } }
   /v1/qso-ingestions:
     post:
       tags: [Activity]
@@ -1582,17 +1219,6 @@ paths:
       operationId: getQsoIngestion
       parameters: [{ in: path, name: ingestionId, required: true, schema: { type: string, format: uuid } }]
       responses: { '200': { description: Ingestion job state and retry information } }
-  /v1/adif/imports:
-    post:
-      tags: [Activity]
-      security: [{ bearerAuth: [] }]
-      deprecated: true
-      summary: Queue an ADIF import for an activation
-      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
-      requestBody:
-        required: true
-        content: { application/json: { schema: { type: object, required: [activationId, filename], additionalProperties: true } } }
-      responses: { '202': { description: ADIF import queued } }
   /v1/adif/imports/{importId}:
     get:
       tags: [Activity]
@@ -1610,17 +1236,6 @@ paths:
         required: true
         content: { application/json: { schema: { type: object, additionalProperties: true } } }
       responses: { '201': { description: Correction request created } }
-  /v1/qso-corrections/{correctionId}/review:
-    post:
-      tags: [Activity]
-      security: [{ bearerAuth: [] }]
-      deprecated: true
-      summary: Review a QSO correction request
-      parameters: [{ in: path, name: correctionId, required: true, schema: { type: string, format: uuid } }, { $ref: '#/components/parameters/IdempotencyKey' }]
-      requestBody:
-        required: true
-        content: { application/json: { schema: { type: object, required: [decision, reviewedBy], additionalProperties: true } } }
-      responses: { '200': { description: Correction decision recorded } }
   /v1/qsos/{qsoId}/corrections/{correctionId}/review:
     post:
       tags: [Activity]
@@ -1650,16 +1265,6 @@ paths:
       summary: Download public activation results
       parameters: [{ in: query, name: programme, schema: { type: string } }, { in: query, name: format, schema: { type: string, enum: [json, csv] } }]
       responses: { '200': { description: Public results document } }
-  /v1/statistics/rebuild:
-    post:
-      tags: [Activity]
-      security: [{ bearerAuth: [] }]
-      deprecated: true
-      summary: Queue a reproducible activity statistics rebuild
-      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
-      requestBody:
-        content: { application/json: { schema: { type: object, additionalProperties: true } } }
-      responses: { '202': { description: Statistics rebuild queued } }
   /v1/statistics/rebuild-jobs:
     post:
       tags: [Activity]
@@ -1692,14 +1297,6 @@ paths:
       summary: List notifications for the authenticated account
       parameters: [{ in: query, name: recipientId, schema: { type: string, format: uuid } }, { $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
       responses: { '200': { description: Notification page } }
-  /v1/awards/{awardId}/recalculate:
-    post:
-      tags: [Awards]
-      security: [{ bearerAuth: [] }]
-      deprecated: true
-      summary: Queue historical award progress recalculation
-      parameters: [{ $ref: '#/components/parameters/AwardId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
-      responses: { '202': { description: Award recalculation queued } }
   /v1/awards/{awardId}/recalculation-jobs:
     post:
       tags: [Awards]
@@ -1726,44 +1323,6 @@ paths:
       summary: Retire an award definition
       parameters: [{ $ref: '#/components/parameters/AwardId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
       responses: { '200': { description: Award retired } }
-  /v1/operations/jetstream:
-    get:
-      operationId: getJetStreamStatus
-      tags: [Operations]
-      security: [{ bearerAuth: [] }]
-      summary: Get the latest timestamped broker status sample
-      description: Requires global administration, observability.view or operations.read. No credentials or message payloads are exposed. Stale, partial and unavailable state is explicit.
-      responses:
-        '200':
-          description: Latest actual stream and consumer sample, including backlog, delivery limits, sequence positions and message-age availability
-          content: { application/json: { schema: { $ref: '#/components/schemas/JetStreamSnapshot' } } }
-        '403': { description: Missing or insufficient administrator authentication }
-        '503': { description: No broker sample recorded yet }
-  /v1/operations/jetstream/snapshots:
-    get:
-      operationId: listJetStreamSnapshots
-      tags: [Operations]
-      security: [{ bearerAuth: [] }]
-      summary: List persistent broker status history
-      description: Timestamped samples, not an exhaustive per-message delivery log. Retained seven days by default. The API caps pageSize at 50.
-      parameters:
-        - $ref: '#/components/parameters/Page'
-        - { in: query, name: pageSize, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
-      responses:
-        '200':
-          description: Paged snapshots newest first
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [items, page, pageSize, total, nextPage]
-                properties:
-                  items: { type: array, items: { $ref: '#/components/schemas/JetStreamSnapshot' } }
-                  page: { type: integer }
-                  pageSize: { type: integer }
-                  total: { type: integer }
-                  nextPage: { type: [integer, 'null'] }
-        '403': { description: Missing or insufficient administrator authentication }
   /v1/operations/observability-session:
     get:
       operationId: getObservabilitySession
