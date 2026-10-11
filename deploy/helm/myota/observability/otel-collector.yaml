@@ -10,6 +10,7 @@ receivers:
     password: ${env:MYOTA_PG_CORE_MONITOR_PASSWORD}
     databases: [myota_core]
     collection_interval: 30s
+    tls: {insecure: true}
     metrics:
       postgresql.backends: {enabled: true}
       postgresql.connection.max: {enabled: true}
@@ -36,6 +37,7 @@ receivers:
     password: ${env:MYOTA_PG_ACTIVITY_MONITOR_PASSWORD}
     databases: [myota_activity]
     collection_interval: 30s
+    tls: {insecure: true}
     metrics:
       postgresql.backends: {enabled: true}
       postgresql.connection.max: {enabled: true}
@@ -62,6 +64,7 @@ receivers:
     password: ${env:MYOTA_PG_GEO_MONITOR_PASSWORD}
     databases: [myota_geo]
     collection_interval: 30s
+    tls: {insecure: true}
     metrics:
       postgresql.backends: {enabled: true}
       postgresql.connection.max: {enabled: true}
