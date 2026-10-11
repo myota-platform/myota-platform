@@ -16,6 +16,7 @@ import tempfile
 import time
 import uuid
 from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import datetime, timezone
 from email.parser import BytesParser
 from email.policy import default as email_default
@@ -32,6 +33,31 @@ from myota_logging import log_http_completed, start_http_span
 MAX_BODY_BYTES = int(
     os.environ.get("MYOTA_MAX_BODY_BYTES", str(1024 * 1024 * 1024))
 )
+
+_CORRELATION_ID: ContextVar[str | None] = ContextVar(
+    "myota_correlation_id", default=None
+)
+
+
+def current_correlation_id() -> str | None:
+    return _CORRELATION_ID.get()
+
+
+def normalize_correlation_id(value: str | None) -> str | None:
+    if not isinstance(value, str) or not 1 <= len(value) <= 128:
+        return None
+    if any(ord(char) < 0x21 or ord(char) > 0x7E for char in value):
+        return None
+    return value
+
+
+@contextmanager
+def bind_correlation_id(value: str | None) -> Iterator[None]:
+    token = _CORRELATION_ID.set(normalize_correlation_id(value))
+    try:
+        yield
+    finally:
+        _CORRELATION_ID.reset(token)
 
 
 def require_durable_database(dsn_env: str | None, dsn: str) -> None:
@@ -308,8 +334,8 @@ class Store:
             )
             for event in self.events:
                 connection.execute(
-                    "INSERT INTO outbox_event(event_id, event_type, producer, aggregate_type, aggregate_id, payload, occurred_at) "
-                    "VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s) ON CONFLICT (event_id) DO NOTHING",
+                    "INSERT INTO outbox_event(event_id, event_type, producer, aggregate_type, aggregate_id, payload, occurred_at, correlation_id) "
+                    "VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, %s) ON CONFLICT (event_id) DO NOTHING",
                     (
                         event["eventId"],
                         event["eventType"],
@@ -318,6 +344,7 @@ class Store:
                         event["aggregate"]["id"],
                         json.dumps(event["payload"], default=json_default),
                         event["occurredAt"],
+                        event["correlationId"],
                     ),
                 )
             for key, response in self.idempotency.items():
@@ -349,7 +376,7 @@ class Store:
             "occurredAt": now(),
             "producer": self.service,
             "aggregate": {"type": aggregate_type, "id": aggregate_id},
-            "correlationId": new_id(),
+            "correlationId": current_correlation_id() or new_id(),
             "payload": payload,
         }
         self.events.append(event)
@@ -680,7 +707,8 @@ class JsonHandler(BaseHTTPRequestHandler):
     def do_OPTIONS(self) -> None:
         self.request_id, self.correlation_id = (
             self._request_id(),
-            self.headers.get("X-Correlation-ID") or new_id(),
+            normalize_correlation_id(self.headers.get("X-Correlation-ID"))
+            or new_id(),
         )
         self._request_started_at = time.perf_counter()
         self.command = "OPTIONS"
@@ -794,27 +822,30 @@ class JsonHandler(BaseHTTPRequestHandler):
                             body = read_json(self)
                     else:
                         body = {}
-                    result = fn(
-                        self,
-                        {
-                            **params,
-                            "_body": body,
-                            "_path": self.path,
-                            "Idempotency-Key": self.headers.get(
-                                "Idempotency-Key"
-                            ),
-                            "Authorization": self.headers.get(
-                                "Authorization", ""
-                            ),
-                            "If-Match": self.headers.get("If-Match", ""),
-                            "X-Part-SHA256": self.headers.get(
-                                "X-Part-SHA256", ""
-                            ),
-                            "User-Agent": self.headers.get("User-Agent", ""),
-                            "Remote-Addr": self.client_address[0],
-                            "_http": "1",
-                        },
-                    )
+                    with bind_correlation_id(self.correlation_id):
+                        result = fn(
+                            self,
+                            {
+                                **params,
+                                "_body": body,
+                                "_path": self.path,
+                                "Idempotency-Key": self.headers.get(
+                                    "Idempotency-Key"
+                                ),
+                                "Authorization": self.headers.get(
+                                    "Authorization", ""
+                                ),
+                                "If-Match": self.headers.get("If-Match", ""),
+                                "X-Part-SHA256": self.headers.get(
+                                    "X-Part-SHA256", ""
+                                ),
+                                "User-Agent": self.headers.get(
+                                    "User-Agent", ""
+                                ),
+                                "Remote-Addr": self.client_address[0],
+                                "_http": "1",
+                            },
+                        )
                     status = (
                         result.pop("_status", 200)
                         if isinstance(result, dict)
