@@ -23,7 +23,12 @@ from nats.js.api import (
 )
 from prometheus_client import Counter, Gauge, Histogram, start_http_server
 from jetstream_topology import ACTIVITY_WORK, GEODATA_WORK
-from myota_logging import configure_logging, inject_messaging_headers, log_event, producer_span
+from myota_logging import (
+    configure_logging,
+    inject_messaging_headers,
+    log_event,
+    producer_span,
+)
 from outbox_routing import (
     CATALOG,
     OutboxContractError,
@@ -484,7 +489,16 @@ def _envelope(claimed: dict) -> dict:
 async def relay_one(js, claimed: dict) -> None:
     """Publish one row, requiring JetStream ack before marking it complete."""
     event_id = claimed["eventId"]
-    log_event(LOG, logging.INFO, "job.received", component="outbox-relay", job_type=WORKER_NAME, job_id=event_id, event_type=claimed.get("eventType"), attempt=claimed.get("attempts", 0))
+    log_event(
+        LOG,
+        logging.INFO,
+        "job.received",
+        component="outbox-relay",
+        job_type=WORKER_NAME,
+        job_id=event_id,
+        event_type=claimed.get("eventType"),
+        attempt=claimed.get("attempts", 0),
+    )
     event_type = claimed["eventType"]
     try:
         envelope = _envelope(claimed)
@@ -511,9 +525,15 @@ async def relay_one(js, claimed: dict) -> None:
                 extra={"event_id": event_id, "event_type": event_type},
             )
         log_event(
-            LOG, logging.ERROR, "job.failed", component="outbox-relay",
-            job_type=WORKER_NAME, job_id=event_id, event_type=event_type,
-            error_type=type(exc).__name__, outcome="dead_lettered",
+            LOG,
+            logging.ERROR,
+            "job.failed",
+            component="outbox-relay",
+            job_type=WORKER_NAME,
+            job_id=event_id,
+            event_type=event_type,
+            error_type=type(exc).__name__,
+            outcome="dead_lettered",
         )
         LOG.error(
             "Outbox event rejected by contract",
@@ -523,8 +543,13 @@ async def relay_one(js, claimed: dict) -> None:
 
     started = asyncio.get_running_loop().time()
     log_event(
-        LOG, logging.INFO, "job.started", component="outbox-relay",
-        job_type=WORKER_NAME, job_id=event_id, event_type=event_type,
+        LOG,
+        logging.INFO,
+        "job.started",
+        component="outbox-relay",
+        job_type=WORKER_NAME,
+        job_id=event_id,
+        event_type=event_type,
     )
     try:
         correlation_id = envelope.get("correlationId")
@@ -546,9 +571,19 @@ async def relay_one(js, claimed: dict) -> None:
         if getattr(ack, "stream", expected_stream) != expected_stream:
             raise RuntimeError("JetStream acknowledged an unexpected stream")
         log_event(
-            LOG, logging.INFO, "job.completed", component="outbox-relay",
-            job_type=WORKER_NAME, job_id=event_id, event_type=event_type,
-            messaging_system="nats", destination=subject,
+            LOG,
+            logging.INFO,
+            "job.completed",
+            component="outbox-relay",
+            job_type=WORKER_NAME,
+            job_id=event_id,
+            event_type=event_type,
+            messaging_system="nats",
+            destination=subject,
+            messaging_message_id=event_id,
+            duration_ms=round(
+                (asyncio.get_running_loop().time() - started) * 1000, 3
+            ),
         )
     except Exception as exc:
         PUBLISH_DURATION.labels(WORKER_NAME).observe(
@@ -563,12 +598,21 @@ async def relay_one(js, claimed: dict) -> None:
             else:
                 RETRY_TOTAL.labels(WORKER_NAME, failure_class).inc()
             log_event(
-                LOG, logging.ERROR if is_dead_letter else logging.WARNING,
+                LOG,
+                logging.ERROR if is_dead_letter else logging.WARNING,
                 "job.failed" if is_dead_letter else "job.retry",
-                component="outbox-relay", job_type=WORKER_NAME,
-                job_id=event_id, event_type=event_type,
+                component="outbox-relay",
+                job_type=WORKER_NAME,
+                job_id=event_id,
+                event_type=event_type,
                 attempt=claimed.get("attempts", 0),
                 error_type=type(exc).__name__,
+                messaging_system="nats",
+                messaging_destination=subject,
+                messaging_message_id=event_id,
+                duration_ms=round(
+                    (asyncio.get_running_loop().time() - started) * 1000, 3
+                ),
             )
         except Exception:
             LOG.exception(
