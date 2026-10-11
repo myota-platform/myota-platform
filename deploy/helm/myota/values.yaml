@@ -231,25 +231,25 @@ nats:
     maxFileStoreBytes: "7516192768"
     maxMemoryStoreBytes: "1073741824"
 jetstreamProvisioner:
-  # Phase 6: validate the target topology before workloads roll out.
-  enabled: true
-  confirmedMigrationGate: true
-  migrateEventsStream: true
+  # Remains disabled by default; enable only in a host-specific rollout.
+  enabled: false
+  confirmedMigrationGate: false
+  migrateEventsStream: false
   scope: all
   imageRepository: ""
   imageTag: ""
   capacity:
-    eventsMaxBytes: "1073741824"
-    eventsMaxMessages: "500000"
-    eventsMaxMessageBytes: "1048576"
-    activityWorkMaxAgeSeconds: "2592000"
-    activityWorkMaxBytes: "1073741824"
-    activityWorkMaxMessages: "250000"
-    activityWorkMaxMessageBytes: "1048576"
-    geodataWorkMaxAgeSeconds: "2592000"
-    geodataWorkMaxBytes: "3221225472"
-    geodataWorkMaxMessages: "500000"
-    geodataWorkMaxMessageBytes: "1048576"
+    eventsMaxBytes: ""
+    eventsMaxMessages: ""
+    eventsMaxMessageBytes: ""
+    activityWorkMaxAgeSeconds: ""
+    activityWorkMaxBytes: ""
+    activityWorkMaxMessages: ""
+    activityWorkMaxMessageBytes: ""
+    geodataWorkMaxAgeSeconds: ""
+    geodataWorkMaxBytes: ""
+    geodataWorkMaxMessages: ""
+    geodataWorkMaxMessageBytes: ""
 outbox:
   enabled: true
   maxAttempts: 12
