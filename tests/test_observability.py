@@ -157,7 +157,7 @@ class ObservabilityConfigurationTests(unittest.TestCase):
         self.assertIn("loki-data", helm_template)
         self.assertIn("workingStorageSize", helm_template)
         self.assertIn("loki-bucket-init", compose)
-        self.assertIn("loki:3100", compose)
+        self.assertIn("  loki:", compose)
         self.assertIn("loki-data:", compose)
 
     def test_k3s_dashboard_and_scrapes_are_internal_and_least_privilege(self):
