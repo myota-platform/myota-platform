@@ -418,7 +418,7 @@ services:
       - ./observability/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
       - alertmanager-data:/alertmanager
   loki-bucket-init:
-    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+    image: public.ecr.aws/aws-cli/aws-cli:2.27.41
     profiles: [observability]
     restart: "no"
     entrypoint: ["/bin/sh", "-ec"]
@@ -429,6 +429,7 @@ services:
     environment:
       AWS_ACCESS_KEY_ID: myota-s3
       AWS_SECRET_ACCESS_KEY: myota-s3-dev-only
+      AWS_DEFAULT_REGION: us-east-1
     depends_on:
       seaweedfs: {condition: service_healthy}
   loki:

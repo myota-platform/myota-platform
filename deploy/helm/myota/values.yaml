@@ -260,7 +260,7 @@ observability:
   storageClassName: ""
   loki:
     image: grafana/loki:3.7.8
-    bucketInitImage: minio/mc:RELEASE.2025-08-13T08-35-41Z
+    bucketInitImage: public.ecr.aws/aws-cli/aws-cli:2.27.41
     servicePort: 3100
     workingStorageSize: 2Gi
     bucketName: myota-loki

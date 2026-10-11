@@ -85,9 +85,14 @@ spec:
           command: ["/bin/sh", "-ec"]
           args:
             - >-
-              mc alias set seaweed {{ .Values.objectStorage.endpoint | quote }}
-              "$AWS_ACCESS_KEY_ID" "$AWS_SECRET_ACCESS_KEY" &&
-              mc mb --ignore-existing seaweed/{{ .Values.observability.loki.bucketName }}
+              if aws s3api head-bucket
+              --bucket {{ .Values.observability.loki.bucketName }}
+              --endpoint-url {{ .Values.objectStorage.endpoint | quote }}
+              --region us-east-1 2>/dev/null; then exit 0; fi;
+              aws s3api create-bucket
+              --bucket {{ .Values.observability.loki.bucketName }}
+              --endpoint-url {{ .Values.objectStorage.endpoint | quote }}
+              --region us-east-1
           env:
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
