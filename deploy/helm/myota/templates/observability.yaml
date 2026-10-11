@@ -485,31 +485,6 @@ metadata:
   labels: {app.kubernetes.io/name: myota, app.kubernetes.io/component: prometheus}
 automountServiceAccountToken: true
 ---
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: myota-prometheus-kubelet-metrics
-rules:
-  - apiGroups: [""]
-    resources: ["nodes"]
-    verbs: ["get", "list", "watch"]
-  - apiGroups: [""]
-    resources: ["nodes/metrics"]
-    verbs: ["get"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: myota-prometheus-kubelet-metrics
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: myota-prometheus-kubelet-metrics
-subjects:
-  - kind: ServiceAccount
-    name: myota-prometheus
-    namespace: {{ .Release.Namespace }}
----
 apiVersion: v1
 kind: ServiceAccount
 metadata:

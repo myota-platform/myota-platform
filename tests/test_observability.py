@@ -10,9 +10,7 @@ class ObservabilityConfigurationTests(unittest.TestCase):
     def test_all_provisioned_dashboards_have_requested_defaults_and_match_helm(
         self,
     ):
-        for source in (ROOT / "observability/grafana/dashboards").glob(
-            "*.json"
-        ):
+        for source in (ROOT / "observability/grafana/dashboards").glob("*.json"):
             dashboard = json.loads(source.read_text())
             mirror = (
                 ROOT
@@ -20,9 +18,7 @@ class ObservabilityConfigurationTests(unittest.TestCase):
                 / source.name
             )
             self.assertEqual(dashboard, json.loads(mirror.read_text()))
-            self.assertEqual(
-                dashboard["time"], {"from": "now-30m", "to": "now"}
-            )
+            self.assertEqual(dashboard["time"], {"from": "now-30m", "to": "now"})
             self.assertEqual(dashboard["refresh"], "30s")
             self.assertEqual(dashboard["timezone"], "utc")
             self.assertTrue(dashboard["editable"])
@@ -57,8 +53,7 @@ class ObservabilityConfigurationTests(unittest.TestCase):
         ]
         self.assertTrue(
             any(
-                "myota_identity_users_total" in expression
-                for expression in expressions
+                "myota_identity_users_total" in expression for expression in expressions
             )
         )
         self.assertTrue(
@@ -68,10 +63,7 @@ class ObservabilityConfigurationTests(unittest.TestCase):
             )
         )
         self.assertTrue(
-            any(
-                "myota_activity_qsos_total" in expression
-                for expression in expressions
-            )
+            any("myota_activity_qsos_total" in expression for expression in expressions)
         )
         self.assertTrue(
             any(
@@ -107,30 +99,19 @@ class ObservabilityConfigurationTests(unittest.TestCase):
         dashboard = json.loads(dashboard_path.read_text())
         chart_dashboard = json.loads(chart_dashboard_path.read_text())
         deployment_template = (
-            ROOT
-            / "deploy"
-            / "helm"
-            / "myota"
-            / "templates"
-            / "observability.yaml"
+            ROOT / "deploy" / "helm" / "myota" / "templates" / "observability.yaml"
         ).read_text()
 
         self.assertEqual(dashboard, chart_dashboard)
         self.assertEqual("myota-object-storage", dashboard["uid"])
         self.assertGreater(len(dashboard["panels"]), 0)
         self.assertIn("checksum/grafana-config:", deployment_template)
-        self.assertIn(
-            '.Files.Glob "observability/grafana/**"', deployment_template
-        )
+        self.assertIn('.Files.Glob "observability/grafana/**"', deployment_template)
 
     def test_loki_uses_s3_retention_and_native_otlp_pipeline(self):
         compose_config = (ROOT / "observability" / "loki.yaml").read_text()
-        helm_config = (
-            ROOT / "deploy/helm/myota/observability/loki.yaml"
-        ).read_text()
-        compose_collector = (
-            ROOT / "observability" / "otel-collector.yaml"
-        ).read_text()
+        helm_config = (ROOT / "deploy/helm/myota/observability/loki.yaml").read_text()
+        compose_collector = (ROOT / "observability" / "otel-collector.yaml").read_text()
         helm_collector = (
             ROOT / "deploy/helm/myota/observability/otel-collector.yaml"
         ).read_text()
@@ -149,9 +130,7 @@ class ObservabilityConfigurationTests(unittest.TestCase):
         self.assertIn("bucketnames: myota-loki", compose_config)
         self.assertIn(".Values.observability.loki.bucketName", helm_config)
         self.assertIn("retention_period: 336h", compose_config)
-        self.assertIn(
-            ".Values.observability.loki.retentionPeriod", helm_config
-        )
+        self.assertIn(".Values.observability.loki.retentionPeriod", helm_config)
         self.assertIn("endpoint: http://loki:3100/otlp", compose_collector)
         self.assertIn("endpoint: http://myota-loki:3100/otlp", helm_collector)
         self.assertIn("exporters: [otlphttp/loki]", helm_collector)
@@ -184,17 +163,26 @@ class ObservabilityConfigurationTests(unittest.TestCase):
         self.assertEqual(dashboard["time"], {"from": "now-30m", "to": "now"})
         self.assertEqual(dashboard["refresh"], "30s")
         self.assertEqual(dashboard["timezone"], "utc")
-        self.assertIn("kube_deployment_status_replicas_available", json.dumps(dashboard))
+        self.assertIn(
+            "kube_deployment_status_replicas_available", json.dumps(dashboard)
+        )
         self.assertIn("kube_pod_container_status_restarts_total", json.dumps(dashboard))
         self.assertIn("pod_cpu_usage_seconds_total", json.dumps(dashboard))
         self.assertIn("kubelet_volume_stats_available_bytes", json.dumps(dashboard))
         self.assertIn("kube-state-metrics", prom_config)
         self.assertIn("scrape_interval: 30s", prom_config)
-        self.assertIn('resources: ["nodes/metrics"]', helm_template)
+        self.assertIn("serviceAccountName: myota-prometheus", helm_template)
+        self.assertNotIn("kind: ClusterRole", helm_template)
         self.assertNotIn("nodes/proxy", helm_template)
         self.assertNotIn("insecure_skip_verify", prom_config)
-        self.assertIn('regex: "(pod_cpu_usage_seconds_total|pod_memory_working_set_bytes);myota"', prom_config)
-        self.assertIn('regex: "(kubelet_volume_stats_available_bytes|kubelet_volume_stats_capacity_bytes);myota"', prom_config)
+        self.assertIn(
+            'regex: "(pod_cpu_usage_seconds_total|pod_memory_working_set_bytes);myota"',
+            prom_config,
+        )
+        self.assertIn(
+            'regex: "(kubelet_volume_stats_available_bytes|kubelet_volume_stats_capacity_bytes);myota"',
+            prom_config,
+        )
         self.assertIn("folder: K3s", dashboard_provider)
         self.assertIn("myota-k3s-workload.json", helm_template)
 
