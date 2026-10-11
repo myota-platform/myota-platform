@@ -96,7 +96,7 @@ class EventRegistryTests(unittest.TestCase):
             for event in registry["events"]
             if event["owner"] == "geodata-service"
         ]
-        self.assertEqual(len(geodata_events), 27)
+        self.assertEqual(len(geodata_events), 26)
         geodata_by_type = {
             event["eventType"]: event for event in geodata_events
         }
