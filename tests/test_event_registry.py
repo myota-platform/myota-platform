@@ -72,7 +72,7 @@ class EventRegistryTests(unittest.TestCase):
             item["subject"] for item in registry["events"] + registry["work"]
         ]
         self.assertEqual(len(subjects), len(set(subjects)))
-        self.assertEqual(len(registry["events"]), 68)
+        self.assertEqual(len(registry["events"]), 67)
         identity_events = [
             event
             for event in registry["events"]
