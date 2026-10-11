@@ -95,9 +95,10 @@ services; they are not made highly available by adding API pods. See the
 [Phase 4 scaling record](https://github.com/myota-platform/myota-docs/blob/main/docs/geodata/evidence/phase4-infrastructure-scaling-2026-10-09.md)
 and the [deployment guide](deploy/helm/myota/DEPLOYMENT.md#geodata-api-replica-safety).
 
-**SeaweedFS storage** (`/object-storage`) follows the NATS status-page pattern:
-operations-owned samples/history, authenticated API access, read-only storage
-health and native exporter gauges. Core migration 003 creates its history table.
+**SeaweedFS storage** (`/object-storage`) uses Operations-owned
+samples/history and authenticated API access, with read-only storage health
+and native exporter gauges. NATS broker metrics are observed separately by
+Surveyor; Operations does not connect to NATS. Core migration 003 creates its history table.
 Compose and Helm provide the health/metrics URLs and the live Identity API URL.
 Helm overrides are `services.operations.storageHealthUrl`,
 `services.operations.storageMetricsUrl` and `services.identity.internalUrl`.
