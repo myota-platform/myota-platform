@@ -170,6 +170,7 @@ class ObservabilityConfigurationTests(unittest.TestCase):
         self.assertIn("kubelet_volume_stats_available_bytes", json.dumps(dashboard))
         self.assertIn("kube-state-metrics", prom_config)
         self.assertIn("scrape_interval: 30s", prom_config)
+        self.assertNotIn("source_labels: [__name__]", prom_config)
         self.assertIn("serviceAccountName: myota-prometheus", helm_template)
         self.assertNotIn("kind: ClusterRole", helm_template)
         self.assertNotIn("nodes/proxy", helm_template)

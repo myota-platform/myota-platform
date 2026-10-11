@@ -548,11 +548,11 @@ spec:
           ports:
             - {name: metrics, containerPort: 8080}
           readinessProbe:
-            httpGet: {path: /healthz, port: 8081}
+            tcpSocket: {port: metrics}
             initialDelaySeconds: 5
             periodSeconds: 15
           livenessProbe:
-            httpGet: {path: /healthz, port: 8081}
+            tcpSocket: {port: metrics}
             initialDelaySeconds: 15
             periodSeconds: 30
           resources:
