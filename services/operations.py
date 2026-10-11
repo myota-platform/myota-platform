@@ -23,6 +23,7 @@ from common import (
 )
 from metrics import METRICS
 from storage_observability import storage_snapshot
+from myota_logging import inject_trace_context
 
 LOG = logging.getLogger("myota.operations")
 POLL_SECONDS = max(10, int(os.environ.get("OPERATIONS_POLL_SECONDS", "30")))
