@@ -13,12 +13,33 @@ datasources:
     access: proxy
     url: http://tempo:3200
     editable: false
+    jsonData:
+      tracesToLogsV2:
+        datasourceUid: myota-loki
+        spanStartTimeShift: "-5m"
+        spanEndTimeShift: "5m"
+        tags:
+          - key: service.name
+            value: service_name
+          - key: deployment.environment
+            value: deployment_environment
+        filterByTraceID: true
+        filterBySpanID: false
+        customQuery: false
   - name: MyOTA Loki
     uid: myota-loki
     type: loki
     access: proxy
     url: http://loki:3100
     editable: false
+    jsonData:
+      maxLines: 1000
+      derivedFields:
+        - name: trace_id
+          matcherRegex: '"trace_id"\\s*:\\s*"([0-9a-f]{32})"'
+          datasourceUid: myota-tempo
+          url: '${__value.raw}'
+          urlDisplayLabel: View trace
   - name: MyOTA Alertmanager
     uid: myota-alertmanager
     type: alertmanager
