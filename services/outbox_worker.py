@@ -364,7 +364,7 @@ def claim() -> dict | None:
                 FROM next_event n WHERE e.event_id = n.event_id
                 RETURNING e.event_id, e.event_type, e.producer,
                   e.aggregate_type, e.aggregate_id, e.payload,
-                  e.occurred_at, e.attempts"""
+                  e.occurred_at, e.attempts, e.correlation_id"""
             )
             row = cur.fetchone()
             if not row:
@@ -378,6 +378,7 @@ def claim() -> dict | None:
                 "payload": row[5],
                 "occurredAt": row[6],
                 "attempts": row[7],
+                "correlationId": row[8],
             }
 
 
@@ -482,6 +483,7 @@ def _envelope(claimed: dict) -> dict:
             claimed["payload"],
             claimed["occurredAt"],
             claimed["attempts"],
+            claimed.get("correlationId"),
         )
     )
 
