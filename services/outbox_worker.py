@@ -23,6 +23,7 @@ from nats.js.api import (
 )
 from prometheus_client import Counter, Gauge, Histogram, start_http_server
 from jetstream_topology import ACTIVITY_WORK, GEODATA_WORK
+from myota_logging import configure_logging, inject_messaging_headers, log_event, producer_span
 from outbox_routing import (
     CATALOG,
     OutboxContractError,
@@ -515,19 +516,34 @@ async def relay_one(js, claimed: dict) -> None:
         return
 
     started = asyncio.get_running_loop().time()
+    log_event(
+        LOG, logging.INFO, "job.started", component="outbox-relay",
+        job_type=WORKER_NAME, job_id=event_id, event_type=event_type,
+    )
     try:
-        ack = await js.publish(
-            subject,
-            body,
-            headers={"Nats-Msg-Id": event_id},
-            timeout=PUBLISH_TIMEOUT_SECONDS,
-        )
+        correlation_id = envelope.get("correlationId")
+        if not isinstance(correlation_id, str):
+            correlation_id = None
+        with producer_span(
+            WORKER_NAME, subject, event_id, correlation_id=correlation_id
+        ):
+            headers = inject_messaging_headers(
+                {"Nats-Msg-Id": event_id}, correlation_id=correlation_id
+            )
+            ack = await js.publish(
+                subject, body, headers=headers, timeout=PUBLISH_TIMEOUT_SECONDS
+            )
         PUBLISH_DURATION.labels(WORKER_NAME).observe(
             asyncio.get_running_loop().time() - started
         )
         expected_stream = event_stream(envelope)
         if getattr(ack, "stream", expected_stream) != expected_stream:
             raise RuntimeError("JetStream acknowledged an unexpected stream")
+        log_event(
+            LOG, logging.INFO, "job.completed", component="outbox-relay",
+            job_type=WORKER_NAME, job_id=event_id, event_type=event_type,
+            messaging_system="nats", destination=subject,
+        )
     except Exception as exc:
         PUBLISH_DURATION.labels(WORKER_NAME).observe(
             asyncio.get_running_loop().time() - started
@@ -540,6 +556,14 @@ async def relay_one(js, claimed: dict) -> None:
                 DEAD_LETTER_TOTAL.labels(WORKER_NAME, "publish").inc()
             else:
                 RETRY_TOTAL.labels(WORKER_NAME, failure_class).inc()
+            log_event(
+                LOG, logging.ERROR if is_dead_letter else logging.WARNING,
+                "job.failed" if is_dead_letter else "job.retry",
+                component="outbox-relay", job_type=WORKER_NAME,
+                job_id=event_id, event_type=event_type,
+                attempt=claimed.get("attempts", 0),
+                error_type=type(exc).__name__,
+            )
         except Exception:
             LOG.exception(
                 "Unable to persist outbox publish failure",
@@ -568,10 +592,7 @@ async def relay_one(js, claimed: dict) -> None:
 
 
 async def main() -> None:
-    logging.basicConfig(
-        level=os.environ.get("LOG_LEVEL", "INFO").upper(),
-        format="%(asctime)s %(levelname)s %(name)s %(message)s",
-    )
+    configure_logging(WORKER_NAME, "outbox-relay")
     if METRICS_PORT:
         start_http_server(METRICS_PORT, addr="0.0.0.0")
     stop_event = asyncio.Event()
