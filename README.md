@@ -121,9 +121,7 @@ values.
 The **MyOTA Geodata capacity baseline** dashboard adds per-instance process
 CPU/memory, request-size and in-flight measurements, PostgreSQL pool and lock
 pressure, and durable import/outbox queue age and throughput signals.
-Grafana folder **NATS** contains dashboard 16256 and ten vendored Surveyor dashboards. Cluster, gateway, multi-node Raft, and service-observation panels show no data when their features are absent. The retired combined broker/PostGIS dashboard and its two PostGIS panels are not provisioned. Grafana's
-provisioned dashboard directory matches the mounted dashboard files for both
-Compose and Helm. The **MyOTA Object Storage** dashboard shows SeaweedFS S3
+The Grafana folder **NATS** contains dashboard 16256 and ten vendored NATS Surveyor dashboards. Surveyor provides broker and JetStream metrics; its upstream cluster, gateway, raft, and service-observation panels can be empty when those features or observation sources are absent. The retired combined MyOTA dashboard and its two PostGIS panels are not provisioned. Compose and Helm both use MyOTA-owned Prometheus datasource/provider configuration. The **MyOTA Object Storage** dashboard shows SeaweedFS S3
 request rates, latency, errors, and in-flight uploads. Helm hashes Grafana's
 dashboard and provisioning files into the Grafana pod template so ConfigMap
 updates restart Grafana; its dashboard files use `subPath` mounts, which do not

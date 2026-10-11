@@ -2,14 +2,14 @@ groups:
   - name: myota-observability
     rules:
       - alert: MyOTANATSSurveyorUnavailable
-        expr: up{job="nats-surveyor"} == 0
+        expr: absent(up{job="nats-surveyor"}) or up{job="nats-surveyor"} == 0
         for: 2m
         labels: {severity: critical}
         annotations:
           summary: NATS Surveyor metrics endpoint is unavailable
           description: Prometheus cannot scrape the cluster-local NATS Surveyor service.
       - alert: MyOTAServerMonitoringUnavailable
-        expr: nats_up{job="nats-surveyor"} == 0
+        expr: absent(nats_up{job="nats-surveyor"}) or nats_up{job="nats-surveyor"} == 0
         for: 2m
         labels: {severity: critical}
         annotations:

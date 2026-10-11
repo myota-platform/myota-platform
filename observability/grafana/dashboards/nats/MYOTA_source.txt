@@ -1,0 +1,4 @@
+Surveyor image: natsio/nats-surveyor:0.9.11 (release tag v0.9.11).
+Vendored Surveyor dashboards: nats-io/nats-surveyor commit 0539d22d7bc7a4574c7f376f1dde37f00bfe2ee9, docker-compose/grafana/provisioning/dashboards.
+Grafana dashboard 16256 is adapted to Surveyor metric names and the MyOTA Prometheus datasource.
+The MyOTA Grafana provider and datasource files remain authoritative; upstream provisioning files are not copied.
