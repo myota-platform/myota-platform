@@ -73,6 +73,20 @@ def _utc_timestamp(value: datetime) -> str:
     )
 
 
+def _bounded_correlation_id(value: object) -> str | None:
+    if value is None:
+        return None
+    if (
+        not isinstance(value, str)
+        or not 1 <= len(value) <= 128
+        or any(ord(char) < 0x21 or ord(char) > 0x7E for char in value)
+    ):
+        raise OutboxContractError(
+            "correlation ID must be bounded printable text"
+        )
+    return value
+
+
 def event_envelope(row: tuple) -> dict:
     """Build a versioned fact or compatible current Geodata work envelope."""
     (
@@ -84,7 +98,8 @@ def event_envelope(row: tuple) -> dict:
         payload,
         occurred_at,
         _attempts,
-    ) = row
+    ) = row[:8]
+    correlation_id = _bounded_correlation_id(row[8] if len(row) > 8 else None)
     work_route = LEGACY_WORK_ROUTES.get(event_type)
     target_type = work_route["workType"] if work_route else event_type
     target_route = TARGET_WORK_ROUTES.get(target_type)
@@ -131,6 +146,8 @@ def event_envelope(row: tuple) -> dict:
         },
         "payload": payload,
     }
+    if correlation_id:
+        envelope["correlationId"] = correlation_id
     if target_route:
         command_payload = payload
         work_id_field = "jobId"
@@ -201,7 +218,7 @@ def event_envelope(row: tuple) -> dict:
             raise OutboxContractError("work ID must use canonical UUID form")
         if work_id_field != "requestId" and work_id != str(aggregate_id):
             raise OutboxContractError("work ID must match its owning job row")
-        return {
+        result = {
             "envelopeVersion": 1,
             "workId": work_id,
             "workType": target_type,
@@ -211,6 +228,9 @@ def event_envelope(row: tuple) -> dict:
             "aggregate": {"type": aggregate_type, "id": str(aggregate_id)},
             "payload": command_payload,
         }
+        if correlation_id:
+            result["correlationId"] = correlation_id
+        return result
     # Legacy work messages preserve their historical envelope during migration.
     if work_route is None:
         envelope["envelopeVersion"] = 1
