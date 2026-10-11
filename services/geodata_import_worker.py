@@ -108,7 +108,7 @@ async def _consume(
             try:
                 event = json.loads(message.data)
                 event_id, event_type = _event_key(event)
-                correlation_id = event.get("correlationId") or getattr(message, "headers", {}).get("Myota-Correlation-Id")
+                correlation_id = event.get("correlationId") or (getattr(message, "headers", None) or {}).get("Myota-Correlation-Id")
                 log_event(LOG, logging.INFO, "job.received", component="geodata-import-processing", job_type=event_type, job_id=event_id, event_id=event_id, correlation_id=correlation_id, attempt=message.metadata.num_delivered)
                 if _already_processed(consumer, event_id):
                     await message.ack()
