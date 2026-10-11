@@ -72,7 +72,7 @@ class EventRegistryTests(unittest.TestCase):
             item["subject"] for item in registry["events"] + registry["work"]
         ]
         self.assertEqual(len(subjects), len(set(subjects)))
-        self.assertEqual(len(registry["events"]), 67)
+        self.assertEqual(len(registry["events"]), 68)
         identity_events = [
             event
             for event in registry["events"]
@@ -96,7 +96,7 @@ class EventRegistryTests(unittest.TestCase):
             for event in registry["events"]
             if event["owner"] == "geodata-service"
         ]
-        self.assertEqual(len(geodata_events), 26)
+        self.assertEqual(len(geodata_events), 27)
         geodata_by_type = {
             event["eventType"]: event for event in geodata_events
         }
