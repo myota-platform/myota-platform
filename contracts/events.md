@@ -20,12 +20,23 @@ source now on `main` has the following behavior:
   relay no longer creates or changes broker topology. The Geodata worker also
   leaves retired durable removal to a reviewed deployment-owned cutover.
 
-The live broker remains on the legacy file-backed `MYOTA_EVENTS` stream with
-Interest retention and the existing Activity/Geodata durable set, as confirmed
-by a read-only inspection on 10 October. No producer or consumer path changed
-in that inspection. See the [Phase 0 inventory](../../myota-docs/docs/operations/messaging/nats-event-migration-inventory.md)
-and [Phase 2 evidence](../../myota-docs/docs/operations/messaging/evidence/phase2-relay-hardening-2026-10-10.md)
-for the dated source and live-state distinction.
+The current deployment uses bounded Limits retention for the registered fact
+stream and separate WorkQueue streams for selected Activity and Geodata work.
+PostgreSQL remains the source of truth; JetStream is a bounded delivery/replay
+window. See the current [NATS migration plan](../../myota-docs/docs/operations/messaging/nats-event-migration-plan.md)
+and [Phase 6 evidence](../../myota-docs/docs/operations/messaging/evidence/phase6-fact-stream-cutover-2026-10-11.md)
+for the deployed topology and limits.
+
+## Transport correlation metadata
+
+The Deploy-owned outbox relay sets the `Myota-Correlation-Id` NATS header from
+the envelope `correlationId`; when absent, it uses `workId` for work commands
+and `eventId` for facts. Consumers bind this header into structured log context.
+This is delivery metadata, outside the immutable fact/work payload schema, so it
+does not change the message contract version. It gives relay attempts and
+consumer lifecycle logs a stable join key; it does not restore an originating
+HTTP correlation ID when the producer never persisted that value in its outbox
+row.
 
 ## Selected target contract (Phase 1 contract/topology complete)
 
