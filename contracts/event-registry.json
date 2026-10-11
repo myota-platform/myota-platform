@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "registryVersion": 1,
-  "status": "phase-1-contract-baseline; payload fields remain subject to owner evidence",
+  "status": "68 source-derived fact schemas and 10 bounded work-command schemas; runtime purpose and payload enforcement remain gated",
   "factStream": "MYOTA_EVENTS",
   "factSubjectPrefix": "myota.events.",
   "activityWorkStream": "MYOTA_ACTIVITY_WORK",
