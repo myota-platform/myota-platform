@@ -486,6 +486,15 @@ def _envelope(claimed: dict) -> dict:
     )
 
 
+def workflow_correlation_id(envelope: dict, fallback: str) -> str:
+    """Choose a stable workflow, work, or event ID for async joins."""
+    for key in ("correlationId", "workId", "eventId"):
+        value = envelope.get(key)
+        if isinstance(value, str) and value:
+            return value
+    return fallback
+
+
 async def relay_one(js, claimed: dict) -> None:
     """Publish one row, requiring JetStream ack before marking it complete."""
     event_id = claimed["eventId"]
@@ -497,11 +506,14 @@ async def relay_one(js, claimed: dict) -> None:
         job_type=WORKER_NAME,
         job_id=event_id,
         event_type=claimed.get("eventType"),
+        correlation_id=claimed.get("correlationId") or event_id,
         attempt=claimed.get("attempts", 0),
     )
     event_type = claimed["eventType"]
+    correlation_id = claimed.get("correlationId") or event_id
     try:
         envelope = _envelope(claimed)
+        correlation_id = workflow_correlation_id(envelope, event_id)
         subject = event_subject(envelope)
         body = json.dumps(
             envelope, separators=(",", ":"), ensure_ascii=False
@@ -550,11 +562,9 @@ async def relay_one(js, claimed: dict) -> None:
         job_type=WORKER_NAME,
         job_id=event_id,
         event_type=event_type,
+        correlation_id=correlation_id,
     )
     try:
-        correlation_id = envelope.get("correlationId")
-        if not isinstance(correlation_id, str):
-            correlation_id = None
         with producer_span(
             WORKER_NAME, subject, event_id, correlation_id=correlation_id
         ):
@@ -581,6 +591,7 @@ async def relay_one(js, claimed: dict) -> None:
             messaging_system="nats",
             destination=subject,
             messaging_message_id=event_id,
+            correlation_id=correlation_id,
             duration_ms=round(
                 (asyncio.get_running_loop().time() - started) * 1000, 3
             ),

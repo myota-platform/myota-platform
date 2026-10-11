@@ -21,7 +21,7 @@ from outbox_routing import (
     event_stream,
     event_subject,
 )
-from outbox_worker import relay_one, retry_delay
+from outbox_worker import relay_one, retry_delay, workflow_correlation_id
 
 
 EVENT_ID = "3e29e282-6c20-4c6d-8e2a-3d7490c3df40"
@@ -81,6 +81,20 @@ class FakeJetStream:
 
 
 class OutboxContractTests(unittest.TestCase):
+    def test_workflow_correlation_uses_stable_ids(self):
+        self.assertEqual(
+            workflow_correlation_id({"correlationId": "flow"}, "fallback"),
+            "flow",
+        )
+        self.assertEqual(
+            workflow_correlation_id({"workId": "job"}, "fallback"), "job"
+        )
+        self.assertEqual(
+            workflow_correlation_id({"eventId": "event"}, "fallback"),
+            "event",
+        )
+        self.assertEqual(workflow_correlation_id({}, "fallback"), "fallback")
+
     def test_domain_fact_uses_registered_dotted_subject_and_v1_envelope(self):
         envelope = event_envelope(row())
         self.assertEqual(
