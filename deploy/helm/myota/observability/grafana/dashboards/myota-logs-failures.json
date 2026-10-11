@@ -117,7 +117,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (service_name, component) (count_over_time({service_namespace=\"myota\"} | severity=\"ERROR\" | service_name=~\"${service:regex}\" | deployment_environment=~\"${environment:regex}\" | component=~\"${component:regex}\"[5m]))",
+          "expr": "sum by (service_name, component) (count_over_time({service_namespace=\"myota\"} | severity_text=\"ERROR\" | service_name=~\"${service:regex}\" | deployment_environment=~\"${environment:regex}\" | component=~\"${component:regex}\"[5m]))",
           "queryType": "range",
           "datasource": {
             "type": "loki",
@@ -231,7 +231,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "{service_namespace=\"myota\"} | service_name=~\"${service:regex}\" | deployment_environment=~\"${environment:regex}\" | severity_text=~\"${severity:regex}\" | component=~\"${component:regex}\" | correlation_id=~\"${correlation_id:regex}\" | event=\"http.request.completed\" | severity=\"ERROR\"",
+          "expr": "{service_namespace=\"myota\"} | service_name=~\"${service:regex}\" | deployment_environment=~\"${environment:regex}\" | severity_text=~\"${severity:regex}\" | component=~\"${component:regex}\" | correlation_id=~\"${correlation_id:regex}\" | event=\"http.request.completed\" | severity_text=\"ERROR\"",
           "queryType": "range",
           "datasource": {
             "type": "loki",
