@@ -54,7 +54,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [otlp/tempo, debug]
+      exporters: [otlp/tempo]
     logs:
       receivers: [otlp]
       processors: [memory_limiter, batch]
