@@ -86,28 +86,28 @@ spec:
               until pg_isready -h myota-activity-postgres -U "$POSTGRES_USER" -d postgres; do sleep 2; done
               until pg_isready -h myota-geo-postgis -U "$POSTGRES_USER" -d postgres; do sleep 2; done
               psql --no-password -h myota-core-postgres -U "$POSTGRES_USER" -d postgres -v ON_ERROR_STOP=1 <<'SQL'
-              getenv monitor_password MYOTA_PG_CORE_MONITOR_PASSWORD
+              \getenv monitor_password MYOTA_PG_CORE_MONITOR_PASSWORD
               SELECT format('CREATE ROLE myota_observability LOGIN PASSWORD %L', :'monitor_password')
               WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'myota_observability')
-              gexec
+              \gexec
               ALTER ROLE myota_observability LOGIN PASSWORD :'monitor_password';
               GRANT CONNECT ON DATABASE myota_core TO myota_observability;
               GRANT SELECT ON pg_catalog.pg_stat_database TO myota_observability;
               SQL
               psql --no-password -h myota-activity-postgres -U "$POSTGRES_USER" -d postgres -v ON_ERROR_STOP=1 <<'SQL'
-              getenv monitor_password MYOTA_PG_ACTIVITY_MONITOR_PASSWORD
+              \getenv monitor_password MYOTA_PG_ACTIVITY_MONITOR_PASSWORD
               SELECT format('CREATE ROLE myota_observability LOGIN PASSWORD %L', :'monitor_password')
               WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'myota_observability')
-              gexec
+              \gexec
               ALTER ROLE myota_observability LOGIN PASSWORD :'monitor_password';
               GRANT CONNECT ON DATABASE myota_activity TO myota_observability;
               GRANT SELECT ON pg_catalog.pg_stat_database TO myota_observability;
               SQL
               psql --no-password -h myota-geo-postgis -U "$POSTGRES_USER" -d postgres -v ON_ERROR_STOP=1 <<'SQL'
-              getenv monitor_password MYOTA_PG_GEO_MONITOR_PASSWORD
+              \getenv monitor_password MYOTA_PG_GEO_MONITOR_PASSWORD
               SELECT format('CREATE ROLE myota_observability LOGIN PASSWORD %L', :'monitor_password')
               WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'myota_observability')
-              gexec
+              \gexec
               ALTER ROLE myota_observability LOGIN PASSWORD :'monitor_password';
               GRANT CONNECT ON DATABASE myota_geo TO myota_observability;
               GRANT SELECT ON pg_catalog.pg_stat_database TO myota_observability;
