@@ -15,10 +15,23 @@ configure_logging("myota-identity", "identity-maintenance")
 IdentityHandler.store.hydrate()
 try:
     while True:
-        log_event(logging.getLogger(__name__), logging.INFO, "job.started", component="identity-maintenance", job_type="identity-retention")
+        log_event(
+            logging.getLogger(__name__),
+            logging.INFO,
+            "job.started",
+            component="identity-maintenance",
+            job_type="identity-retention",
+        )
         removed = IdentityHandler.cleanup_expired()
         IdentityHandler.store.persist()
-        log_event(logging.getLogger(__name__), logging.INFO, "job.completed", component="identity-maintenance", job_type="identity-retention", removed_count=removed if isinstance(removed, int) else 0)
+        log_event(
+            logging.getLogger(__name__),
+            logging.INFO,
+            "job.completed",
+            component="identity-maintenance",
+            job_type="identity-retention",
+            removed_count=removed if isinstance(removed, int) else 0,
+        )
         time.sleep(interval)
 except KeyboardInterrupt:
     pass
