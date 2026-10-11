@@ -36,5 +36,5 @@ exporters:
 service:
   pipelines:
     metrics: {receivers: [otlp, prometheus], processors: [memory_limiter, batch], exporters: [prometheus]}
-    traces: {receivers: [otlp], processors: [memory_limiter, batch], exporters: [otlp/tempo, debug]}
+    traces: {receivers: [otlp], processors: [memory_limiter, batch], exporters: [otlp/tempo]}
     logs: {receivers: [otlp], processors: [memory_limiter, batch], exporters: [otlphttp/loki]}
