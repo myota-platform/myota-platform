@@ -24,7 +24,7 @@
         "id": { "type": "string", "minLength": 1, "maxLength": 200 }
       }
     },
-    "correlationId": { "type": "string", "maxLength": 200 },
+    "correlationId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[!-~]+$" },
     "causationId": { "type": "string", "maxLength": 200 },
     "payload": { "type": "object", "description": "Per-event payload schema is referenced by the registry; payload shape evidence is incomplete for some Phase 0 rows." }
   }

@@ -40,18 +40,28 @@ class ProgrammeHandler(JsonHandler):
     service = "programme-service"
     store = Store("programmes", "CORE_DATABASE_URL")
 
-    @classmethod
-    def metrics_extra(cls) -> dict[str, float]:
-        programmes = list(cls.store.items.values())
-        catalogue = cls.store.data.get("entityTypeCatalog", {})
+    @staticmethod
+    def metrics_text() -> str:
+        programmes = list(ProgrammeHandler.store.items.values())
+        catalogue = ProgrammeHandler.store.data.get("entityTypeCatalog", {})
         assignments = sum(
-            len(cls._assigned_codes(programme)) for programme in programmes
+            len(ProgrammeHandler._assigned_codes(programme))
+            for programme in programmes
         )
-        return {
-            "myota_programmes": float(len(programmes)),
-            "myota_programme_entity_type_catalog_items": float(len(catalogue)),
-            "myota_programme_category_assignments": float(assignments),
-        }
+        return "\n".join(
+            [
+                "# HELP myota_programmes Current configured programme count.",
+                "# TYPE myota_programmes gauge",
+                f"myota_programmes {len(programmes)}",
+                "# HELP myota_programme_entity_type_catalog_items Current entity type catalog item count.",
+                "# TYPE myota_programme_entity_type_catalog_items gauge",
+                f"myota_programme_entity_type_catalog_items {len(catalogue)}",
+                "# HELP myota_programme_category_assignments Current programme to entity type assignments.",
+                "# TYPE myota_programme_category_assignments gauge",
+                f"myota_programme_category_assignments {assignments}",
+                "",
+            ]
+        )
 
     @staticmethod
     def _authorize_admin(p: dict[str, str], slug: str | None = None) -> None:
