@@ -125,14 +125,6 @@
       ],
       "dataClassification": "personal-and-operational-data"
     },
-    "geodata.entity-deletion-job.failed.v1": {
-      "subject": "myota.events.geodata.entity-deletion-job.failed.v1",
-      "owner": "geodata-service",
-      "producers": [
-        "geodata"
-      ],
-      "dataClassification": "personal-and-operational-data"
-    },
     "geodata.entity.candidate.created.v1": {
       "subject": "myota.events.geodata.entity.candidate.created.v1",
       "owner": "geodata-service",
