@@ -213,7 +213,8 @@ async def ensure_stream(nc: NATS) -> None:
             stream.config.max_bytes,
             stream.config.max_msgs,
             stream.config.max_msg_size,
-        ) <= 0
+        )
+        <= 0
     ):
         raise RuntimeError(
             f"{STREAM_NAME} storage, replica, or finite capacity policy drifted"
