@@ -1,6 +1,45 @@
 groups:
   - name: myota-observability
     rules:
+      - alert: MyOTAPostgreSQLMonitoringUnavailableCore
+        expr: absent(postgresql_backends{postgresql_database_name="myota_core"})
+        for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: OpenTelemetry cannot collect core PostgreSQL metrics
+          description: Check Collector health, the core monitoring secret, network access, and the read-only role.
+      - alert: MyOTAPostgreSQLMonitoringUnavailableActivity
+        expr: absent(postgresql_backends{postgresql_database_name="myota_activity"})
+        for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: OpenTelemetry cannot collect activity PostgreSQL metrics
+          description: Check Collector health, the activity monitoring secret, network access, and the read-only role.
+      - alert: MyOTAPostgreSQLMonitoringUnavailableGeo
+        expr: absent(postgresql_backends{postgresql_database_name="myota_geo"})
+        for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: OpenTelemetry cannot collect geodata PostgreSQL metrics
+          description: Check Collector health, the geodata monitoring secret, network access, and the read-only role.
+      - alert: MyOTAPostgreSQLConnectionsHigh
+        expr: |
+          100 * postgresql_backends
+          / on (postgresql_database_name) postgresql_connection_max >= 80
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: PostgreSQL connection utilization is above 80%
+          description: Review connection demand and pooling for the affected fixed database.
+      - alert: MyOTAPostgreSQLConnectionsCritical
+        expr: |
+          100 * postgresql_backends
+          / on (postgresql_database_name) postgresql_connection_max >= 90
+        for: 5m
+        labels: {severity: critical}
+        annotations:
+          summary: PostgreSQL connection utilization is above 90%
+          description: Investigate promptly; remaining connection capacity is limited.
       - alert: MyOTANATSSurveyorUnavailable
         expr: absent(up{job="nats-surveyor"}) or up{job="nats-surveyor"} == 0
         for: 2m

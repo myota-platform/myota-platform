@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import mimetypes
+import json
 import os
 import sys
 import threading
@@ -17,7 +18,6 @@ from activity import ActivityHandler
 from geodata import GeoHandler
 from identity import IdentityHandler, bootstrap_admin, seed as seed_identity
 from programmes import ProgrammeHandler, seed as seed_programmes
-from operations import OperationsHandler
 from metrics import METRICS
 from otel import telemetry_for
 
@@ -28,7 +28,6 @@ SERVICES = {
     "/v1/entity-types": ("programmes", 8002, ProgrammeHandler),
     "/v1/programmes": ("programmes", 8002, ProgrammeHandler),
     "/v1/geodata/": ("geodata", 8003, GeoHandler),
-    "/v1/operations/": ("operations", 8005, OperationsHandler),
     "/v1/activations": ("activity", 8004, ActivityHandler),
     "/v1/awards": ("activity", 8004, ActivityHandler),
     "/v1/qso-ingestions": ("activity", 8004, ActivityHandler),
@@ -67,8 +66,6 @@ def route_template(method: str, path: str) -> str:
             if method == route_method or method == "OPTIONS":
                 route_patterns.append(pattern)
             elif _matches_route(pattern, path):
-                # Keep a recognized resource template for unsupported methods
-                # too, rather than falling back to a raw identifier-bearing URI.
                 route_patterns.append(pattern)
         break
 
@@ -78,6 +75,40 @@ def route_template(method: str, path: str) -> str:
     if matched_prefix:
         return f"{matched_prefix}/{{unmatched}}"
     return "/unmatched"
+
+
+def grafana_auth_response(authorization: str) -> tuple[int, bytes, dict[str, str]]:
+    """Resolve Grafana identity from live Identity roles; never trust client headers."""
+    no_store = {"Cache-Control": "no-store"}
+    if not authorization.startswith("Bearer ") or not authorization[7:].strip():
+        return 401, b'{"error":"authentication_required"}', no_store
+    identity_url = os.environ.get("MYOTA_IDENTITY_URL", "http://identity:8001")
+    request = urllib.request.Request(identity_url.rstrip("/") + "/v1/identity/me",
+        headers={"Authorization": authorization})
+    try:
+        with urllib.request.urlopen(request, timeout=5) as response:
+            account = json.loads(response.read())
+    except urllib.error.HTTPError as exc:
+        return (401 if exc.code in (400, 401, 403) else 503), b'{"error":"identity_unavailable"}', no_store
+    except (urllib.error.URLError, TimeoutError, ValueError, OSError):
+        return 503, b'{"error":"identity_unavailable"}', no_store
+    account_id = account.get("id")
+    if not isinstance(account_id, str) or not account_id:
+        return 401, b'{"error":"authentication_required"}', no_store
+    roles = {role.get("role") if isinstance(role, dict) else role for role in account.get("roles") or []}
+    scopes = set(account.get("scopes") or [])
+    global_operator = bool(roles.intersection({"GLOBAL_OPERATOR", "GLOBAL_ADMIN"}))
+    if not global_operator and not scopes.intersection({"*", "observability.view"}):
+        return 403, b'{"error":"forbidden"}', no_store
+    values = {
+        "X-MyOTA-Grafana-User": "myota:" + account_id,
+        "X-MyOTA-Grafana-Name": account.get("displayName") or account_id,
+        "X-MyOTA-Grafana-Email": account.get("email") or "",
+        "X-MyOTA-Grafana-Role": "Editor" if global_operator else "Viewer",
+    }
+    if any("\r" in value or "\n" in value for value in values.values()):
+        return 503, b'{"error":"identity_unavailable"}', no_store
+    return 200, b"{}", {**no_store, **values}
 
 
 class GatewayHandler(BaseHTTPRequestHandler):
@@ -112,6 +143,12 @@ class GatewayHandler(BaseHTTPRequestHandler):
             return
         if self.path == "/healthz":
             self._json(200, b'{"status":"ok","service":"gateway"}')
+            return
+        if self.path == "/_internal/grafana/auth":
+            status, body, headers = grafana_auth_response(
+                self.headers.get("Authorization", "")
+            )
+            self._json(status, body, headers.items())
             return
         if self.path == "/" or self.path.startswith("/assets/"):
             self._static()

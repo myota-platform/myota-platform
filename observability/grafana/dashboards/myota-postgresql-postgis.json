@@ -33,7 +33,7 @@
       "id": 1,
       "type": "timeseries",
       "title": "Database connections",
-      "description": "Current client backend count from the bounded read-only Operations sampler; labels use only the fixed database names.",
+      "description": "Current client backend count from the OpenTelemetry PostgreSQL receiver; labels use only the fixed database names.",
       "gridPos": {
         "h": 8,
         "w": 12,
@@ -52,17 +52,17 @@
       },
       "targets": [
         {
-          "expr": "myota_postgresql_connections{database=\"core\"}",
+          "expr": "postgresql_backends{postgresql_database_name=\"core\"}",
           "legendFormat": "core",
           "refId": "A"
         },
         {
-          "expr": "myota_postgresql_connections{database=\"activity\"}",
+          "expr": "postgresql_backends{postgresql_database_name=\"activity\"}",
           "legendFormat": "activity",
           "refId": "B"
         },
         {
-          "expr": "myota_postgresql_connections{database=\"geo\"}",
+          "expr": "postgresql_backends{postgresql_database_name=\"geo\"}",
           "legendFormat": "geo",
           "refId": "C"
         }
@@ -91,17 +91,17 @@
       },
       "targets": [
         {
-          "expr": "myota_postgresql_database_size_bytes{database=\"core\"}",
+          "expr": "postgresql_db_size{postgresql_database_name=\"core\"}",
           "legendFormat": "core",
           "refId": "A"
         },
         {
-          "expr": "myota_postgresql_database_size_bytes{database=\"activity\"}",
+          "expr": "postgresql_db_size{postgresql_database_name=\"activity\"}",
           "legendFormat": "activity",
           "refId": "B"
         },
         {
-          "expr": "myota_postgresql_database_size_bytes{database=\"geo\"}",
+          "expr": "postgresql_db_size{postgresql_database_name=\"geo\"}",
           "legendFormat": "geo",
           "refId": "C"
         }
@@ -129,17 +129,17 @@
       },
       "targets": [
         {
-          "expr": "rate(myota_postgresql_commits_total{database=\"core\"}[5m])",
+          "expr": "rate(postgresql_commits_total{postgresql_database_name=\"core\"}[5m])",
           "legendFormat": "core",
           "refId": "A"
         },
         {
-          "expr": "rate(myota_postgresql_commits_total{database=\"activity\"}[5m])",
+          "expr": "rate(postgresql_commits_total{postgresql_database_name=\"activity\"}[5m])",
           "legendFormat": "activity",
           "refId": "B"
         },
         {
-          "expr": "rate(myota_postgresql_commits_total{database=\"geo\"}[5m])",
+          "expr": "rate(postgresql_commits_total{postgresql_database_name=\"geo\"}[5m])",
           "legendFormat": "geo",
           "refId": "C"
         }
@@ -167,17 +167,17 @@
       },
       "targets": [
         {
-          "expr": "rate(myota_postgresql_rollbacks_total{database=\"core\"}[5m])",
+          "expr": "rate(postgresql_rollbacks_total{postgresql_database_name=\"core\"}[5m])",
           "legendFormat": "core",
           "refId": "A"
         },
         {
-          "expr": "rate(myota_postgresql_rollbacks_total{database=\"activity\"}[5m])",
+          "expr": "rate(postgresql_rollbacks_total{postgresql_database_name=\"activity\"}[5m])",
           "legendFormat": "activity",
           "refId": "B"
         },
         {
-          "expr": "rate(myota_postgresql_rollbacks_total{database=\"geo\"}[5m])",
+          "expr": "rate(postgresql_rollbacks_total{postgresql_database_name=\"geo\"}[5m])",
           "legendFormat": "geo",
           "refId": "C"
         }
@@ -205,17 +205,17 @@
       },
       "targets": [
         {
-          "expr": "rate(myota_postgresql_deadlocks_total{database=\"core\"}[5m])",
+          "expr": "rate(postgresql_deadlocks_total{postgresql_database_name=\"core\"}[5m])",
           "legendFormat": "core",
           "refId": "A"
         },
         {
-          "expr": "rate(myota_postgresql_deadlocks_total{database=\"activity\"}[5m])",
+          "expr": "rate(postgresql_deadlocks_total{postgresql_database_name=\"activity\"}[5m])",
           "legendFormat": "activity",
           "refId": "B"
         },
         {
-          "expr": "rate(myota_postgresql_deadlocks_total{database=\"geo\"}[5m])",
+          "expr": "rate(postgresql_deadlocks_total{postgresql_database_name=\"geo\"}[5m])",
           "legendFormat": "geo",
           "refId": "C"
         }
@@ -254,7 +254,7 @@
       "id": 7,
       "type": "timeseries",
       "title": "Connection utilization",
-      "description": "Connections divided by configured max_connections from the same bounded DB sampler. Missing series are not zero.",
+      "description": "Connections divided by configured max_connections from the OpenTelemetry PostgreSQL receiver. Missing series are not zero.",
       "gridPos": {
         "h": 8,
         "w": 12,
@@ -275,7 +275,7 @@
       },
       "targets": [
         {
-          "expr": "100 * myota_postgresql_connections / on(database) myota_postgresql_max_connections",
+          "expr": "100 * postgresql_backends / on(postgresql_database_name) postgresql_connection_max",
           "legendFormat": "{{database}}",
           "refId": "A"
         }
@@ -385,7 +385,7 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "The current supported metric source does **not** export transaction age, cache hit ratio, autovacuum/freeze age, or per-table maintenance state. They are unavailable, not zero. No panel is drawn for these signals. PostgreSQL panels use fixed database labels and no SQL text, parameters, credentials, or user identifiers. The read-only Operations sampler remains the source while its migration/retirement work is tracked separately."
+        "content": "The current least-privilege OpenTelemetry receiver does **not** export transaction age, cache hit ratio, autovacuum/freeze age, or per-table maintenance state. They are unavailable, not zero. No panel is drawn for these signals. PostgreSQL panels use fixed database names and approved aggregate metrics; query text, parameters, per-table details, credentials, and user identifiers are not collected."
       }
     }
   ],

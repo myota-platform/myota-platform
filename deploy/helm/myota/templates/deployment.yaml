@@ -67,18 +67,6 @@ spec:
               value: "1"
             - name: MYOTA_ENV
               value: {{ $.Values.auth.environment | quote }}
-            {{- if eq $name "operations" }}
-            - name: MYOTA_IDENTITY_URL
-              value: {{ $.Values.services.identity.internalUrl | quote }}
-            - name: OPERATIONS_PG_POLL_SECONDS
-              value: "30"
-            {{- range $database, $secret := dict "CORE" "myota-postgres-monitor-core" "ACTIVITY" "myota-postgres-monitor-activity" "GEO" "myota-postgres-monitor-geo" }}
-            - name: MYOTA_PG_{{ $database }}_MONITOR_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ $secret }}
-                  key: password
-            {{- end }}
             {{- range $database, $host := dict "CORE" "myota-core-postgres" "ACTIVITY" "myota-activity-postgres" "GEO" "myota-geo-postgis" }}
             - name: OPERATIONS_PG_{{ $database }}_HOST
               value: {{ $host | quote }}
@@ -414,8 +402,6 @@ spec:
               value: http://myota-geodata:8003
             - name: MYOTA_ACTIVITY_URL
               value: http://myota-activity:8004
-            - name: MYOTA_OPERATIONS_URL
-              value: http://myota-operations:8005
             - name: MYOTA_PROXY_UPLOAD_TIMEOUT_SECONDS
               value: {{ .Values.gateway.proxyUploadTimeoutSeconds | quote }}
             {{- if .Values.observability.enabled }}

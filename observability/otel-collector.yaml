@@ -5,13 +5,97 @@ receivers:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
+  postgresql/core:
+    endpoint: core-db:5432
+    username: myota_observability
+    password: ${env:MYOTA_PG_CORE_MONITOR_PASSWORD}
+    databases: [myota_core]
+    collection_interval: 30s
+    events:
+      db.server.query_sample: {enabled: false}
+      db.server.top_query: {enabled: false}
+    metrics:
+      postgresql.bgwriter.buffers.allocated: {enabled: false}
+      postgresql.bgwriter.buffers.writes: {enabled: false}
+      postgresql.bgwriter.checkpoint.count: {enabled: false}
+      postgresql.bgwriter.duration: {enabled: false}
+      postgresql.bgwriter.maxwritten: {enabled: false}
+      postgresql.blocks_read: {enabled: false}
+      postgresql.database.count: {enabled: false}
+      postgresql.index.scans: {enabled: false}
+      postgresql.index.size: {enabled: false}
+      postgresql.operations: {enabled: false}
+      postgresql.replication.data_delay: {enabled: false}
+      postgresql.rows: {enabled: false}
+      postgresql.table.count: {enabled: false}
+      postgresql.table.size: {enabled: false}
+      postgresql.table.vacuum.count: {enabled: false}
+      postgresql.wal.age: {enabled: false}
+      postgresql.wal.lag: {enabled: false}
+      postgresql.deadlocks: {enabled: true}
+  postgresql/activity:
+    endpoint: activity-db:5432
+    username: myota_observability
+    password: ${env:MYOTA_PG_ACTIVITY_MONITOR_PASSWORD}
+    databases: [myota_activity]
+    collection_interval: 30s
+    events:
+      db.server.query_sample: {enabled: false}
+      db.server.top_query: {enabled: false}
+    metrics:
+      postgresql.bgwriter.buffers.allocated: {enabled: false}
+      postgresql.bgwriter.buffers.writes: {enabled: false}
+      postgresql.bgwriter.checkpoint.count: {enabled: false}
+      postgresql.bgwriter.duration: {enabled: false}
+      postgresql.bgwriter.maxwritten: {enabled: false}
+      postgresql.blocks_read: {enabled: false}
+      postgresql.database.count: {enabled: false}
+      postgresql.index.scans: {enabled: false}
+      postgresql.index.size: {enabled: false}
+      postgresql.operations: {enabled: false}
+      postgresql.replication.data_delay: {enabled: false}
+      postgresql.rows: {enabled: false}
+      postgresql.table.count: {enabled: false}
+      postgresql.table.size: {enabled: false}
+      postgresql.table.vacuum.count: {enabled: false}
+      postgresql.wal.age: {enabled: false}
+      postgresql.wal.lag: {enabled: false}
+      postgresql.deadlocks: {enabled: true}
+  postgresql/geo:
+    endpoint: geo-db:5432
+    username: myota_observability
+    password: ${env:MYOTA_PG_GEO_MONITOR_PASSWORD}
+    databases: [myota_geo]
+    collection_interval: 30s
+    events:
+      db.server.query_sample: {enabled: false}
+      db.server.top_query: {enabled: false}
+    metrics:
+      postgresql.bgwriter.buffers.allocated: {enabled: false}
+      postgresql.bgwriter.buffers.writes: {enabled: false}
+      postgresql.bgwriter.checkpoint.count: {enabled: false}
+      postgresql.bgwriter.duration: {enabled: false}
+      postgresql.bgwriter.maxwritten: {enabled: false}
+      postgresql.blocks_read: {enabled: false}
+      postgresql.database.count: {enabled: false}
+      postgresql.index.scans: {enabled: false}
+      postgresql.index.size: {enabled: false}
+      postgresql.operations: {enabled: false}
+      postgresql.replication.data_delay: {enabled: false}
+      postgresql.rows: {enabled: false}
+      postgresql.table.count: {enabled: false}
+      postgresql.table.size: {enabled: false}
+      postgresql.table.vacuum.count: {enabled: false}
+      postgresql.wal.age: {enabled: false}
+      postgresql.wal.lag: {enabled: false}
+      postgresql.deadlocks: {enabled: true}
   prometheus:
     config:
       scrape_configs:
         - job_name: myota-services
           scrape_interval: 15s
           static_configs:
-            - targets: [gateway:8080, geodata:8003, activity:8004, operations:8005, activity-notifications:9110]
+            - targets: [gateway:8080, geodata:8003, activity:8004, activity-notifications:9110]
         - job_name: myota-identity
           scrape_interval: 15s
           static_configs:
@@ -68,7 +152,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [otlp, prometheus]
+      receivers: [otlp, prometheus, postgresql/core, postgresql/activity, postgresql/geo]
       processors: [memory_limiter, batch]
       exporters: [prometheus]
     traces:

@@ -10,7 +10,6 @@ imageRollout:
     programmes: ""
     geodata: ""
     activity: ""
-    operations: ""
     gateway: ""
     adminWeb: ""
     platform: ""
@@ -50,11 +49,6 @@ ingress:
     secretName: ""
     certResolver: ""
 services:
-  operations:
-    imageRepository: ghcr.io/myota-platform/myota-operations-service
-    imageTag: ""
-    port: 8005
-    replicas: 1
   identity:
     internalUrl: http://myota-identity:8001
     imageRepository: ghcr.io/myota-platform/myota-identity-service
@@ -271,6 +265,13 @@ observability:
     image: otel/opentelemetry-collector-contrib:0.135.0
     servicePort: 4317
     metricsPort: 8889
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 300m
+        memory: 512Mi
   kubeStateMetrics:
     image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.19.1
     resources:

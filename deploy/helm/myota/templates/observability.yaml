@@ -38,8 +38,8 @@ data:
 {{ .Files.Get "observability/grafana/provisioning/dashboards/dashboards.yml" | indent 4 }}
   datasources.yml: |
 {{ .Files.Get "observability/grafana/provisioning/datasources/datasources.yml" | indent 4 }}
-  myota-operations.json: |
-{{ .Files.Get "observability/grafana/dashboards/myota-operations.json" | indent 4 }}
+  myota-service-health.json: |
+{{ .Files.Get "observability/grafana/dashboards/myota-service-health.json" | indent 4 }}
   myota-api-performance.json: |
 {{ .Files.Get "observability/grafana/dashboards/myota-api-performance.json" | indent 4 }}
   myota-geodata-capacity.json: |
@@ -277,6 +277,8 @@ spec:
             - {name: otlp-grpc, containerPort: 4317}
             - {name: otlp-http, containerPort: 4318}
             - {name: metrics, containerPort: 8889}
+          resources:
+{{ toYaml .Values.observability.otelCollector.resources | indent 12 }}
           volumeMounts:
             - {name: config, mountPath: /etc/otelcol-contrib/config.yaml, subPath: otel-collector.yaml}
       volumes:
@@ -455,7 +457,7 @@ spec:
             - {name: config, mountPath: /etc/grafana/provisioning/alerting/alert-rules.yml, subPath: alert-rules.yml}
             - {name: config, mountPath: /etc/grafana/provisioning/alerting/contact-points.yml, subPath: contact-points.yml}
             - {name: config, mountPath: /etc/grafana/provisioning/alerting/policies.yml, subPath: policies.yml}
-            - {name: config, mountPath: /etc/grafana/dashboards/myota-operations.json, subPath: myota-operations.json}
+            - {name: config, mountPath: /etc/grafana/dashboards/myota-service-health.json, subPath: myota-service-health.json}
             - {name: config, mountPath: /etc/grafana/dashboards/myota-api-performance.json, subPath: myota-api-performance.json}
             - {name: config, mountPath: /etc/grafana/dashboards/myota-geodata-capacity.json, subPath: myota-geodata-capacity.json}
             - {name: config, mountPath: /etc/grafana/dashboards/myota-object-storage.json, subPath: myota-object-storage.json}

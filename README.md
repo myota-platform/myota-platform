@@ -19,32 +19,28 @@ outcome metrics feed the OpenTelemetry Collector, Grafana dashboard and
 Alertmanager rules; notification replay requires the audited Activity redrive
 tool.
 The shared `MYOTA_EVENTS` stream uses bounded Limits retention for registered
-domain facts only. It captures `myota.events.>`, with a 30-day maximum age and
-finite capacity; it is not a replay archive. Geodata cancellation persists lifecycle fields
+domain facts only and captures `myota.events.>`. Its 30-day maximum age is a
+bounded replay window, not an event archive. Geodata cancellation persists lifecycle fields
 through the row repository and locks finalization through candidate cleanup.
 These fixes are mirrored in `services/` for integrated deployments. See the
 [notification runbook](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/activity-notification-consumer.md)
 for the legacy push-consumer handoff and cancellation guarantees.
 
 NATS migration Phases 0–6 are complete within their recorded evidence
-bounds. Phase 6 converted `MYOTA_EVENTS` to bounded Limits retention with only
-registered fact subjects. Activity and Geodata work remain on separate
-WorkQueue streams. The one-time migration flag is disabled while topology
-drift validation remains enabled. Helm revision 213 is deployed; MyOTA Fleet
-is Ready=True at Deploy main commit
-`dfc423d26bd79a82b1177b9e5d51e2d1196580c9`, and all MyOTA Deployments have
-their desired replicas ready. The four legacy Geodata durables were retired
-after Phase 5 checks; its 24-hour observation was explicitly waived and closed
-early, not represented as a full-day observation. Migration 021, owner rows,
-outboxes, and all six existing Geodata database DLQ records remain intact.
-Previously Interest-expired facts cannot be recovered from JetStream.
-PostgreSQL remains authoritative and off-node broker recovery is deferred.
-No production test data, shadow traffic, canary, or Phase 6 metrics baseline
-was used. See the [provisioning runbook](docs/jetstream-topology.md),
+bounds. Phase 6 migrated `MYOTA_EVENTS` from Interest to bounded Limits
+retention and removed the legacy Geodata subject capture. The one-time
+migration flag is disabled; routine topology drift validation remains enabled.
+Activity and Geodata work use separate WorkQueue streams. The four legacy
+Geodata durables were retired after Phase 5 checks; its 24-hour observation
+was explicitly waived and closed early, not represented as a full-day
+observation. Preserve migration 021, owner rows, outboxes, and six pre-existing
+Geodata database DLQ records. Previously Interest-expired facts cannot be
+recovered from JetStream. PostgreSQL remains authoritative and off-node
+recovery is deferred. No Phase 6 production test data, shadowing, canary, or
+new metrics baseline was used. See the [JetStream topology guide](docs/jetstream-topology.md),
 [Phase 6 evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase6-fact-stream-cutover-2026-10-11.md),
 [Phase 5 evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase5-geodata-work-2026-10-10.md),
-[migration plan](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/nats-event-migration-plan.md),
-and [Phase 4 Activity runbook](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/activity-work-queues.md).
+and [migration plan](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/nats-event-migration-plan.md).
 
 The geodata worker also consumes `myota.geodata.entity.location-enrichment.v1`
 through durable consumer `geodata-location-enrichment-v1`. It performs
@@ -96,13 +92,15 @@ services; they are not made highly available by adding API pods. See the
 [Phase 4 scaling record](https://github.com/myota-platform/myota-docs/blob/main/docs/geodata/evidence/phase4-infrastructure-scaling-2026-10-09.md)
 and the [deployment guide](deploy/helm/myota/DEPLOYMENT.md#geodata-api-replica-safety).
 
-**SeaweedFS monitoring** uses the private OpenTelemetry Collector scrape and a
-provisioned Grafana adaptation of dashboard 19173. The former Admin
-`/object-storage` bookmark opens the Grafana dashboard; Operations sampling,
-API endpoints and history table are retired. Operations retains bounded
-PostgreSQL/PostGIS metrics and Grafana identity resolution. Core migration 006
-drops only the retired sampled-history table. Deploy owns the chart and
-synchronized Platform copies. See the [SeaweedFS Grafana guide](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/storage/seaweedfs-admin-status.md).
+SeaweedFS monitoring uses the private OpenTelemetry Collector scrape and the
+provisioned Grafana dashboard, an adaptation of
+[Grafana dashboard 19173](https://grafana.com/grafana/dashboards/19173-seaweedfs/).
+The former Admin `/object-storage` bookmark redirects to Grafana. Operations no
+longer samples SeaweedFS or retains its history; OpenTelemetry now collects bounded PostgreSQL/PostGIS metrics, and the Gateway
+resolves Grafana authorization through live Identity data. Core migration 006 removes
+only the retired sample table. Object-storage APIs, application health checks,
+credentials and data remain unchanged. See the
+[SeaweedFS monitoring guide](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/storage/seaweedfs-admin-status.md).
 
 Grafana now uses individual MyOTA identities. GLOBAL_OPERATOR/GLOBAL_ADMIN
 receive Editor access for dashboards/panels; other authorized readers receive
@@ -110,10 +108,10 @@ Viewer access. The auth proxy synchronizes roles on every request. Provisioned
 dashboards are editable and allow UI saves, default to `now-30m` through `now`,
 and refresh every 30 seconds. UI-created dashboards persist on Grafana's PVC;
 source provisioning overwrites UI edits to provisioned dashboards on update.
-See the [Grafana and Admin access guide](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/storage/seaweedfs-admin-status.md).
+See the [storage/admin access guide](https://github.com/myota-platform/myota-docs/blob/main/docs/seaweedfs-admin-status.md).
 
-NATS broker and JetStream observability is provided centrally by the cluster-local Surveyor exporter, Prometheus scrape and Grafana folder `NATS`. Operations retains PostgreSQL/PostGIS metrics and Grafana identity, without SeaweedFS sampling or a broker dependency. See the [NATS observability migration guide](https://github.com/myota-platform/myota-docs/blob/main/docs/observability/nats-surveyor-migration.md).
-The operations dashboard
+NATS broker and JetStream observability is provided centrally by the cluster-local Surveyor exporter, Prometheus scrape and Grafana folder `NATS`. Operations is retired. PostgreSQL telemetry is collected by the OTel Collector, while the Gateway checks live Identity roles for Grafana access. See the [NATS observability migration guide](https://github.com/myota-platform/myota-docs/blob/main/docs/observability/nats-surveyor-migration.md).
+The service health dashboard
 includes users, geodata entities, imports, programmes, QSOs, participants,
 awards, workers, queue lag, HTTP errors and OTel latency. The separate
 `MyOTA API performance` dashboard repeats request-rate, p95 latency, 5xx rate,
@@ -123,8 +121,7 @@ values.
 The **MyOTA Geodata capacity baseline** dashboard adds per-instance process
 CPU/memory, request-size and in-flight measurements, PostgreSQL pool and lock
 pressure, and durable import/outbox queue age and throughput signals.
-The Grafana folder **NATS** contains dashboard 16256 and ten vendored NATS Surveyor dashboards. Surveyor provides broker and JetStream metrics; its upstream cluster, gateway, raft, and service-observation panels can be empty when those features or observation sources are absent. The retired combined MyOTA dashboard and its two PostGIS panels are not provisioned. Compose and Helm both use MyOTA-owned Prometheus datasource/provider configuration. The **SeaweedFS** dashboard adapts Grafana Labs dashboard 19173 and shows SeaweedFS S3
-request rates, latency, errors, and in-flight uploads. Helm hashes Grafana's
+The Grafana folder **NATS** contains dashboard 16256 and ten vendored NATS Surveyor dashboards. Surveyor provides broker and JetStream metrics; its upstream cluster, gateway, raft, and service-observation panels can be empty when those features or observation sources are absent. The retired combined MyOTA dashboard and its two PostGIS panels are not provisioned. Compose and Helm both use MyOTA-owned Prometheus datasource/provider configuration. The **SeaweedFS** dashboard is an adaptation of dashboard 19173 and shows supported SeaweedFS S3, bucket, filesystem and server request metrics. Helm hashes Grafana's
 dashboard and provisioning files into the Grafana pod template so ConfigMap
 updates restart Grafana; its dashboard files use `subPath` mounts, which do not
 refresh in place.
@@ -190,9 +187,8 @@ docker-compose up -d --build
 
 Open <http://127.0.0.1:8090> for administration or
 <http://127.0.0.1:8080> for the participant web/gateway. Domain APIs use
-ports 8001–8004; the read-only operations service uses 8005. Activations and awards
-intentionally share the activity service on port 8004; there is no standalone
-awards port. Use `python3 services/dev_server.py` only as the dependency-free
+ports 8001–8004. Activations and awards intentionally share the activity
+service on port 8004; there is no standalone awards port. Use `python3 services/dev_server.py` only as the dependency-free
 unit-test harness; it is not a durable runtime unless database URLs and
 `MYOTA_REQUIRE_DURABILITY=1` are supplied explicitly.
 
@@ -307,13 +303,11 @@ migration rollout must follow the staged procedure in the [Activity work queue
 runbook](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/activity-work-queues.md)
 and [Phase 4 evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase4-activity-work-2026-10-10.md).
 
-Phase 5 Geodata work source, migration 021, recovery behavior, and legacy
-durable retirement are complete within their recorded evidence bounds. The
-explicit waiver closed the 24-hour observation early; it is not a full-day
-observation. Phase 6 completed the bounded fact-stream cutover. Helm revision
-213 is deployed and Fleet is Ready=True at Deploy commit
-`dfc423d26bd79a82b1177b9e5d51e2d1196580c9`. See the [Phase 5 evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase5-geodata-work-2026-10-10.md),
-[Phase 6 evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase6-fact-stream-cutover-2026-10-11.md),
+Phase 5 Geodata work source, migration 021, retry-safe recovery, Activity
+idempotency, and legacy durable retirement are complete within their recorded
+evidence bounds. The explicit waiver closed the 24-hour observation early; it
+is not represented as a full-day window. Phase 6 completed the bounded fact
+stream cutover. The current deployed topology and Fleet/Helm evidence are
+recorded in the [Phase 6 evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase6-fact-stream-cutover-2026-10-11.md),
+[Phase 5 evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase5-geodata-work-2026-10-10.md),
 and [migration plan](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/nats-event-migration-plan.md).
-
-Shared runtime logging ownership and mirror synchronization are documented in [docs/shared-runtime-logging.md](docs/shared-runtime-logging.md).

@@ -316,9 +316,8 @@
   "style": "dark",
   "tags": [
     "myota",
-    "operations",
-    "opentelemetry",
-    "real-data"
+    "service-health",
+    "otel"
   ],
   "templating": {
     "list": []
@@ -327,6 +326,7 @@
     "from": "now-30m",
     "to": "now"
   },
-  "title": "MyOTA operations",
-  "uid": "myota-operations"
+  "title": "MyOTA service health",
+  "uid": "myota-service-health",
+  "version": 1
 }
