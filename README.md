@@ -315,3 +315,5 @@ observation. Phase 6 completed the bounded fact-stream cutover. Helm revision
 `dfc423d26bd79a82b1177b9e5d51e2d1196580c9`. See the [Phase 5 evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase5-geodata-work-2026-10-10.md),
 [Phase 6 evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase6-fact-stream-cutover-2026-10-11.md),
 and [migration plan](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/nats-event-migration-plan.md).
+
+Shared runtime logging ownership and mirror synchronization are documented in [docs/shared-runtime-logging.md](docs/shared-runtime-logging.md).
