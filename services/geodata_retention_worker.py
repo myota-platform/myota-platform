@@ -10,6 +10,7 @@ import time
 from import_retention import purge_expired_imports
 from geodata import GeoHandler
 from storage import ObjectStore
+from myota_logging import configure_logging, log_event
 
 
 def purge_sweep() -> dict[str, object]:
@@ -84,14 +85,18 @@ def main() -> None:
         ),
     )
     args = parser.parse_args()
-    logging.basicConfig(
-        level=os.environ.get("LOG_LEVEL", "INFO"),
-        format="%(asctime)s %(levelname)s %(name)s %(message)s",
-    )
+    configure_logging("myota-geodata", "geodata-import-retention")
     if args.interval_seconds < 60:
         parser.error("--interval-seconds must be at least 60")
+    logger = logging.getLogger("myota.geodata.import_retention")
     while True:
-        purge_sweep()
+        log_event(logger, logging.INFO, "job.started", component="geodata-import-retention", job_type="import-retention")
+        try:
+            result = purge_sweep()
+        except Exception as exc:
+            log_event(logger, logging.ERROR, "job.failed", component="geodata-import-retention", job_type="import-retention", error_type=type(exc).__name__)
+            raise
+        log_event(logger, logging.INFO, "job.completed", component="geodata-import-retention", job_type="import-retention", purged_count=result["purged"], failed_count=result["failed"], uploads_expired=result.get("uploadsExpired", 0))
         if not args.loop:
             return
         time.sleep(args.interval_seconds)
