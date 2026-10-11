@@ -1,8 +1,9 @@
-"""One-shot, create-only JetStream topology provisioner.
+"""Drift-checked JetStream topology provisioner with one guarded Phase 6 migration.
 
-It never mutates or deletes an existing stream or durable. A mismatch is a
-hard failure that requires a reviewed migration, which prevents accidental
-retention conversion of the existing shared MYOTA_EVENTS stream.
+Existing topology is create-only except for the explicitly gated, empty-stream
+MYOTA_EVENTS Interest-to-Limits migration. That migration refuses any retained
+message, unexpected subject/configuration, pending consumer state, or extra
+durable. All other mismatches remain hard failures.
 """
 
 from __future__ import annotations
@@ -129,6 +130,77 @@ def validate_consumer(actual, desired: ConsumerConfig, stream: str) -> None:
         )
 
 
+async def migrate_shared_event_stream(js, desired_stream: Stream, consumers) -> None:
+    """Apply the one-time Interest-to-Limits cutover only after strict preflight."""
+    if os.environ.get("NATS_EVENTS_RETENTION_MIGRATION") != "1":
+        return
+    if os.environ.get("NATS_TOPOLOGY_SCOPE", "all") != "all":
+        raise RuntimeError("event retention migration requires topology scope=all")
+    target = stream_config(desired_stream)
+    try:
+        info = await js.stream_info("MYOTA_EVENTS")
+    except NotFoundError as exc:
+        raise RuntimeError("MYOTA_EVENTS must already exist for in-place migration") from exc
+    config = info.config
+    if (
+        set(config.subjects or []) == set(target.subjects or [])
+        and _value(config.retention) == _value(target.retention)
+        and config.max_bytes == target.max_bytes
+        and config.max_msgs == target.max_msgs
+        and config.max_msg_size == target.max_msg_size
+        and _value(config.discard) == _value(target.discard)
+    ):
+        print("MYOTA_EVENTS already matches the target; migration is a no-op")
+        return
+    expected_legacy = {
+        "subjects": {"myota.events.>", "myota.geodata.>"},
+        "retention": RetentionPolicy.INTEREST.value,
+        "storage": StorageType.FILE.value,
+        "replicas": 1,
+        "max_bytes": -1,
+        "max_msgs": -1,
+        "max_msg_size": -1,
+        "discard": DiscardPolicy.OLD.value,
+    }
+    actual = {
+        "subjects": set(config.subjects or []),
+        "retention": _value(config.retention),
+        "storage": _value(config.storage),
+        "replicas": config.num_replicas,
+        "max_bytes": config.max_bytes,
+        "max_msgs": config.max_msgs,
+        "max_msg_size": config.max_msg_size,
+        "discard": _value(config.discard),
+    }
+    if actual != expected_legacy or config.max_age != desired_stream.max_age_seconds:
+        raise RuntimeError("MYOTA_EVENTS is not the reviewed legacy configuration")
+    state = info.state
+    if state.messages != 0 or state.bytes != 0 or state.consumer_count != 1:
+        raise RuntimeError(
+            "MYOTA_EVENTS migration requires zero messages/bytes and exactly "
+            "the single Activity notification durable"
+        )
+    try:
+        durable = await js.consumer_info("MYOTA_EVENTS", "activity-notifications-v1")
+    except Exception as exc:
+        raise RuntimeError("expected Activity notification durable is missing") from exc
+    consumer = durable.config
+    if (
+        durable.num_pending != 0
+        or durable.num_ack_pending != 0
+        or durable.num_redelivered != 0
+        or consumer.ack_policy != AckPolicy.EXPLICIT
+        or consumer.deliver_subject is not None
+        or not (consumer.filter_subjects or consumer.filter_subject)
+    ):
+        raise RuntimeError("Activity notification durable is not drained and pull-based")
+
+    await js.update_stream(target)
+    migrated = await js.stream_info("MYOTA_EVENTS")
+    validate_stream(migrated, target)
+    print("migrated MYOTA_EVENTS to bounded Limits retention")
+
+
 async def ensure_stream(js, desired: Stream) -> None:
     config = stream_config(desired)
     try:
@@ -160,6 +232,14 @@ async def main() -> None:
     )
     try:
         js = nc.jetstream()
+        if os.environ.get("NATS_EVENTS_RETENTION_MIGRATION") == "1":
+            event_stream = next(
+                (stream for stream in streams if stream.name == "MYOTA_EVENTS"),
+                None,
+            )
+            if event_stream is None:
+                raise RuntimeError("event retention migration requires MYOTA_EVENTS")
+            await migrate_shared_event_stream(js, event_stream, consumers)
         for stream in streams:
             await ensure_stream(js, stream)
             print(f"validated stream {stream.name}")
