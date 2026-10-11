@@ -13,6 +13,12 @@ datasources:
     access: proxy
     url: http://myota-tempo:3200
     editable: false
+  - name: MyOTA Loki
+    uid: myota-loki
+    type: loki
+    access: proxy
+    url: http://myota-loki:3100
+    editable: false
   - name: MyOTA Alertmanager
     uid: myota-alertmanager
     type: alertmanager

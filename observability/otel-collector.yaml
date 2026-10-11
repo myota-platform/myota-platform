@@ -37,8 +37,14 @@ exporters:
     endpoint: tempo:4317
     tls:
       insecure: true
-  debug:
-    verbosity: basic
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+    timeout: 10s
+    sending_queue:
+      enabled: true
+      queue_size: 1024
+    retry_on_failure:
+      enabled: true
 service:
   pipelines:
     metrics:
@@ -52,4 +58,4 @@ service:
     logs:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [debug]
+      exporters: [otlphttp/loki]

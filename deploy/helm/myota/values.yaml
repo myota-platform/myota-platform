@@ -258,6 +258,20 @@ outbox:
 observability:
   enabled: true
   storageClassName: ""
+  loki:
+    image: grafana/loki:3.7.8
+    bucketInitImage: minio/mc:RELEASE.2025-08-13T08-35-41Z
+    servicePort: 3100
+    workingStorageSize: 2Gi
+    bucketName: myota-loki
+    retentionPeriod: 336h
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 750m
+        memory: 768Mi
   otelCollector:
     image: otel/opentelemetry-collector-contrib:0.135.0
     servicePort: 4317

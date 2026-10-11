@@ -417,6 +417,34 @@ services:
     volumes:
       - ./observability/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
       - alertmanager-data:/alertmanager
+  loki-bucket-init:
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+    profiles: [observability]
+    restart: "no"
+    entrypoint: ["/bin/sh", "-ec"]
+    command: >-
+      mc alias set seaweed http://seaweedfs:8333 "$AWS_ACCESS_KEY_ID"
+      "$AWS_SECRET_ACCESS_KEY" &&
+      mc mb --ignore-existing seaweed/myota-loki
+    environment:
+      AWS_ACCESS_KEY_ID: myota-s3
+      AWS_SECRET_ACCESS_KEY: myota-s3-dev-only
+    depends_on:
+      seaweedfs: {condition: service_healthy}
+  loki:
+    image: grafana/loki:3.7.8
+    profiles: [observability]
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/config.yaml", "-config.expand-env=true"]
+    environment:
+      AWS_ACCESS_KEY_ID: myota-s3
+      AWS_SECRET_ACCESS_KEY: myota-s3-dev-only
+    volumes:
+      - ./observability/loki.yaml:/etc/loki/config.yaml:ro
+      - loki-data:/var/loki
+    depends_on:
+      seaweedfs: {condition: service_healthy}
+      loki-bucket-init: {condition: service_completed_successfully}
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.135.0
     profiles: [observability]
@@ -424,7 +452,7 @@ services:
     command: ["--config=/etc/otelcol-contrib/config.yaml"]
     volumes:
       - ./observability/otel-collector.yaml:/etc/otelcol-contrib/config.yaml:ro
-    depends_on: [gateway, identity, programmes, geodata, activity, tempo]
+    depends_on: [gateway, identity, programmes, geodata, activity, tempo, loki]
   tempo:
     image: grafana/tempo:2.6.1
     profiles: [observability]
@@ -456,7 +484,7 @@ services:
       - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./observability/grafana/dashboards:/etc/grafana/dashboards:ro
       - grafana-data:/var/lib/grafana
-    depends_on: [prometheus, alertmanager, tempo]
+    depends_on: [prometheus, alertmanager, tempo, loki]
 volumes:
   postgis-data:
   activity-data:
@@ -466,4 +494,5 @@ volumes:
   prometheus-data:
   grafana-data:
   tempo-data:
+  loki-data:
   alertmanager-data:
