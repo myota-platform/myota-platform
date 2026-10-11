@@ -1129,65 +1129,6 @@
       }
     },
     {
-      "eventType": "geodata.entity-deletion-job.failed.v1",
-      "owner": "geodata-service",
-      "class": "domain-fact",
-      "subject": "myota.events.geodata.entity-deletion-job.failed.v1",
-      "schema": "schemas/events/geodata-entity-deletion-job-failed-v1.schema.json",
-      "consumerGroups": [],
-      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
-      "payloadEvidence": "source-derived-geodata-callsite",
-      "producerSources": [
-        "myota-geodata-service/geodata.py"
-      ],
-      "dataClassification": "personal-and-operational-data",
-      "payloadSchema": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "entityId": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          },
-          "requestedBy": {
-            "type": "string"
-          },
-          "impact": {
-            "type": "object",
-            "additionalProperties": true
-          },
-          "confirmationRequired": {
-            "type": "boolean"
-          },
-          "createdAt": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "type": "string"
-          },
-          "error": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "entityId",
-          "status",
-          "requestedBy",
-          "impact",
-          "confirmationRequired",
-          "createdAt",
-          "updatedAt",
-          "error"
-        ],
-        "additionalProperties": true
-      }
-    },
-    {
       "eventType": "geodata.entity.candidate.created.v1",
       "owner": "geodata-service",
       "class": "domain-fact",
