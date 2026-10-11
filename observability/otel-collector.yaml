@@ -1,4 +1,6 @@
 receivers:
+  # DB endpoints are cluster-internal; the server images do not enable TLS.
+  # Monitor credentials are least-privilege and SQL/query collection stays disabled.
   otlp:
     protocols:
       grpc:
@@ -11,6 +13,7 @@ receivers:
     password: ${env:MYOTA_PG_CORE_MONITOR_PASSWORD}
     databases: [myota_core]
     collection_interval: 30s
+    tls: {insecure: true}
     events:
       db.server.query_sample: {enabled: false}
       db.server.top_query: {enabled: false}
@@ -39,6 +42,7 @@ receivers:
     password: ${env:MYOTA_PG_ACTIVITY_MONITOR_PASSWORD}
     databases: [myota_activity]
     collection_interval: 30s
+    tls: {insecure: true}
     events:
       db.server.query_sample: {enabled: false}
       db.server.top_query: {enabled: false}
@@ -67,6 +71,7 @@ receivers:
     password: ${env:MYOTA_PG_GEO_MONITOR_PASSWORD}
     databases: [myota_geo]
     collection_interval: 30s
+    tls: {insecure: true}
     events:
       db.server.query_sample: {enabled: false}
       db.server.top_query: {enabled: false}

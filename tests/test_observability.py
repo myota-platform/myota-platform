@@ -287,6 +287,8 @@ class ObservabilityConfigurationTests(unittest.TestCase):
         config = (ROOT / "observability" / "otel-collector.yaml").read_text()
         for database in ("core", "activity", "geo"):
             self.assertIn(f"postgresql/{database}:", config)
+        receivers = config.split("  prometheus:", 1)[0]
+        self.assertEqual(receivers.count("tls: {insecure: true}"), 3)
         self.assertIn("collection_interval: 30s", config)
         self.assertIn("db.server.query_sample: {enabled: false}", config)
         self.assertIn("db.server.top_query: {enabled: false}", config)
