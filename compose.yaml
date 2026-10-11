@@ -450,6 +450,10 @@ services:
     image: otel/opentelemetry-collector-contrib:0.135.0
     profiles: [observability]
     restart: unless-stopped
+    environment:
+      MYOTA_PG_CORE_MONITOR_PASSWORD: ${MYOTA_PG_CORE_MONITOR_PASSWORD:-myota-dev-monitor-core}
+      MYOTA_PG_ACTIVITY_MONITOR_PASSWORD: ${MYOTA_PG_ACTIVITY_MONITOR_PASSWORD:-myota-dev-monitor-activity}
+      MYOTA_PG_GEO_MONITOR_PASSWORD: ${MYOTA_PG_GEO_MONITOR_PASSWORD:-myota-dev-monitor-geo}
     command: ["--config=/etc/otelcol-contrib/config.yaml"]
     volumes:
       - ./observability/otel-collector.yaml:/etc/otelcol-contrib/config.yaml:ro
