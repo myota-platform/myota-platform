@@ -3,6 +3,84 @@ receivers:
     protocols:
       grpc: {endpoint: 0.0.0.0:4317}
       http: {endpoint: 0.0.0.0:4318}
+  postgresql/core:
+    endpoint: myota-core-postgres:5432
+    transport: tcp
+    username: myota_observability
+    password: ${env:MYOTA_PG_CORE_MONITOR_PASSWORD}
+    databases: [myota_core]
+    collection_interval: 30s
+    metrics:
+      postgresql.backends: {enabled: true}
+      postgresql.connection.max: {enabled: true}
+      postgresql.database.count: {enabled: true}
+      postgresql.db_size: {enabled: true}
+      postgresql.commits: {enabled: true}
+      postgresql.rollbacks: {enabled: true}
+      postgresql.blocks_read: {enabled: true}
+      postgresql.bgwriter.buffers.allocated: {enabled: true}
+      postgresql.bgwriter.buffers.writes: {enabled: true}
+      postgresql.bgwriter.checkpoint.count: {enabled: true}
+      postgresql.bgwriter.duration: {enabled: true}
+      postgresql.bgwriter.maxwritten: {enabled: true}
+      postgresql.deadlocks: {enabled: true}
+      postgresql.index.scans: {enabled: false}
+      postgresql.index.size: {enabled: false}
+      postgresql.rows: {enabled: false}
+      postgresql.table.size: {enabled: false}
+      postgresql.table.vacuum.count: {enabled: false}
+  postgresql/activity:
+    endpoint: myota-activity-postgres:5432
+    transport: tcp
+    username: myota_observability
+    password: ${env:MYOTA_PG_ACTIVITY_MONITOR_PASSWORD}
+    databases: [myota_activity]
+    collection_interval: 30s
+    metrics:
+      postgresql.backends: {enabled: true}
+      postgresql.connection.max: {enabled: true}
+      postgresql.database.count: {enabled: true}
+      postgresql.db_size: {enabled: true}
+      postgresql.commits: {enabled: true}
+      postgresql.rollbacks: {enabled: true}
+      postgresql.blocks_read: {enabled: true}
+      postgresql.bgwriter.buffers.allocated: {enabled: true}
+      postgresql.bgwriter.buffers.writes: {enabled: true}
+      postgresql.bgwriter.checkpoint.count: {enabled: true}
+      postgresql.bgwriter.duration: {enabled: true}
+      postgresql.bgwriter.maxwritten: {enabled: true}
+      postgresql.deadlocks: {enabled: true}
+      postgresql.index.scans: {enabled: false}
+      postgresql.index.size: {enabled: false}
+      postgresql.rows: {enabled: false}
+      postgresql.table.size: {enabled: false}
+      postgresql.table.vacuum.count: {enabled: false}
+  postgresql/geo:
+    endpoint: myota-geo-postgis:5432
+    transport: tcp
+    username: myota_observability
+    password: ${env:MYOTA_PG_GEO_MONITOR_PASSWORD}
+    databases: [myota_geo]
+    collection_interval: 30s
+    metrics:
+      postgresql.backends: {enabled: true}
+      postgresql.connection.max: {enabled: true}
+      postgresql.database.count: {enabled: true}
+      postgresql.db_size: {enabled: true}
+      postgresql.commits: {enabled: true}
+      postgresql.rollbacks: {enabled: true}
+      postgresql.blocks_read: {enabled: true}
+      postgresql.bgwriter.buffers.allocated: {enabled: true}
+      postgresql.bgwriter.buffers.writes: {enabled: true}
+      postgresql.bgwriter.checkpoint.count: {enabled: true}
+      postgresql.bgwriter.duration: {enabled: true}
+      postgresql.bgwriter.maxwritten: {enabled: true}
+      postgresql.deadlocks: {enabled: true}
+      postgresql.index.scans: {enabled: false}
+      postgresql.index.size: {enabled: false}
+      postgresql.rows: {enabled: false}
+      postgresql.table.size: {enabled: false}
+      postgresql.table.vacuum.count: {enabled: false}
   prometheus:
     config:
       scrape_configs:
@@ -35,6 +113,6 @@ exporters:
     retry_on_failure: {enabled: true}
 service:
   pipelines:
-    metrics: {receivers: [otlp, prometheus], processors: [memory_limiter, batch], exporters: [prometheus]}
+    metrics: {receivers: [otlp, prometheus, postgresql/core, postgresql/activity, postgresql/geo], processors: [memory_limiter, batch], exporters: [prometheus]}
     traces: {receivers: [otlp], processors: [memory_limiter, batch], exporters: [otlp/tempo]}
     logs: {receivers: [otlp], processors: [memory_limiter, batch], exporters: [otlphttp/loki]}
