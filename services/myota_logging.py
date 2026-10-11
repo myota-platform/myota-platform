@@ -22,9 +22,7 @@ _SENSITIVE_KEY = re.compile(
     re.IGNORECASE,
 )
 _BEARER = re.compile(r"(?i)\bBearer\s+[A-Za-z0-9._~+/=-]+")
-_JWT = re.compile(
-    r"\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b"
-)
+_JWT = re.compile(r"\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b")
 _SECRET_ASSIGNMENT = re.compile(
     r"(?i)\b(password|passwd|secret|token|api[_-]?key|authorization|"
     r"access[_-]?key|signing[_-]?key)\b(\s*[:=]\s*)([^\s,;]+)"
@@ -66,11 +64,16 @@ def bind_log_context(**fields: str) -> Iterator[None]:
 
 
 def log_event(
-    logger: logging.Logger, level: int, event: str, *,
-    component: str, **fields: Any,
+    logger: logging.Logger,
+    level: int,
+    event: str,
+    *,
+    component: str,
+    **fields: Any,
 ) -> None:
     logger.log(
-        level, redact_text(event),
+        level,
+        redact_text(event),
         extra={
             "event": redact_text(event),
             "component": component,
@@ -116,6 +119,7 @@ class _SafeFilter(logging.Filter):
                 setattr(record, key, context[key])
         try:
             from opentelemetry import trace
+
             span_context = trace.get_current_span().get_span_context()
             if span_context and span_context.is_valid:
                 record.trace_id = f"{span_context.trace_id:032x}"
@@ -124,9 +128,7 @@ class _SafeFilter(logging.Filter):
             pass
         record.service_name = self.service_name
         record.service_namespace = "myota"
-        record.deployment_environment = os.environ.get(
-            "MYOTA_ENV", "development"
-        )
+        record.deployment_environment = os.environ.get("MYOTA_ENV", "development")
         record.service_instance_id = os.environ.get("HOSTNAME", "local")
         return True
 
@@ -138,9 +140,9 @@ class _JsonFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         document: dict[str, Any] = {
-            "timestamp": datetime.fromtimestamp(
-                record.created, timezone.utc
-            ).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
+            "timestamp": datetime.fromtimestamp(record.created, timezone.utc)
+            .isoformat(timespec="milliseconds")
+            .replace("+00:00", "Z"),
             "severity": record.levelname,
             "event": getattr(record, "event", record.getMessage()),
             "component": getattr(record, "component", "service"),
@@ -149,13 +151,15 @@ class _JsonFormatter(logging.Formatter):
             "deployment.environment": getattr(
                 record, "deployment_environment", "development"
             ),
-            "service.instance.id": getattr(
-                record, "service_instance_id", "local"
-            ),
+            "service.instance.id": getattr(record, "service_instance_id", "local"),
         }
         for key in (
-            "trace_id", "span_id", "request_id", "correlation_id",
-            "event_id", "job_id",
+            "trace_id",
+            "span_id",
+            "request_id",
+            "correlation_id",
+            "event_id",
+            "job_id",
         ):
             value = getattr(record, key, None)
             if value:
@@ -184,7 +188,10 @@ def configure_logging(service_name: str, component: str = "service") -> None:
     stream.addFilter(safe_filter)
     root.addHandler(stream)
     if os.environ.get("MYOTA_OTEL_ENABLED", "0").strip().lower() in {
-        "1", "true", "yes", "on",
+        "1",
+        "true",
+        "yes",
+        "on",
     }:
         try:
             from opentelemetry._logs import set_logger_provider
@@ -198,19 +205,25 @@ def configure_logging(service_name: str, component: str = "service") -> None:
             endpoint = os.environ.get(
                 "OTEL_EXPORTER_OTLP_ENDPOINT", "http://otel-collector:4317"
             )
-            resource = Resource.create({
-                "service.name": os.environ.get("OTEL_SERVICE_NAME", service_name),
-                "service.namespace": "myota",
-                "deployment.environment": os.environ.get("MYOTA_ENV", "development"),
-                "service.instance.id": os.environ.get("HOSTNAME", "local"),
-            })
+            resource = Resource.create(
+                {
+                    "service.name": os.environ.get("OTEL_SERVICE_NAME", service_name),
+                    "service.namespace": "myota",
+                    "deployment.environment": os.environ.get(
+                        "MYOTA_ENV", "development"
+                    ),
+                    "service.instance.id": os.environ.get("HOSTNAME", "local"),
+                }
+            )
             provider = LoggerProvider(resource=resource)
-            provider.add_log_record_processor(BatchLogRecordProcessor(
-                OTLPLogExporter(
-                    endpoint=endpoint,
-                    insecure=not endpoint.startswith("https://"),
+            provider.add_log_record_processor(
+                BatchLogRecordProcessor(
+                    OTLPLogExporter(
+                        endpoint=endpoint,
+                        insecure=not endpoint.startswith("https://"),
+                    )
                 )
-            ))
+            )
             set_logger_provider(provider)
             otlp = LoggingHandler(level=logging.NOTSET, logger_provider=provider)
             otlp.addFilter(safe_filter)
