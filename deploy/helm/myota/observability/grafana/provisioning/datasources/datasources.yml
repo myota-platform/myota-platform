@@ -36,7 +36,8 @@ datasources:
       maxLines: 1000
       derivedFields:
         - name: trace_id
-          matcherRegex: '"trace_id"\s*:\s*"([0-9a-f]{32})"'
+          matcherType: label
+          matcherRegex: trace_id
           datasourceUid: myota-tempo
           url: '${__value.raw}'
           urlDisplayLabel: View trace
