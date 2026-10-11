@@ -63,7 +63,7 @@ postgres:
 jetstreamProvisioner:
   enabled: true
   confirmedMigrationGate: true
-  migrateEventsStream: true
+  migrateEventsStream: false
   scope: all
   capacity:
     eventsMaxBytes: "1073741824"
