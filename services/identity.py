@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from myota_logging import configure_logging
+
 import hashlib
 import os
 import re
@@ -1451,6 +1453,7 @@ def seed() -> None:
 
 
 if __name__ == "__main__":
+    configure_logging("myota-identity", component="api")
     seed()
     bootstrap_admin()
     server = ThreadingHTTPServer(("0.0.0.0", 8001), IdentityHandler)

@@ -9,6 +9,7 @@ from __future__ import annotations
 import copy
 import json
 import threading
+import time
 from collections.abc import Iterator, MutableMapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -93,6 +94,15 @@ PROJECTIONS = {
             "name": "name",
             "status": "lifecycle_status",
             "geometry": "ST_AsGeoJSON(geom)::jsonb",
+            "centroid": (
+                "jsonb_build_object("
+                "'lon', ST_X(COALESCE(centroid, "
+                "ST_Centroid(geom)::geography)::geometry), "
+                "'lat', ST_Y(COALESCE(centroid, "
+                "ST_Centroid(geom)::geography)::geometry))"
+            ),
+            "maidenheadGridSquares4": "maidenhead_grid_squares_4",
+            "maidenheadLocators6": "maidenhead_locators_6",
             "sourceState": "source_state",
             "jurisdiction": "jurisdiction",
             "attachments": "attachments",
@@ -297,6 +307,141 @@ class RowRepository:
         self.scope.original[identity] = copy.deepcopy(latest)
         return value
 
+    def import_candidates_for_run(
+        self, run_id: str
+    ) -> dict[int, dict[str, Any]]:
+        """Load one import's staged candidates without scanning other runs."""
+        with self.connection() as connection:
+            rows = connection.execute(
+                f"SELECT {PROJECTIONS['importCandidates']} "
+                "FROM geodata_import_candidate WHERE import_run_id=%s "
+                "ORDER BY ordinal",
+                (run_id,),
+            ).fetchall()
+        result: dict[int, dict[str, Any]] = {}
+        for row in rows:
+            value = canonical(row[0])
+            entity = value.get("entity") or {}
+            value["dedupeWarning"] = entity.get("dedupeWarning")
+            value["possibleDuplicates"] = entity.get("possibleDuplicates", [])
+            key = str(value["id"])
+            identity = ("importCandidates", key)
+            current = self.scope.loaded.get(identity)
+            if current is not None:
+                value = current
+            else:
+                self.scope.loaded[identity] = value
+                self.scope.original[identity] = copy.deepcopy(value)
+            result[int(value.get("ordinal", -1))] = value
+        return result
+
+    def import_candidates_for_ordinals(
+        self, run_id: str, start: int, end: int
+    ) -> dict[int, dict[str, Any]]:
+        """Load only the replay window needed by the current worker batch."""
+        with self.connection() as connection:
+            rows = connection.execute(
+                f"SELECT {PROJECTIONS['importCandidates']} "
+                "FROM geodata_import_candidate WHERE import_run_id=%s "
+                "AND ordinal >= %s AND ordinal < %s ORDER BY ordinal",
+                (run_id, start, end),
+            ).fetchall()
+        result: dict[int, dict[str, Any]] = {}
+        for row in rows:
+            value = canonical(row[0])
+            entity = value.get("entity") or {}
+            value["dedupeWarning"] = entity.get("dedupeWarning")
+            value["possibleDuplicates"] = entity.get("possibleDuplicates", [])
+            key = str(value["id"])
+            identity = ("importCandidates", key)
+            current = self.scope.loaded.get(identity)
+            if current is not None:
+                value = current
+            else:
+                self.scope.loaded[identity] = value
+                self.scope.original[identity] = copy.deepcopy(value)
+            result[int(value.get("ordinal", -1))] = value
+        return result
+
+    def evict_import_candidates(self, run_id: str) -> None:
+        """Release committed candidate projections between worker batches."""
+        for identity, value in list(self.scope.loaded.items()):
+            if identity[0] != "importCandidates":
+                continue
+            original = self.scope.original.get(identity) or value
+            if original.get("importRunId") == run_id:
+                self.scope.loaded.pop(identity, None)
+                self.scope.original.pop(identity, None)
+
+    def stage_import_candidate(
+        self, candidate: dict[str, Any], *, is_new: bool
+    ) -> None:
+        """Stage candidate rows without per-row existence SELECTs."""
+        key = str(candidate["id"])
+        identity = ("importCandidates", key)
+        if identity not in self.scope.original:
+            self.scope.original[identity] = (
+                None if is_new else copy.deepcopy(candidate)
+            )
+        self.scope.deleted.discard(identity)
+        self.scope.loaded[identity] = candidate
+
+    def entity_by_source_ref(
+        self, source_ref: str, programme_slug: str | None
+    ) -> dict[str, Any] | None:
+        """Fetch a matching imported entity using the source-reference index."""
+        programme_filter = (
+            "programme_slug IS NULL"
+            if programme_slug is None
+            else "programme_slug=%s"
+        )
+        params = (
+            (source_ref,)
+            if programme_slug is None
+            else (source_ref, programme_slug)
+        )
+        with self.connection() as connection:
+            row = connection.execute(
+                f"SELECT {PROJECTIONS['entities']} FROM geodata_entity "
+                "WHERE public_properties->>'sourceRef'=%s "
+                f"AND {programme_filter} LIMIT 1",
+                params,
+            ).fetchone()
+        if not row:
+            return None
+        return canonical(row[0])
+
+    def nearby_entity_ids(
+        self, geometry: dict[str, Any], exclude_id: str, distance_meters: float
+    ) -> list[tuple[str, float]]:
+        """Use the PostGIS geography index to find entities within a radius."""
+        geometry_json = json.dumps(geometry, separators=(",", ":"))
+        started = time.perf_counter()
+        try:
+            with self.connection() as connection:
+                rows = connection.execute(
+                    "SELECT id::text, ST_Distance(geom::geography, "
+                    "ST_SetSRID(ST_GeomFromGeoJSON(%s),4326)::geography) "
+                    "FROM geodata_entity WHERE id<>%s AND ST_DWithin("
+                    "geom::geography, "
+                    "ST_SetSRID(ST_GeomFromGeoJSON(%s),4326)::geography, %s) "
+                    "ORDER BY 2, id",
+                    (
+                        geometry_json,
+                        exclude_id,
+                        geometry_json,
+                        distance_meters,
+                    ),
+                ).fetchall()
+            return [
+                (str(entity_id), float(distance))
+                for entity_id, distance in rows
+            ]
+        finally:
+            self.store._observe_postgis_query(
+                "candidate_duplicate_proximity", started
+            )
+
     def discard_import_candidates(self, run_id: str) -> None:
         """Delete one run's staging rows without loading other imports."""
         with self.connection() as connection:
@@ -465,6 +610,33 @@ class RowRepository:
                             (kind, key),
                         )
             for event in scope.events:
+                event_type = event["eventType"]
+                aggregate_id = event["aggregate"]["id"]
+                if event_type in {
+                    "geodata.import.queued.v1",
+                    "geodata.import.recovered.v1",
+                }:
+                    connection.execute(
+                        "UPDATE import_run SET work_dispatched_at=now() WHERE id=%s",
+                        (aggregate_id,),
+                    )
+                elif event_type in {
+                    "geodata.import.processing.queued.v1",
+                    "geodata.import.processing.recovered.v1",
+                }:
+                    connection.execute(
+                        "UPDATE geodata_import_processing_queue "
+                        "SET work_dispatched_at=now() WHERE id=%s",
+                        (aggregate_id,),
+                    )
+                elif event_type == (
+                    "geodata.entity.location-enrichment-requested.v1"
+                ):
+                    connection.execute(
+                        "UPDATE geodata_entity "
+                        "SET location_work_dispatched_at=now() WHERE id=%s",
+                        (aggregate_id,),
+                    )
                 if ("entities", event["aggregate"]["id"]) not in scope.deleted:
                     connection.execute(
                         "INSERT INTO geodata_audit_event(event_id,aggregate_type,"

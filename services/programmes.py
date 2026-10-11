@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from myota_logging import configure_logging
+
 from datetime import datetime, timezone
 from http.server import ThreadingHTTPServer
+import re
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
@@ -14,6 +17,15 @@ from common import (
     require,
     verify_token,
 )
+
+ENTITY_GEOMETRY_TYPES = {
+    "POINT",
+    "LINESTRING",
+    "MULTILINESTRING",
+    "POLYGON",
+    "MULTIPOLYGON",
+}
+ENTITY_GEOMETRY_ALIASES = {"WAY": "LINESTRING"}
 
 
 def _utc_timestamp(value: str) -> str:
@@ -44,6 +56,142 @@ class ProgrammeHandler(JsonHandler):
         raise PermissionError("programme administration scope is required")
 
     @staticmethod
+    def _entity_type_catalog() -> dict[str, dict[str, Any]]:
+        return ProgrammeHandler.store.data.setdefault("entityTypeCatalog", {})
+
+    @staticmethod
+    def _normalise_entity_type(
+        body: dict[str, Any], existing: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        require(body, "code", "label")
+        code = str(body["code"]).strip().upper()
+        original_code = str(body.get("originalCode") or code).strip().upper()
+        if not re.fullmatch(r"[A-Z][A-Z0-9_]{1,63}", code):
+            raise ValueError(
+                "category code must start with a letter and contain only A-Z, 0-9, and underscores"
+            )
+        if code != original_code:
+            raise ValueError(
+                "category codes are stable identifiers and cannot be renamed"
+            )
+        raw_geometry_types = body.get("geometryTypes", body.get("geometry"))
+        if isinstance(raw_geometry_types, str):
+            raw_geometry_types = [raw_geometry_types]
+        if not isinstance(raw_geometry_types, list) or not raw_geometry_types:
+            raise ValueError(
+                "geometryTypes must contain at least one supported GeoJSON geometry type"
+            )
+        geometry_types = list(
+            dict.fromkeys(
+                ENTITY_GEOMETRY_ALIASES.get(
+                    str(value).strip().upper(), str(value).strip().upper()
+                )
+                for value in raw_geometry_types
+            )
+        )
+        if any(value not in ENTITY_GEOMETRY_TYPES for value in geometry_types):
+            raise ValueError(
+                "geometryTypes must contain only POINT, LINESTRING, MULTILINESTRING, POLYGON, or MULTIPOLYGON"
+            )
+        label = str(body["label"]).strip()
+        if not label:
+            raise ValueError("category label must not be empty")
+        return {
+            **(existing or {"createdAt": now()}),
+            "code": code,
+            "label": label,
+            "geometry": geometry_types[0],
+            "geometryTypes": geometry_types,
+            "description": str(body.get("description") or "").strip(),
+            "active": bool(
+                body.get(
+                    "active",
+                    existing.get("active", True) if existing else True,
+                )
+            ),
+            "updatedAt": now(),
+        }
+
+    @staticmethod
+    def _assigned_codes(programme: dict[str, Any]) -> list[str]:
+        codes = programme.get("entityTypeCodes")
+        if codes is None:
+            codes = [
+                str(item.get("code", "")).strip().upper()
+                for item in programme.get("entityTypes", [])
+            ]
+        return list(
+            dict.fromkeys(
+                code
+                for code in (str(value).strip().upper() for value in codes)
+                if code
+            )
+        )
+
+    @staticmethod
+    def _assigned_entity_types(
+        programme: dict[str, Any],
+    ) -> list[dict[str, Any]]:
+        catalog = ProgrammeHandler._entity_type_catalog()
+        return [
+            dict(catalog[code])
+            for code in ProgrammeHandler._assigned_codes(programme)
+            if code in catalog
+        ]
+
+    @staticmethod
+    def _set_programme_assignments(
+        programme: dict[str, Any], codes: list[str]
+    ) -> list[dict[str, Any]]:
+        catalog = ProgrammeHandler._entity_type_catalog()
+        assigned_codes = list(
+            dict.fromkeys(
+                str(code).strip().upper()
+                for code in codes
+                if str(code).strip()
+            )
+        )
+        missing = [code for code in assigned_codes if code not in catalog]
+        if missing:
+            raise ValueError(f"unknown entity category: {missing[0]}")
+        programme["entityTypeCodes"] = assigned_codes
+        programme["entityTypes"] = [
+            dict(catalog[code]) for code in assigned_codes
+        ]
+        return programme["entityTypes"]
+
+    @staticmethod
+    def _backfill_entity_type_catalog() -> bool:
+        catalog = ProgrammeHandler._entity_type_catalog()
+        changed = False
+        for programme in ProgrammeHandler.store.items.values():
+            for item in programme.get("entityTypes", []):
+                code = str(item.get("code", "")).strip().upper()
+                if code and code not in catalog:
+                    catalog[code] = {**item, "code": code}
+                    changed = True
+                if (
+                    code
+                    and code in catalog
+                    and not catalog[code].get("geometryTypes")
+                ):
+                    catalog[code]["geometryTypes"] = [
+                        str(catalog[code].get("geometry", "MULTIPOLYGON"))
+                        .strip()
+                        .upper()
+                    ]
+                    changed = True
+            codes = ProgrammeHandler._assigned_codes(programme)
+            if programme.get("entityTypeCodes") != codes:
+                programme["entityTypeCodes"] = codes
+                changed = True
+            assigned = ProgrammeHandler._assigned_entity_types(programme)
+            if assigned and programme.get("entityTypes") != assigned:
+                programme["entityTypes"] = assigned
+                changed = True
+        return changed
+
+    @staticmethod
     def list_programmes(_: JsonHandler, __: dict[str, str]) -> dict[str, Any]:
         from urllib.parse import parse_qs, urlparse
 
@@ -62,12 +210,19 @@ class ProgrammeHandler(JsonHandler):
         ProgrammeHandler._authorize_admin(p, slug)
         if slug in ProgrammeHandler.store.items:
             raise ValueError("programme slug already exists")
+        catalog = ProgrammeHandler._entity_type_catalog()
+        initial_codes = []
+        for item in body["entityTypes"]:
+            record = ProgrammeHandler._normalise_entity_type(item)
+            catalog.setdefault(record["code"], record)
+            initial_codes.append(record["code"])
         programme = {
             "id": new_id(),
             "slug": slug,
             "name": body["name"],
             "description": body.get("description", ""),
-            "entityTypes": body["entityTypes"],
+            "entityTypeCodes": list(dict.fromkeys(initial_codes)),
+            "entityTypes": [],
             "rules": body["rules"],
             "policyVersion": int(body.get("policyVersion", 1)),
             "theme": body.get(
@@ -78,6 +233,9 @@ class ProgrammeHandler(JsonHandler):
             "createdAt": now(),
             "updatedAt": now(),
         }
+        ProgrammeHandler._set_programme_assignments(
+            programme, programme["entityTypeCodes"]
+        )
         ProgrammeHandler.store.items[slug] = programme
         ProgrammeHandler.store.event(
             "programme.created.v1", "programme", programme["id"], programme
@@ -89,16 +247,20 @@ class ProgrammeHandler(JsonHandler):
         ProgrammeHandler._authorize_admin(p, p["slug"])
         programme = ProgrammeHandler.store.items[p["slug"]]
         body = p["_body"]
-        for field in (
-            "name",
-            "description",
-            "entityTypes",
-            "rules",
-            "theme",
-            "oidc",
-        ):
+        for field in ("name", "description", "rules", "theme", "oidc"):
             if field in body:
                 programme[field] = body[field]
+        if "entityTypes" in body:
+            catalog = ProgrammeHandler._entity_type_catalog()
+            codes = []
+            for item in body["entityTypes"]:
+                record = ProgrammeHandler._normalise_entity_type(
+                    item,
+                    catalog.get(str(item.get("code", "")).strip().upper()),
+                )
+                catalog.setdefault(record["code"], record)
+                codes.append(record["code"])
+            ProgrammeHandler._set_programme_assignments(programme, codes)
         if any(field in body for field in ("entityTypes", "rules")):
             programme["policyVersion"] = programme.get("policyVersion", 1) + 1
         programme["updatedAt"] = now()
@@ -106,6 +268,185 @@ class ProgrammeHandler(JsonHandler):
             "programme.updated.v1", "programme", programme["id"], programme
         )
         return programme
+
+    @staticmethod
+    def patch_programme(_: JsonHandler, p: dict[str, str]) -> dict[str, Any]:
+        """Preferred resource update; retain the legacy action semantics."""
+        body = dict(p.get("_body") or {})
+        status = body.pop("status", None)
+        if status == "ARCHIVED":
+            return ProgrammeHandler.archive_programme(
+                None, {**p, "_body": body}
+            )
+        if status not in (None, "ACTIVE"):
+            raise ValueError("status must be ACTIVE or ARCHIVED")
+        return ProgrammeHandler.update_programme(None, {**p, "_body": body})
+
+    @staticmethod
+    def list_entity_types(_: JsonHandler, p: dict[str, str]) -> dict[str, Any]:
+        ProgrammeHandler._authorize_admin(p, p["slug"])
+        programme = ProgrammeHandler.store.items[p["slug"]]
+        return {
+            "programmeSlug": p["slug"],
+            "items": ProgrammeHandler._assigned_entity_types(programme),
+        }
+
+    @staticmethod
+    def list_entity_type_catalog(
+        _: JsonHandler, p: dict[str, str]
+    ) -> dict[str, Any]:
+        ProgrammeHandler._authorize_admin(p)
+        ProgrammeHandler._backfill_entity_type_catalog()
+        items = []
+        for item in ProgrammeHandler._entity_type_catalog().values():
+            record = dict(item)
+            record["assignedProgrammes"] = [
+                programme.get("slug", slug)
+                for slug, programme in ProgrammeHandler.store.items.items()
+                if record["code"]
+                in ProgrammeHandler._assigned_codes(programme)
+            ]
+            items.append(record)
+        return {"items": sorted(items, key=lambda item: item["code"])}
+
+    @staticmethod
+    def save_entity_type_catalog(
+        _: JsonHandler, p: dict[str, str]
+    ) -> dict[str, Any]:
+        ProgrammeHandler._authorize_admin(p)
+        body = p["_body"]
+        ProgrammeHandler._backfill_entity_type_catalog()
+        catalog = ProgrammeHandler._entity_type_catalog()
+        code = str(body.get("code", "")).strip().upper()
+        existing = catalog.get(code)
+        record = ProgrammeHandler._normalise_entity_type(body, existing)
+        catalog[code] = record
+        for programme in ProgrammeHandler.store.items.values():
+            if code in ProgrammeHandler._assigned_codes(programme):
+                programme["entityTypes"] = [
+                    dict(catalog[assigned])
+                    for assigned in ProgrammeHandler._assigned_codes(programme)
+                ]
+                programme["updatedAt"] = now()
+        ProgrammeHandler.store.event(
+            "programme.entity-type.catalog-saved.v1",
+            "entity_type",
+            code,
+            {"entityType": record, "previous": existing},
+        )
+        items = []
+        for item in catalog.values():
+            value = dict(item)
+            value["assignedProgrammes"] = [
+                programme.get("slug", slug)
+                for slug, programme in ProgrammeHandler.store.items.items()
+                if value["code"] in ProgrammeHandler._assigned_codes(programme)
+            ]
+            items.append(value)
+        return {
+            "entityType": record,
+            "items": sorted(items, key=lambda item: item["code"]),
+            "_status": 201 if not existing else 200,
+        }
+
+    @staticmethod
+    def assign_entity_type(
+        _: JsonHandler, p: dict[str, str]
+    ) -> dict[str, Any]:
+        ProgrammeHandler._authorize_admin(p, p["slug"])
+        code = str(p["_body"].get("code", "")).strip().upper()
+
+        def assign() -> dict[str, Any]:
+            programme = ProgrammeHandler.store.items[p["slug"]]
+            if code not in ProgrammeHandler._entity_type_catalog():
+                raise ValueError("unknown entity category")
+            codes = ProgrammeHandler._assigned_codes(programme)
+            if code not in codes:
+                codes.append(code)
+                ProgrammeHandler._set_programme_assignments(programme, codes)
+                programme["policyVersion"] = (
+                    programme.get("policyVersion", 1) + 1
+                )
+                programme["updatedAt"] = now()
+                ProgrammeHandler.store.event(
+                    "programme.entity-type.assigned.v1",
+                    "programme",
+                    programme["id"],
+                    {"programmeSlug": p["slug"], "code": code},
+                )
+            return {
+                "programmeSlug": p["slug"],
+                "items": programme["entityTypes"],
+                "assigned": ProgrammeHandler._entity_type_catalog()[code],
+            }
+
+        return ProgrammeHandler.store.once(p.get("Idempotency-Key"), assign)
+
+    @staticmethod
+    def unassign_entity_type(
+        _: JsonHandler, p: dict[str, str]
+    ) -> dict[str, Any]:
+        ProgrammeHandler._authorize_admin(p, p["slug"])
+        code = str(p["_body"].get("code", "")).strip().upper()
+
+        def unassign() -> dict[str, Any]:
+            programme = ProgrammeHandler.store.items[p["slug"]]
+            codes = [
+                value
+                for value in ProgrammeHandler._assigned_codes(programme)
+                if value != code
+            ]
+            if codes != ProgrammeHandler._assigned_codes(programme):
+                ProgrammeHandler._set_programme_assignments(programme, codes)
+                programme["policyVersion"] = (
+                    programme.get("policyVersion", 1) + 1
+                )
+                programme["updatedAt"] = now()
+                ProgrammeHandler.store.event(
+                    "programme.entity-type.unassigned.v1",
+                    "programme",
+                    programme["id"],
+                    {"programmeSlug": p["slug"], "code": code},
+                )
+            return {
+                "programmeSlug": p["slug"],
+                "items": programme["entityTypes"],
+            }
+
+        return ProgrammeHandler.store.once(p.get("Idempotency-Key"), unassign)
+
+    @staticmethod
+    def assign_entity_type_resource(
+        _: JsonHandler, p: dict[str, str]
+    ) -> dict[str, Any]:
+        return ProgrammeHandler.assign_entity_type(
+            None, {**p, "_body": {"code": p["categoryCode"]}}
+        )
+
+    @staticmethod
+    def unassign_entity_type_resource(
+        _: JsonHandler, p: dict[str, str]
+    ) -> dict[str, Any]:
+        return ProgrammeHandler.unassign_entity_type(
+            None, {**p, "_body": {"code": p["categoryCode"]}}
+        )
+
+    @staticmethod
+    def save_entity_type(_: JsonHandler, p: dict[str, str]) -> dict[str, Any]:
+        ProgrammeHandler._authorize_admin(p, p["slug"])
+        catalog_result = ProgrammeHandler.save_entity_type_catalog(
+            None, {**p, "_http": None}
+        )
+        code = catalog_result["entityType"]["code"]
+        assigned = ProgrammeHandler.assign_entity_type(
+            None, {**p, "_body": {"code": code}, "_http": None}
+        )
+        return {
+            "programmeSlug": p["slug"],
+            "entityType": catalog_result["entityType"],
+            "items": assigned["items"],
+            "_status": catalog_result.get("_status", 200),
+        }
 
     @staticmethod
     def archive_programme(_: JsonHandler, p: dict[str, str]) -> dict[str, Any]:
@@ -268,6 +609,27 @@ class ProgrammeHandler(JsonHandler):
             "programme.content.published.v1", "content", content["id"], content
         )
         return content
+
+    @staticmethod
+    def patch_content(_: JsonHandler, p: dict[str, str]) -> dict[str, Any]:
+        body = dict(p.get("_body") or {})
+        status = body.pop("status", None)
+        action = {**p, "_body": body}
+        if status == "UNDER_REVIEW":
+            return ProgrammeHandler.submit_content(None, action)
+        if status in ("APPROVED", "CHANGES_REQUESTED"):
+            return ProgrammeHandler.review_content(
+                None, {**p, "_body": {**body, "decision": status}}
+            )
+        if status == "PUBLISHED":
+            return ProgrammeHandler.publish_content(None, action)
+        content = ProgrammeHandler._content_bucket().get(p["contentId"])
+        if content is None:
+            raise ValueError("content not found")
+        return ProgrammeHandler.save_content(
+            None,
+            {**p, "_body": {**content, **body, "contentId": p["contentId"]}},
+        )
 
     @staticmethod
     def content_coverage(_: JsonHandler, p: dict[str, str]) -> dict[str, Any]:
@@ -474,6 +836,28 @@ class ProgrammeHandler(JsonHandler):
         return {"draft": draft, "programme": programme}
 
     @staticmethod
+    def patch_policy_draft(
+        _: JsonHandler, p: dict[str, str]
+    ) -> dict[str, Any]:
+        body = dict(p.get("_body") or {})
+        status = body.pop("status", None)
+        action = {**p, "_body": body}
+        if status == "UNDER_REVIEW":
+            return ProgrammeHandler.submit_policy_draft(None, action)
+        if status in ("APPROVED", "CHANGES_REQUESTED"):
+            return ProgrammeHandler.review_policy_draft(
+                None, {**p, "_body": {**body, "decision": status}}
+            )
+        if status == "PUBLISHED":
+            return ProgrammeHandler.publish_policy_draft(None, action)
+        draft = ProgrammeHandler._policy_bucket().get(p["draftId"])
+        if draft is None:
+            raise ValueError("policy draft not found")
+        return ProgrammeHandler.save_policy_draft(
+            None, {**p, "_body": {**draft, **body, "draftId": p["draftId"]}}
+        )
+
+    @staticmethod
     def get_policy(_: JsonHandler, p: dict[str, str]) -> dict[str, Any]:
         programme = ProgrammeHandler.store.items[p["slug"]]
         return {
@@ -489,10 +873,37 @@ ProgrammeHandler.routes = {
     ("GET", "/v1/programmes"): ProgrammeHandler.list_programmes,
     ("GET", "/v1/programmes/{slug}"): ProgrammeHandler.get_programme,
     ("POST", "/v1/programmes"): ProgrammeHandler.create_programme,
+    ("PATCH", "/v1/programmes/{slug}"): ProgrammeHandler.patch_programme,
     (
         "POST",
         "/v1/programmes/{slug}/update",
     ): ProgrammeHandler.update_programme,
+    ("GET", "/v1/entity-types"): ProgrammeHandler.list_entity_type_catalog,
+    ("POST", "/v1/entity-types"): ProgrammeHandler.save_entity_type_catalog,
+    (
+        "GET",
+        "/v1/programmes/{slug}/entity-types",
+    ): ProgrammeHandler.list_entity_types,
+    (
+        "POST",
+        "/v1/programmes/{slug}/entity-types",
+    ): ProgrammeHandler.save_entity_type,
+    (
+        "POST",
+        "/v1/programmes/{slug}/entity-types/assign",
+    ): ProgrammeHandler.assign_entity_type,
+    (
+        "POST",
+        "/v1/programmes/{slug}/entity-types/unassign",
+    ): ProgrammeHandler.unassign_entity_type,
+    (
+        "PUT",
+        "/v1/programmes/{slug}/entity-types/{categoryCode}",
+    ): ProgrammeHandler.assign_entity_type_resource,
+    (
+        "DELETE",
+        "/v1/programmes/{slug}/entity-types/{categoryCode}",
+    ): ProgrammeHandler.unassign_entity_type_resource,
     (
         "POST",
         "/v1/programmes/{slug}/archive",
@@ -517,6 +928,10 @@ ProgrammeHandler.routes = {
         "/v1/programmes/{slug}/content/{contentId}/publish",
     ): ProgrammeHandler.publish_content,
     (
+        "PATCH",
+        "/v1/programmes/{slug}/content/{contentId}",
+    ): ProgrammeHandler.patch_content,
+    (
         "GET",
         "/v1/programmes/{slug}/policy-drafts",
     ): ProgrammeHandler.list_policy_drafts,
@@ -536,6 +951,23 @@ ProgrammeHandler.routes = {
         "POST",
         "/v1/programmes/{slug}/policy-drafts/{draftId}/publish",
     ): ProgrammeHandler.publish_policy_draft,
+    (
+        "PATCH",
+        "/v1/programmes/{slug}/policy-drafts/{draftId}",
+    ): ProgrammeHandler.patch_policy_draft,
+}
+
+ProgrammeHandler.deprecated_routes = {
+    ("POST", "/v1/programmes/{slug}/update"),
+    ("POST", "/v1/programmes/{slug}/archive"),
+    ("POST", "/v1/programmes/{slug}/entity-types/assign"),
+    ("POST", "/v1/programmes/{slug}/entity-types/unassign"),
+    ("POST", "/v1/programmes/{slug}/content/{contentId}/submit"),
+    ("POST", "/v1/programmes/{slug}/content/{contentId}/review"),
+    ("POST", "/v1/programmes/{slug}/content/{contentId}/publish"),
+    ("POST", "/v1/programmes/{slug}/policy-drafts/{draftId}/submit"),
+    ("POST", "/v1/programmes/{slug}/policy-drafts/{draftId}/review"),
+    ("POST", "/v1/programmes/{slug}/policy-drafts/{draftId}/publish"),
 }
 
 
@@ -553,6 +985,8 @@ def seed() -> None:
             ProgrammeHandler.store.items["regional-ota"].setdefault(
                 "locales", ["en"]
             )
+        if ProgrammeHandler._backfill_entity_type_catalog():
+            ProgrammeHandler.store.persist()
         content = ProgrammeHandler._content_bucket()
         if "mpota" in ProgrammeHandler.store.items and not any(
             item.get("programmeSlug") == "mpota" for item in content.values()
@@ -650,6 +1084,8 @@ def seed() -> None:
         "createdAt": now(),
         "updatedAt": now(),
     }
+    ProgrammeHandler._backfill_entity_type_catalog()
+    ProgrammeHandler.store.persist()
     ProgrammeHandler._content_bucket()[
         "00000000-0000-4000-8000-000000000301"
     ] = {
@@ -689,5 +1125,6 @@ def seed() -> None:
 
 
 if __name__ == "__main__":
+    configure_logging("myota-programmes", component="api")
     seed()
     ThreadingHTTPServer(("0.0.0.0", 8002), ProgrammeHandler).serve_forever()
