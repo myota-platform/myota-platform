@@ -137,12 +137,16 @@ async def migrate_shared_event_stream(
     if os.environ.get("NATS_EVENTS_RETENTION_MIGRATION") != "1":
         return
     if os.environ.get("NATS_TOPOLOGY_SCOPE", "all") != "all":
-        raise RuntimeError("event retention migration requires topology scope=all")
+        raise RuntimeError(
+            "event retention migration requires topology scope=all"
+        )
     target = stream_config(desired_stream)
     try:
         info = await js.stream_info("MYOTA_EVENTS")
     except NotFoundError as exc:
-        raise RuntimeError("MYOTA_EVENTS must already exist for in-place migration") from exc
+        raise RuntimeError(
+            "MYOTA_EVENTS must already exist for in-place migration"
+        ) from exc
     config = info.config
     if (
         set(config.subjects or []) == set(target.subjects or [])
@@ -174,8 +178,13 @@ async def migrate_shared_event_stream(
         "max_msg_size": config.max_msg_size,
         "discard": _value(config.discard),
     }
-    if actual != expected_legacy or config.max_age != desired_stream.max_age_seconds:
-        raise RuntimeError("MYOTA_EVENTS is not the reviewed legacy configuration")
+    if (
+        actual != expected_legacy
+        or config.max_age != desired_stream.max_age_seconds
+    ):
+        raise RuntimeError(
+            "MYOTA_EVENTS is not the reviewed legacy configuration"
+        )
     state = info.state
     if state.messages != 0 or state.bytes != 0 or state.consumer_count != 1:
         raise RuntimeError(
@@ -183,9 +192,13 @@ async def migrate_shared_event_stream(
             "the single Activity notification durable"
         )
     try:
-        durable = await js.consumer_info("MYOTA_EVENTS", "activity-notifications-v1")
+        durable = await js.consumer_info(
+            "MYOTA_EVENTS", "activity-notifications-v1"
+        )
     except Exception as exc:
-        raise RuntimeError("expected Activity notification durable is missing") from exc
+        raise RuntimeError(
+            "expected Activity notification durable is missing"
+        ) from exc
     consumer = durable.config
     if (
         durable.num_pending != 0
@@ -195,7 +208,9 @@ async def migrate_shared_event_stream(
         or consumer.deliver_subject is not None
         or not (consumer.filter_subjects or consumer.filter_subject)
     ):
-        raise RuntimeError("Activity notification durable is not drained and pull-based")
+        raise RuntimeError(
+            "Activity notification durable is not drained and pull-based"
+        )
 
     await js.update_stream(target)
     migrated = await js.stream_info("MYOTA_EVENTS")
@@ -236,11 +251,17 @@ async def main() -> None:
         js = nc.jetstream()
         if os.environ.get("NATS_EVENTS_RETENTION_MIGRATION") == "1":
             event_stream = next(
-                (stream for stream in streams if stream.name == "MYOTA_EVENTS"),
+                (
+                    stream
+                    for stream in streams
+                    if stream.name == "MYOTA_EVENTS"
+                ),
                 None,
             )
             if event_stream is None:
-                raise RuntimeError("event retention migration requires MYOTA_EVENTS")
+                raise RuntimeError(
+                    "event retention migration requires MYOTA_EVENTS"
+                )
             await migrate_shared_event_stream(js, event_stream, consumers)
         for stream in streams:
             await ensure_stream(js, stream)
