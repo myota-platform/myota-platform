@@ -33,6 +33,8 @@ spec:
               value: "1"
             - name: NATS_TOPOLOGY_SCOPE
               value: {{ .Values.jetstreamProvisioner.scope | quote }}
+            - name: NATS_EVENTS_RETENTION_MIGRATION
+              value: {{ ternary "1" "0" .Values.jetstreamProvisioner.migrateEventsStream | quote }}
 {{- $capacityEnv := dict
   "NATS_EVENTS_MAX_BYTES" $capacity.eventsMaxBytes
   "NATS_EVENTS_MAX_MESSAGES" $capacity.eventsMaxMessages
