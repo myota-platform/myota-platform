@@ -1,0 +1,341 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "title": "API performance",
+      "tooltip": "MyOTA API performance dashboard",
+      "type": "link",
+      "url": "/observability/d/myota-api-performance"
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "title": "Geodata capacity",
+      "tooltip": "Geodata import and service capacity",
+      "type": "link",
+      "url": "/observability/d/myota-geodata-capacity"
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "title": "PostgreSQL and PostGIS",
+      "tooltip": "Database health dashboard",
+      "type": "link",
+      "url": "/observability/d/myota-postgresql-postgis"
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "title": "Object storage",
+      "tooltip": "SeaweedFS dashboard",
+      "type": "link",
+      "url": "/observability/d/myota-object-storage"
+    }
+  ],
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "K3s metrics source",
+      "description": "Kube-state-metrics and kubelet internal scrape status. No data means source unavailable.",
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "up{job=~\"kube-state-metrics|k3s-kubelet-resource|k3s-kubelet-volumes\"}",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Deployment desired and available replicas",
+      "description": "Kubernetes object state scoped to the release namespace. Missing series indicate source/resource absence.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "kube_deployment_spec_replicas{namespace=\"myota\"}",
+          "legendFormat": "{{deployment}} desired",
+          "refId": "A"
+        },
+        {
+          "expr": "kube_deployment_status_replicas_available{namespace=\"myota\"}",
+          "legendFormat": "{{deployment}} available",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "StatefulSet desired and ready replicas",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "kube_statefulset_replicas{namespace=\"myota\"}",
+          "legendFormat": "{{statefulset}} desired",
+          "refId": "A"
+        },
+        {
+          "expr": "kube_statefulset_status_replicas_ready{namespace=\"myota\"}",
+          "legendFormat": "{{statefulset}} ready",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Container restarts (15m)",
+      "description": "Increase in the cumulative container restart counter; no data is not zero.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 12
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum by (pod) (increase(kube_pod_container_status_restarts_total{namespace=\"myota\"}[15m]))",
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "HPA current, desired, minimum, maximum",
+      "description": "Only autoscalers in the MyOTA namespace are shown. Missing HPA series mean no HPA/source data.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "kube_horizontalpodautoscaler_status_current_replicas{namespace=\"myota\"}",
+          "legendFormat": "{{horizontalpodautoscaler}} current",
+          "refId": "A"
+        },
+        {
+          "expr": "kube_horizontalpodautoscaler_status_desired_replicas{namespace=\"myota\"}",
+          "legendFormat": "{{horizontalpodautoscaler}} desired",
+          "refId": "B"
+        },
+        {
+          "expr": "kube_horizontalpodautoscaler_spec_min_replicas{namespace=\"myota\"}",
+          "legendFormat": "{{horizontalpodautoscaler}} min",
+          "refId": "C"
+        },
+        {
+          "expr": "kube_horizontalpodautoscaler_spec_max_replicas{namespace=\"myota\"}",
+          "legendFormat": "{{horizontalpodautoscaler}} max",
+          "refId": "D"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "CPU usage and request by pod",
+      "description": "Kubelet resource counter divided by sampled usage interval; resource request from Kubernetes object state.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 20
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cores"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum by (pod) (rate(pod_cpu_usage_seconds_total{namespace=\"myota\"}[5m]))",
+          "legendFormat": "{{pod}} used",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (pod) (kube_pod_container_resource_requests{namespace=\"myota\",resource=\"cpu\",unit=\"core\"})",
+          "legendFormat": "{{pod}} requested",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Memory working set and request by pod",
+      "description": "Kubelet working set and declared memory request. Missing values indicate unavailable collection.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 20
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum by (pod) (pod_memory_working_set_bytes{namespace=\"myota\"})",
+          "legendFormat": "{{pod}} used",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (pod) (kube_pod_container_resource_requests{namespace=\"myota\",resource=\"memory\",unit=\"byte\"})",
+          "legendFormat": "{{pod}} requested",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "PVC used capacity",
+      "description": "Derived from kubelet volume available/capacity stats; absence means unsupported/unavailable.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 28
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "100 * (1 - kubelet_volume_stats_available_bytes{namespace=\"myota\"} / kubelet_volume_stats_capacity_bytes{namespace=\"myota\"})",
+          "legendFormat": "{{persistentvolumeclaim}}",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": [
+    "myota",
+    "k3s",
+    "workload"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "utc",
+  "title": "MyOTA K3s workload health and capacity",
+  "uid": "myota-k3s-workload",
+  "version": 1
+}

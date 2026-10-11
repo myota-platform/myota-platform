@@ -19,3 +19,53 @@ scrape_configs:
   - job_name: myota-otel-collector
     static_configs:
       - targets: [myota-otel-collector:8889]
+
+  - job_name: kube-state-metrics
+    scrape_interval: 30s
+    scrape_timeout: 5s
+    static_configs:
+      - targets: [myota-kube-state-metrics:8080]
+  - job_name: k3s-kubelet-resource
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    scheme: https
+    metrics_path: /metrics/resource
+    kubernetes_sd_configs:
+      - role: node
+    authorization:
+      credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    tls_config:
+      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_node_address_InternalIP]
+        target_label: __address__
+        replacement: $1:10250
+      - source_labels: [__meta_kubernetes_node_name]
+        target_label: node
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: "(pod_cpu_usage_seconds_total|pod_memory_working_set_bytes);myota"
+        source_labels: [__name__, namespace]
+        action: keep
+  - job_name: k3s-kubelet-volumes
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    scheme: https
+    metrics_path: /metrics
+    kubernetes_sd_configs:
+      - role: node
+    authorization:
+      credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    tls_config:
+      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_node_address_InternalIP]
+        target_label: __address__
+        replacement: $1:10250
+      - source_labels: [__meta_kubernetes_node_name]
+        target_label: node
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: "(kubelet_volume_stats_available_bytes|kubelet_volume_stats_capacity_bytes);myota"
+        source_labels: [__name__, namespace]
+        action: keep

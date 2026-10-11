@@ -271,6 +271,15 @@ observability:
     image: otel/opentelemetry-collector-contrib:0.135.0
     servicePort: 4317
     metricsPort: 8889
+  kubeStateMetrics:
+    image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.19.1
+    resources:
+      requests:
+        cpu: 30m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
   natsSurveyor:
     enabled: true
     image: natsio/nats-surveyor:0.9.11

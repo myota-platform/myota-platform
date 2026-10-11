@@ -19,3 +19,13 @@ providers:
     allowUiUpdates: false
     options:
       path: /etc/grafana/dashboards-nats
+
+  - name: K3s
+    orgId: 1
+    folder: K3s
+    type: file
+    disableDeletion: false
+    editable: false
+    allowUiUpdates: false
+    options:
+      path: /etc/grafana/dashboards-k3s
