@@ -38,14 +38,9 @@ SECURITY_EVENT_RETENTION_SECONDS = int(
 
 ADMIN_PERMISSION_CATALOG = [
     {
-        "code": "operations.read",
-        "label": "View NATS / JetStream status and sampled history",
-        "group": "Operations",
-    },
-    {
         "code": "observability.view",
-        "label": "View platform operational status",
-        "group": "Operations",
+        "label": "View platform metrics and dashboards",
+        "group": "Observability",
     },
     {
         "code": "identity.admin",
@@ -300,6 +295,14 @@ class IdentityHandler(JsonHandler):
                 template["code"],
                 {**template, "createdAt": now(), "updatedAt": now()},
             )
+        # Remove the retired permission from persisted custom role definitions.
+        for definition in definitions.values():
+            scopes = definition.get("scopes")
+            if isinstance(scopes, list) and "operations.read" in scopes:
+                definition["scopes"] = [
+                    scope for scope in scopes if scope != "operations.read"
+                ]
+                definition["updatedAt"] = now()
         return definitions
 
     @staticmethod
@@ -336,9 +339,13 @@ class IdentityHandler(JsonHandler):
         for role in IdentityHandler._roles(account_id):
             definition = IdentityHandler._role_definition(role.get("role", ""))
             scopes.update(
-                definition.get("scopes", [])
-                if definition
-                else role.get("scopes", [])
+                scope
+                for scope in (
+                    definition.get("scopes", [])
+                    if definition
+                    else role.get("scopes", [])
+                )
+                if scope != "operations.read"
             )
             if role.get("programmeSlug"):
                 scopes.add(
@@ -714,7 +721,7 @@ class IdentityHandler(JsonHandler):
         return {
             **IdentityHandler._account(claims["sub"]),
             "roles": IdentityHandler._roles(claims["sub"]),
-            "scopes": claims.get("scp", []),
+            "scopes": IdentityHandler._scopes(claims["sub"]),
         }
 
     @staticmethod
