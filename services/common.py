@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import base64
 import errno
 import hashlib
@@ -23,6 +24,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterator
 from metrics import METRICS
 from otel import telemetry_for
+from myota_logging import log_http_completed, start_http_span
 
 # Geodata imports are sent as JSON envelopes and can legitimately contain a
 # sizeable pasted FeatureCollection. Deployments may lower this explicitly,
@@ -543,7 +545,40 @@ class JsonHandler(BaseHTTPRequestHandler):
     def _request_id(self) -> str:
         return self.headers.get("X-Request-ID") or new_id()
 
+    def _log_http_completed(self, status: int) -> None:
+        if getattr(self, "_http_logged", False):
+            return
+        self._http_logged = True
+        route = getattr(self, "current_route", None)
+        route_name = (
+            route[1]
+            if route
+            else (
+                self.path.split("?", 1)[0]
+                if self.path.split("?", 1)[0] in {"/healthz", "/metrics"}
+                else "/_unmatched"
+            )
+        )
+        started = getattr(self, "_request_started_at", time.perf_counter())
+        span = getattr(self, "_http_span", None)
+        if span:
+            span.set_result(status, route_name)
+        try:
+            log_http_completed(
+                logging.getLogger(f"{self.service}.http"),
+                method=getattr(self, "command", "UNKNOWN"),
+                route=route_name,
+                status=status,
+                duration_ms=(time.perf_counter() - started) * 1000,
+                request_id=getattr(self, "request_id", ""),
+                correlation_id=getattr(self, "correlation_id", ""),
+            )
+        finally:
+            if span:
+                span.end()
+
     def _send(self, status: int, payload: Any) -> None:
+        self._log_http_completed(status)
         route = getattr(self, "current_route", None)
         route_name = (
             route[1]
@@ -584,6 +619,12 @@ class JsonHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Length", str(len(data)))
             self.send_header("X-Request-ID", self.request_id)
             self.send_header("X-Correlation-ID", self.correlation_id)
+            if self._http_span and self._http_span.trace_id:
+                self.send_header("X-Trace-ID", self._http_span.trace_id)
+            self.send_header(
+                "Access-Control-Expose-Headers",
+                "X-Request-ID, X-Correlation-ID, traceparent, tracestate, X-Trace-ID",
+            )
             self.send_header("Access-Control-Allow-Origin", "*")
             self.send_header(
                 "Access-Control-Allow-Headers",
@@ -635,6 +676,7 @@ class JsonHandler(BaseHTTPRequestHandler):
         )
 
     def _send_metrics(self) -> None:
+        self._log_http_completed(200)
         data = METRICS.render(type(self).metrics_extra()).encode("utf-8")
         request_telemetry = getattr(self, "_otel_request", None)
         if request_telemetry:
@@ -652,6 +694,16 @@ class JsonHandler(BaseHTTPRequestHandler):
         self.request_id, self.correlation_id = (
             self._request_id(),
             self.headers.get("X-Correlation-ID") or new_id(),
+        )
+        self._request_started_at = time.perf_counter()
+        self.command = "OPTIONS"
+        self._http_span = start_http_span(
+            self.service,
+            "OPTIONS",
+            {
+                "traceparent": self.headers.get("traceparent", ""),
+                "tracestate": self.headers.get("tracestate", ""),
+            },
         )
         self._send(204, {})
 
@@ -676,6 +728,15 @@ class JsonHandler(BaseHTTPRequestHandler):
             self.headers.get("X-Correlation-ID") or new_id(),
         )
         self.command = method
+        self._request_started_at = time.perf_counter()
+        self._http_span = start_http_span(
+            self.service,
+            method,
+            {
+                "traceparent": self.headers.get("traceparent", ""),
+                "tracestate": self.headers.get("tracestate", ""),
+            },
+        )
         try:
             request_body_size = max(
                 0, int(self.headers.get("Content-Length", "0"))
@@ -683,7 +744,7 @@ class JsonHandler(BaseHTTPRequestHandler):
         except ValueError:
             request_body_size = 0
         self._otel_request = telemetry_for(self.service).start_request(
-            method, self.path.split("?", 1)[0], request_body_size
+            method, self.path.split("?", 1)[0], request_body_size, create_span=False
         )
         if self.path.split("?", 1)[0] == "/metrics":
             self._send_metrics()
