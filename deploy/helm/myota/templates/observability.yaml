@@ -54,6 +54,88 @@ data:
 {{ .Files.Get "observability/grafana/provisioning/alerting/contact-points.yml" | indent 4 }}
   policies.yml: |
 {{ .Files.Get "observability/grafana/provisioning/alerting/policies.yml" | indent 4 }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "myota.fullname" (dict "name" "postgres-monitor-role") }}-{{ .Release.Revision }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 2
+  activeDeadlineSeconds: 300
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "myota.name" . }}
+        app.kubernetes.io/component: postgres-monitor-role
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: grant-monitor
+          image: {{ .Values.migrations.waitImage | quote }}
+          command: ["/bin/sh", "-ec"]
+          args:
+            - |
+              until pg_isready -h myota-core-postgres -U "$POSTGRES_USER" -d postgres; do sleep 2; done
+              until pg_isready -h myota-activity-postgres -U "$POSTGRES_USER" -d postgres; do sleep 2; done
+              until pg_isready -h myota-geo-postgis -U "$POSTGRES_USER" -d postgres; do sleep 2; done
+              psql --no-password -h myota-core-postgres -U "$POSTGRES_USER" -d postgres -v ON_ERROR_STOP=1 <<'SQL'
+              getenv monitor_password MYOTA_PG_CORE_MONITOR_PASSWORD
+              SELECT format('CREATE ROLE myota_observability LOGIN PASSWORD %L', :'monitor_password')
+              WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'myota_observability')
+              gexec
+              ALTER ROLE myota_observability LOGIN PASSWORD :'monitor_password';
+              GRANT CONNECT ON DATABASE myota_core TO myota_observability;
+              GRANT SELECT ON pg_catalog.pg_stat_database TO myota_observability;
+              SQL
+              psql --no-password -h myota-activity-postgres -U "$POSTGRES_USER" -d postgres -v ON_ERROR_STOP=1 <<'SQL'
+              getenv monitor_password MYOTA_PG_ACTIVITY_MONITOR_PASSWORD
+              SELECT format('CREATE ROLE myota_observability LOGIN PASSWORD %L', :'monitor_password')
+              WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'myota_observability')
+              gexec
+              ALTER ROLE myota_observability LOGIN PASSWORD :'monitor_password';
+              GRANT CONNECT ON DATABASE myota_activity TO myota_observability;
+              GRANT SELECT ON pg_catalog.pg_stat_database TO myota_observability;
+              SQL
+              psql --no-password -h myota-geo-postgis -U "$POSTGRES_USER" -d postgres -v ON_ERROR_STOP=1 <<'SQL'
+              getenv monitor_password MYOTA_PG_GEO_MONITOR_PASSWORD
+              SELECT format('CREATE ROLE myota_observability LOGIN PASSWORD %L', :'monitor_password')
+              WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'myota_observability')
+              gexec
+              ALTER ROLE myota_observability LOGIN PASSWORD :'monitor_password';
+              GRANT CONNECT ON DATABASE myota_geo TO myota_observability;
+              GRANT SELECT ON pg_catalog.pg_stat_database TO myota_observability;
+              SQL
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgres.existingSecret }}
+                  key: username
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgres.existingSecret }}
+                  key: password
+            - name: MYOTA_PG_CORE_MONITOR_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: myota-postgres-monitor-core
+                  key: password
+            - name: MYOTA_PG_ACTIVITY_MONITOR_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: myota-postgres-monitor-activity
+                  key: password
+            - name: MYOTA_PG_GEO_MONITOR_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: myota-postgres-monitor-geo
+                  key: password
 {{- if .Values.observability.natsSurveyor.enabled }}
 ---
 apiVersion: v1
@@ -169,6 +251,22 @@ spec:
         - name: otel-collector
           image: {{ .Values.observability.otelCollector.image }}
           args: ["--config=/etc/otelcol-contrib/config.yaml"]
+          env:
+            - name: MYOTA_PG_CORE_MONITOR_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: myota-postgres-monitor-core
+                  key: password
+            - name: MYOTA_PG_ACTIVITY_MONITOR_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: myota-postgres-monitor-activity
+                  key: password
+            - name: MYOTA_PG_GEO_MONITOR_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: myota-postgres-monitor-geo
+                  key: password
           ports:
             - {name: otlp-grpc, containerPort: 4317}
             - {name: otlp-http, containerPort: 4318}
