@@ -47,6 +47,7 @@ from import_formats import (
 )
 from location_catalog import build_location_tree, derive_location_codes
 from reverse_geocoder import LOCATION_FIELDS, enrich_entity_location
+from myota_logging import inject_trace_context
 
 GEODATA_IMPORT_BUCKET = os.environ.get(
     "MYOTA_GEODATA_IMPORT_BUCKET", "myota-geodata-imports"
