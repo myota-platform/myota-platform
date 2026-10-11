@@ -1,0 +1,252 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Database connections",
+      "description": "Current client backends per MyOTA database.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "postgresql_backends{postgresql_database_name=\"myota_core\"}",
+          "legendFormat": "myota_core",
+          "refId": "A"
+        },
+        {
+          "expr": "postgresql_backends{postgresql_database_name=\"myota_activity\"}",
+          "legendFormat": "myota_activity",
+          "refId": "B"
+        },
+        {
+          "expr": "postgresql_backends{postgresql_database_name=\"myota_geo\"}",
+          "legendFormat": "myota_geo",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Database size",
+      "description": "Trend only; establish representative growth before setting capacity triggers.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "postgresql_db_size{postgresql_database_name=\"myota_core\"}",
+          "legendFormat": "myota_core",
+          "refId": "A"
+        },
+        {
+          "expr": "postgresql_db_size{postgresql_database_name=\"myota_activity\"}",
+          "legendFormat": "myota_activity",
+          "refId": "B"
+        },
+        {
+          "expr": "postgresql_db_size{postgresql_database_name=\"myota_geo\"}",
+          "legendFormat": "myota_geo",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Commit rate",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "rate(postgresql_commits_total{postgresql_database_name=\"myota_core\"}[5m])",
+          "legendFormat": "myota_core",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(postgresql_commits_total{postgresql_database_name=\"myota_activity\"}[5m])",
+          "legendFormat": "myota_activity",
+          "refId": "B"
+        },
+        {
+          "expr": "rate(postgresql_commits_total{postgresql_database_name=\"myota_geo\"}[5m])",
+          "legendFormat": "myota_geo",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Rollback rate",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "rate(postgresql_rollbacks_total{postgresql_database_name=\"myota_core\"}[5m])",
+          "legendFormat": "myota_core",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(postgresql_rollbacks_total{postgresql_database_name=\"myota_activity\"}[5m])",
+          "legendFormat": "myota_activity",
+          "refId": "B"
+        },
+        {
+          "expr": "rate(postgresql_rollbacks_total{postgresql_database_name=\"myota_geo\"}[5m])",
+          "legendFormat": "myota_geo",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Deadlocks",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "rate(postgresql_deadlocks_total{postgresql_database_name=\"myota_core\"}[5m])",
+          "legendFormat": "myota_core",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(postgresql_deadlocks_total{postgresql_database_name=\"myota_activity\"}[5m])",
+          "legendFormat": "myota_activity",
+          "refId": "B"
+        },
+        {
+          "expr": "rate(postgresql_deadlocks_total{postgresql_database_name=\"myota_geo\"}[5m])",
+          "legendFormat": "myota_geo",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "PostGIS query latency p95",
+      "description": "Existing bounded application histogram; query remains a bounded operation label.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, query) (rate(myota_geodata_postgis_query_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{query}}",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": [
+    "myota",
+    "postgresql",
+    "postgis"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "UTC",
+  "title": "MyOTA PostgreSQL and PostGIS",
+  "uid": "myota-postgresql-postgis",
+  "version": 1
+}
