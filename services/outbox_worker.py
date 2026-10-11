@@ -484,6 +484,7 @@ def _envelope(claimed: dict) -> dict:
 async def relay_one(js, claimed: dict) -> None:
     """Publish one row, requiring JetStream ack before marking it complete."""
     event_id = claimed["eventId"]
+    log_event(LOG, logging.INFO, "job.received", component="outbox-relay", job_type=WORKER_NAME, job_id=event_id, event_type=claimed.get("eventType"), attempt=claimed.get("attempts", 0))
     event_type = claimed["eventType"]
     try:
         envelope = _envelope(claimed)
@@ -509,6 +510,11 @@ async def relay_one(js, claimed: dict) -> None:
                 "Unable to persist outbox contract failure",
                 extra={"event_id": event_id, "event_type": event_type},
             )
+        log_event(
+            LOG, logging.ERROR, "job.failed", component="outbox-relay",
+            job_type=WORKER_NAME, job_id=event_id, event_type=event_type,
+            error_type=type(exc).__name__, outcome="dead_lettered",
+        )
         LOG.error(
             "Outbox event rejected by contract",
             extra={"event_id": event_id, "event_type": event_type},
