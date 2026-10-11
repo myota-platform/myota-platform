@@ -70,14 +70,6 @@ spec:
             {{- if eq $name "operations" }}
             - name: MYOTA_IDENTITY_URL
               value: {{ $.Values.services.identity.internalUrl | quote }}
-            - name: OPERATIONS_STORAGE_HEALTH_URL
-              value: {{ $cfg.storageHealthUrl | default (printf "%s/status" $.Values.objectStorage.endpoint) | quote }}
-            - name: OPERATIONS_STORAGE_METRICS_URL
-              value: {{ $cfg.storageMetricsUrl | default (printf "http://myota-seaweedfs:%v/metrics" $.Values.seaweedfs.metricsPort) | quote }}
-            - name: OPERATIONS_POLL_SECONDS
-              value: {{ $cfg.pollSeconds | default 30 | quote }}
-            - name: OPERATIONS_HISTORY_DAYS
-              value: {{ $cfg.historyDays | default 7 | quote }}
             - name: OPERATIONS_PG_POLL_SECONDS
               value: "30"
             {{- range $database, $secret := dict "CORE" "myota-postgres-monitor-core" "ACTIVITY" "myota-postgres-monitor-activity" "GEO" "myota-postgres-monitor-geo" }}

@@ -55,11 +55,6 @@ services:
     imageTag: ""
     port: 8005
     replicas: 1
-    pollSeconds: 30
-    historyDays: 7
-    # Empty URLs use the chart's SeaweedFS health and exporter endpoints.
-    storageHealthUrl: ""
-    storageMetricsUrl: ""
   identity:
     internalUrl: http://myota-identity:8001
     imageRepository: ghcr.io/myota-platform/myota-identity-service

@@ -96,13 +96,13 @@ services; they are not made highly available by adding API pods. See the
 [Phase 4 scaling record](https://github.com/myota-platform/myota-docs/blob/main/docs/geodata/evidence/phase4-infrastructure-scaling-2026-10-09.md)
 and the [deployment guide](deploy/helm/myota/DEPLOYMENT.md#geodata-api-replica-safety).
 
-**SeaweedFS storage** (`/object-storage`) uses Operations-owned
-samples/history and authenticated API access, with read-only storage health
-and native exporter gauges. NATS broker metrics are observed separately by
-Surveyor; Operations does not connect to NATS. Core migration 003 creates its history table.
-Compose and Helm provide the health/metrics URLs and the live Identity API URL.
-Helm overrides are `services.operations.storageHealthUrl`,
-`services.operations.storageMetricsUrl` and `services.identity.internalUrl`.
+**SeaweedFS monitoring** uses the private OpenTelemetry Collector scrape and a
+provisioned Grafana adaptation of dashboard 19173. The former Admin
+`/object-storage` bookmark opens the Grafana dashboard; Operations sampling,
+API endpoints and history table are retired. Operations retains bounded
+PostgreSQL/PostGIS metrics and Grafana identity resolution. Core migration 006
+drops only the retired sampled-history table. Deploy owns the chart and
+synchronized Platform copies. See the [SeaweedFS Grafana guide](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/storage/seaweedfs-admin-status.md).
 
 Grafana now uses individual MyOTA identities. GLOBAL_OPERATOR/GLOBAL_ADMIN
 receive Editor access for dashboards/panels; other authorized readers receive
@@ -110,9 +110,9 @@ Viewer access. The auth proxy synchronizes roles on every request. Provisioned
 dashboards are editable and allow UI saves, default to `now-30m` through `now`,
 and refresh every 30 seconds. UI-created dashboards persist on Grafana's PVC;
 source provisioning overwrites UI edits to provisioned dashboards on update.
-See the [storage/admin access guide](https://github.com/myota-platform/myota-docs/blob/main/docs/seaweedfs-admin-status.md).
+See the [Grafana and Admin access guide](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/storage/seaweedfs-admin-status.md).
 
-NATS broker and JetStream observability is provided centrally by the cluster-local Surveyor exporter, Prometheus scrape and Grafana folder `NATS`. Operations retains SeaweedFS inspection and Grafana identity, without a broker dependency. See the [NATS observability migration guide](https://github.com/myota-platform/myota-docs/blob/main/docs/observability/nats-surveyor-migration.md).
+NATS broker and JetStream observability is provided centrally by the cluster-local Surveyor exporter, Prometheus scrape and Grafana folder `NATS`. Operations retains PostgreSQL/PostGIS metrics and Grafana identity, without SeaweedFS sampling or a broker dependency. See the [NATS observability migration guide](https://github.com/myota-platform/myota-docs/blob/main/docs/observability/nats-surveyor-migration.md).
 The operations dashboard
 includes users, geodata entities, imports, programmes, QSOs, participants,
 awards, workers, queue lag, HTTP errors and OTel latency. The separate
@@ -123,7 +123,7 @@ values.
 The **MyOTA Geodata capacity baseline** dashboard adds per-instance process
 CPU/memory, request-size and in-flight measurements, PostgreSQL pool and lock
 pressure, and durable import/outbox queue age and throughput signals.
-The Grafana folder **NATS** contains dashboard 16256 and ten vendored NATS Surveyor dashboards. Surveyor provides broker and JetStream metrics; its upstream cluster, gateway, raft, and service-observation panels can be empty when those features or observation sources are absent. The retired combined MyOTA dashboard and its two PostGIS panels are not provisioned. Compose and Helm both use MyOTA-owned Prometheus datasource/provider configuration. The **MyOTA Object Storage** dashboard shows SeaweedFS S3
+The Grafana folder **NATS** contains dashboard 16256 and ten vendored NATS Surveyor dashboards. Surveyor provides broker and JetStream metrics; its upstream cluster, gateway, raft, and service-observation panels can be empty when those features or observation sources are absent. The retired combined MyOTA dashboard and its two PostGIS panels are not provisioned. Compose and Helm both use MyOTA-owned Prometheus datasource/provider configuration. The **SeaweedFS** dashboard adapts Grafana Labs dashboard 19173 and shows SeaweedFS S3
 request rates, latency, errors, and in-flight uploads. Helm hashes Grafana's
 dashboard and provisioning files into the Grafana pod template so ConfigMap
 updates restart Grafana; its dashboard files use `subPath` mounts, which do not

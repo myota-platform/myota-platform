@@ -84,6 +84,7 @@ groups:
         annotations:
           summary: SeaweedFS Prometheus metrics endpoint is unavailable
           description: Check the SeaweedFS mini metrics listener and Collector scrape target; missing metrics are not zero storage activity.
+          runbook_url: https://github.com/myota-platform/myota-docs/blob/main/docs/operations/storage/seaweedfs-admin-status.md
       - alert: MyOTASeaweedS3ErrorRateHigh
         expr: |
           (
@@ -96,6 +97,7 @@ groups:
         annotations:
           summary: SeaweedFS S3 error rate is high
           description: More than 5% of observed S3 requests have returned non-2xx responses for five minutes.
+          runbook_url: https://github.com/myota-platform/myota-docs/blob/main/docs/operations/storage/seaweedfs-admin-status.md
       - alert: MyOTASeaweedS3LatencyHigh
         expr: |
           histogram_quantile(
@@ -109,6 +111,7 @@ groups:
         annotations:
           summary: SeaweedFS S3 p95 processing time is high
           description: SeaweedFS server-side p95 request processing time has exceeded two seconds for ten minutes.
+          runbook_url: https://github.com/myota-platform/myota-docs/blob/main/docs/operations/storage/seaweedfs-admin-status.md
       - alert: MyOTAActivityQueueBacklog
         expr: myota_activity_jobs_queued_total{job="myota-otel-collector"} > 100
         for: 10m
