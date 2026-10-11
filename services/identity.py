@@ -1352,16 +1352,8 @@ IdentityHandler.routes = {
         "GET",
         "/v1/identity/admin/accounts",
     ): IdentityHandler.list_admin_accounts,
-    (
-        "POST",
-        "/v1/identity/admin/accounts/{accountId}/update",
-    ): IdentityHandler.update_admin_account,
     ("GET", "/v1/identity/admin/roles"): IdentityHandler.list_admin_roles,
     ("POST", "/v1/identity/admin/roles"): IdentityHandler.create_admin_role,
-    (
-        "POST",
-        "/v1/identity/admin/roles/{roleCode}/update",
-    ): IdentityHandler.update_admin_role,
     (
         "GET",
         "/v1/identity/admin/security-events",
@@ -1372,16 +1364,8 @@ IdentityHandler.routes = {
     ): IdentityHandler.export_account,
     (
         "POST",
-        "/v1/identity/accounts/{accountId}/deactivate",
-    ): IdentityHandler.deactivate_account,
-    (
-        "POST",
         "/v1/identity/accounts/{accountId}/callsigns",
     ): IdentityHandler.add_callsign,
-    (
-        "POST",
-        "/v1/identity/accounts/{accountId}/primary-callsign",
-    ): IdentityHandler.set_primary,
     (
         "POST",
         "/v1/identity/accounts/{accountId}/callsigns/{callsignId}/evidence",
@@ -1398,19 +1382,10 @@ IdentityHandler.routes = {
         "GET",
         "/v1/identity/accounts/{accountId}/roles",
     ): IdentityHandler.list_roles,
-    (
-        "POST",
-        "/v1/identity/accounts/{accountId}/roles",
-    ): IdentityHandler.assign_role,
     ("POST", "/v1/identity/oidc/providers"): IdentityHandler.oidc_mapping,
 }
 
-IdentityHandler.deprecated_routes = {
-    ("POST", "/v1/identity/admin/accounts/{accountId}/update"),
-    ("POST", "/v1/identity/admin/roles/{roleCode}/update"),
-    ("POST", "/v1/identity/accounts/{accountId}/primary-callsign"),
-    ("POST", "/v1/identity/accounts/{accountId}/roles"),
-}
+IdentityHandler.deprecated_routes = set()
 
 
 def seed() -> None:

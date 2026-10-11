@@ -874,10 +874,6 @@ ProgrammeHandler.routes = {
     ("GET", "/v1/programmes/{slug}"): ProgrammeHandler.get_programme,
     ("POST", "/v1/programmes"): ProgrammeHandler.create_programme,
     ("PATCH", "/v1/programmes/{slug}"): ProgrammeHandler.patch_programme,
-    (
-        "POST",
-        "/v1/programmes/{slug}/update",
-    ): ProgrammeHandler.update_programme,
     ("GET", "/v1/entity-types"): ProgrammeHandler.list_entity_type_catalog,
     ("POST", "/v1/entity-types"): ProgrammeHandler.save_entity_type_catalog,
     (
@@ -889,14 +885,6 @@ ProgrammeHandler.routes = {
         "/v1/programmes/{slug}/entity-types",
     ): ProgrammeHandler.save_entity_type,
     (
-        "POST",
-        "/v1/programmes/{slug}/entity-types/assign",
-    ): ProgrammeHandler.assign_entity_type,
-    (
-        "POST",
-        "/v1/programmes/{slug}/entity-types/unassign",
-    ): ProgrammeHandler.unassign_entity_type,
-    (
         "PUT",
         "/v1/programmes/{slug}/entity-types/{categoryCode}",
     ): ProgrammeHandler.assign_entity_type_resource,
@@ -904,10 +892,6 @@ ProgrammeHandler.routes = {
         "DELETE",
         "/v1/programmes/{slug}/entity-types/{categoryCode}",
     ): ProgrammeHandler.unassign_entity_type_resource,
-    (
-        "POST",
-        "/v1/programmes/{slug}/archive",
-    ): ProgrammeHandler.archive_programme,
     ("GET", "/v1/programmes/{slug}/policy"): ProgrammeHandler.get_policy,
     ("GET", "/v1/programmes/{slug}/content"): ProgrammeHandler.list_content,
     (
@@ -957,18 +941,7 @@ ProgrammeHandler.routes = {
     ): ProgrammeHandler.patch_policy_draft,
 }
 
-ProgrammeHandler.deprecated_routes = {
-    ("POST", "/v1/programmes/{slug}/update"),
-    ("POST", "/v1/programmes/{slug}/archive"),
-    ("POST", "/v1/programmes/{slug}/entity-types/assign"),
-    ("POST", "/v1/programmes/{slug}/entity-types/unassign"),
-    ("POST", "/v1/programmes/{slug}/content/{contentId}/submit"),
-    ("POST", "/v1/programmes/{slug}/content/{contentId}/review"),
-    ("POST", "/v1/programmes/{slug}/content/{contentId}/publish"),
-    ("POST", "/v1/programmes/{slug}/policy-drafts/{draftId}/submit"),
-    ("POST", "/v1/programmes/{slug}/policy-drafts/{draftId}/review"),
-    ("POST", "/v1/programmes/{slug}/policy-drafts/{draftId}/publish"),
-}
+ProgrammeHandler.deprecated_routes = set()
 
 
 def seed() -> None:
