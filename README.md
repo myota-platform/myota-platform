@@ -18,29 +18,30 @@ legacy retirement are defined in the notification topology hooks. Its bounded
 outcome metrics feed the OpenTelemetry Collector, Grafana dashboard and
 Alertmanager rules; notification replay requires the audited Activity redrive
 tool.
-The shared `MYOTA_EVENTS` stream currently uses Interest retention, mixing facts
-with legacy Geodata work. The 30-day maximum age is a backlog safety bound; the
-stream is not a replay archive. Geodata cancellation persists lifecycle fields
+The shared `MYOTA_EVENTS` stream uses bounded Limits retention for registered
+domain facts only. It captures `myota.events.>`, with a 30-day maximum age and
+finite capacity; it is not a replay archive. Geodata cancellation persists lifecycle fields
 through the row repository and locks finalization through candidate cleanup.
 These fixes are mirrored in `services/` for integrated deployments. See the
 [notification runbook](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/activity-notification-consumer.md)
 for the legacy push-consumer handoff and cancellation guarantees.
 
-NATS migration Phases 0–4 are complete within their recorded evidence bounds.
-Phase 5 is in production cutover: the four Geodata work kinds use the
-`MYOTA_GEODATA_WORK` WorkQueue, all four workers subscribe to their exact target
-subjects, and migration 021 is applied. The retry-safe partial-deletion handler
-is deployed on digest-pinned images. No accepted Geodata production work was
-available to process. Helm revision 192 is deployed; Fleet is Ready=True at
-Deploy commit `6443473828305ab9d02a918bbe990d01abe97f6a` with 60/60 resources. Four old durable definitions
-remain empty and inactive during the rollback observation, anchored at 21:39:22 UTC on 10 October; the shared `MYOTA_EVENTS` stream and
-Activity notification durable remain active. Fleet readiness, two-database cross-service failure qualification,
-cancellation/expiry replay, and the five work-command recovery paths have been
-verified in the recorded isolated run. The 24-hour rollback observation and
-legacy durable retirement remain open. Keep migration 021 and authoritative
-recovery rows; no obsolete Phase 5 database object was found to purge. NATS
-remains cluster-internal without auth/TLS under the accepted single-tenant
-boundary; off-node recovery is deferred. See the [provisioning runbook](docs/jetstream-topology.md),
+NATS migration Phases 0–6 are complete within their recorded evidence
+bounds. Phase 6 converted `MYOTA_EVENTS` to bounded Limits retention with only
+registered fact subjects. Activity and Geodata work remain on separate
+WorkQueue streams. The one-time migration flag is disabled while topology
+drift validation remains enabled. Helm revision 211 is deployed; MyOTA Fleet
+is Ready=True at Deploy main commit
+`16af2edf6b8e868904f9284e481d971ae7d6d38c`, and all MyOTA Deployments have
+their desired replicas ready. The four legacy Geodata durables were retired
+after Phase 5 checks; its 24-hour observation was explicitly waived and closed
+early, not represented as a full-day observation. Migration 021, owner rows,
+outboxes, and all six existing Geodata database DLQ records remain intact.
+Previously Interest-expired facts cannot be recovered from JetStream.
+PostgreSQL remains authoritative and off-node broker recovery is deferred.
+No production test data, shadow traffic, canary, or Phase 6 metrics baseline
+was used. See the [provisioning runbook](docs/jetstream-topology.md),
+[Phase 6 evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase6-fact-stream-cutover-2026-10-11.md),
 [Phase 5 evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase5-geodata-work-2026-10-10.md),
 [migration plan](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/nats-event-migration-plan.md),
 and [Phase 4 Activity runbook](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/activity-work-queues.md).
@@ -306,12 +307,11 @@ migration rollout must follow the staged procedure in the [Activity work queue
 runbook](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/activity-work-queues.md)
 and [Phase 4 evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase4-activity-work-2026-10-10.md).
 
-Phase 5 Geodata work source, migration 021, and isolated reliability tests are
-complete within their recorded evidence bounds. Helm revision 192 is deployed;
-Fleet reports Ready=True at `6443473828305ab9d02a918bbe990d01abe97f6a` with 60/60 resources. First-party
-image references use configured immutable digests, which match live Activity,
-Geodata, and shared-runtime pod IDs. The four target durables are empty with
-active workers; four legacy Geodata durables remain inactive and empty through
-the rollback observation ending no earlier than 21:39:22 UTC on 11 October 2026.
-Only that observation and safe retirement of those four legacy durables remain open. See the
-[Phase 5 evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase5-geodata-work-2026-10-10.md).
+Phase 5 Geodata work source, migration 021, recovery behavior, and legacy
+durable retirement are complete within their recorded evidence bounds. The
+explicit waiver closed the 24-hour observation early; it is not a full-day
+observation. Phase 6 then completed the bounded fact-stream cutover. Helm
+revision 211 is deployed and Fleet is Ready=True at Deploy commit
+`16af2edf6b8e868904f9284e481d971ae7d6d38c`. See the [Phase 5 evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase5-geodata-work-2026-10-10.md),
+[Phase 6 evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase6-fact-stream-cutover-2026-10-11.md),
+and [migration plan](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/nats-event-migration-plan.md).
