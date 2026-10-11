@@ -15,15 +15,11 @@ from myota_logging import configure_logging, log_event
 
 def purge_sweep() -> dict[str, object]:
     """Drain all eligible rows in bounded batches, stopping safely on errors."""
-    batch_size = int(
-        os.environ.get("GEODATA_IMPORT_RETENTION_BATCH_SIZE", "100")
-    )
+    batch_size = int(os.environ.get("GEODATA_IMPORT_RETENTION_BATCH_SIZE", "100"))
     total = {"eligible": 0, "purged": 0, "failed": 0, "failedRunIds": []}
     excluded: set[str] = set()
     while True:
-        result = purge_expired_imports(
-            batch_size=batch_size, excluded_run_ids=excluded
-        )
+        result = purge_expired_imports(batch_size=batch_size, excluded_run_ids=excluded)
         for key in ("eligible", "purged", "failed"):
             total[key] += result[key]
         excluded.update(result["failedRunIds"])
@@ -79,9 +75,7 @@ def main() -> None:
         "--interval-seconds",
         type=int,
         default=int(
-            os.environ.get(
-                "GEODATA_IMPORT_RETENTION_INTERVAL_SECONDS", "86400"
-            )
+            os.environ.get("GEODATA_IMPORT_RETENTION_INTERVAL_SECONDS", "86400")
         ),
     )
     args = parser.parse_args()
@@ -90,13 +84,35 @@ def main() -> None:
         parser.error("--interval-seconds must be at least 60")
     logger = logging.getLogger("myota.geodata.import_retention")
     while True:
-        log_event(logger, logging.INFO, "job.started", component="geodata-import-retention", job_type="import-retention")
+        log_event(
+            logger,
+            logging.INFO,
+            "job.started",
+            component="geodata-import-retention",
+            job_type="import-retention",
+        )
         try:
             result = purge_sweep()
         except Exception as exc:
-            log_event(logger, logging.ERROR, "job.failed", component="geodata-import-retention", job_type="import-retention", error_type=type(exc).__name__)
+            log_event(
+                logger,
+                logging.ERROR,
+                "job.failed",
+                component="geodata-import-retention",
+                job_type="import-retention",
+                error_type=type(exc).__name__,
+            )
             raise
-        log_event(logger, logging.INFO, "job.completed", component="geodata-import-retention", job_type="import-retention", purged_count=result["purged"], failed_count=result["failed"], uploads_expired=result.get("uploadsExpired", 0))
+        log_event(
+            logger,
+            logging.INFO,
+            "job.completed",
+            component="geodata-import-retention",
+            job_type="import-retention",
+            purged_count=result["purged"],
+            failed_count=result["failed"],
+            uploads_expired=result.get("uploadsExpired", 0),
+        )
         if not args.loop:
             return
         time.sleep(args.interval_seconds)
