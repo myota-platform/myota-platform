@@ -130,7 +130,9 @@ def validate_consumer(actual, desired: ConsumerConfig, stream: str) -> None:
         )
 
 
-async def migrate_shared_event_stream(js, desired_stream: Stream, consumers) -> None:
+async def migrate_shared_event_stream(
+    js, desired_stream: Stream, consumers
+) -> None:
     """Apply the one-time Interest-to-Limits cutover only after strict preflight."""
     if os.environ.get("NATS_EVENTS_RETENTION_MIGRATION") != "1":
         return
