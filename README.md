@@ -32,7 +32,7 @@ registered fact subjects. Activity and Geodata work remain on separate
 WorkQueue streams. The one-time migration flag is disabled while topology
 drift validation remains enabled. Helm revision 213 is deployed; MyOTA Fleet
 is Ready=True at Deploy main commit
-`de01650e19b88bc99a11ede1f25694202c8c8d17`, and all MyOTA Deployments have
+`dfc423d26bd79a82b1177b9e5d51e2d1196580c9`, and all MyOTA Deployments have
 their desired replicas ready. The four legacy Geodata durables were retired
 after Phase 5 checks; its 24-hour observation was explicitly waived and closed
 early, not represented as a full-day observation. Migration 021, owner rows,
@@ -312,6 +312,6 @@ durable retirement are complete within their recorded evidence bounds. The
 explicit waiver closed the 24-hour observation early; it is not a full-day
 observation. Phase 6 completed the bounded fact-stream cutover. Helm revision
 213 is deployed and Fleet is Ready=True at Deploy commit
-`de01650e19b88bc99a11ede1f25694202c8c8d17`. See the [Phase 5 evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase5-geodata-work-2026-10-10.md),
+`dfc423d26bd79a82b1177b9e5d51e2d1196580c9`. See the [Phase 5 evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase5-geodata-work-2026-10-10.md),
 [Phase 6 evidence](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/evidence/phase6-fact-stream-cutover-2026-10-11.md),
 and [migration plan](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/messaging/nats-event-migration-plan.md).
