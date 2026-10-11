@@ -22,9 +22,7 @@ from myota_logging import configure_logging, log_event, messaging_span
 
 LOG = logging.getLogger("geodata.import.worker")
 MAX_DELIVERIES = int(os.environ.get("GEODATA_WORKER_MAX_DELIVERIES", "100"))
-ACK_WAIT_SECONDS = int(
-    os.environ.get("GEODATA_WORKER_ACK_WAIT_SECONDS", "120")
-)
+ACK_WAIT_SECONDS = int(os.environ.get("GEODATA_WORKER_ACK_WAIT_SECONDS", "120"))
 MAX_ACK_PENDING = int(os.environ.get("GEODATA_WORKER_MAX_ACK_PENDING", "1"))
 
 
@@ -62,9 +60,7 @@ def _record_processed(consumer: str, event: dict[str, Any]) -> None:
         )
 
 
-async def _with_ack_heartbeat(
-    message: Any, operation: Awaitable[None]
-) -> None:
+async def _with_ack_heartbeat(message: Any, operation: Awaitable[None]) -> None:
     async def heartbeat() -> None:
         while True:
             await asyncio.sleep(max(15, ACK_WAIT_SECONDS // 3))
@@ -111,15 +107,45 @@ async def _consume(
                 correlation_id = event.get("correlationId") or (
                     getattr(message, "headers", None) or {}
                 ).get("Myota-Correlation-Id")
-                log_event(LOG, logging.INFO, "job.received", component="geodata-import-processing", job_type=event_type, job_id=event_id, event_id=event_id, correlation_id=correlation_id, attempt=message.metadata.num_delivered)
+                log_event(
+                    LOG,
+                    logging.INFO,
+                    "job.received",
+                    component="geodata-import-processing",
+                    job_type=event_type,
+                    job_id=event_id,
+                    event_id=event_id,
+                    correlation_id=correlation_id,
+                    attempt=message.metadata.num_delivered,
+                )
                 if _already_processed(consumer, event_id):
                     await message.ack()
                     continue
-                log_event(LOG, logging.INFO, "job.started", component="geodata-import-processing", job_type=event_type, job_id=event_id, event_id=event_id, correlation_id=correlation_id, attempt=message.metadata.num_delivered)
+                log_event(
+                    LOG,
+                    logging.INFO,
+                    "job.started",
+                    component="geodata-import-processing",
+                    job_type=event_type,
+                    job_id=event_id,
+                    event_id=event_id,
+                    correlation_id=correlation_id,
+                    attempt=message.metadata.num_delivered,
+                )
                 with messaging_span("myota-geodata", message):
                     await _with_ack_heartbeat(message, handler(event))
                 _record_processed(consumer, event)
-                log_event(LOG, logging.INFO, "job.completed", component="geodata-import-processing", job_type=event_type, job_id=event_id, event_id=event_id, correlation_id=correlation_id, attempt=message.metadata.num_delivered)
+                log_event(
+                    LOG,
+                    logging.INFO,
+                    "job.completed",
+                    component="geodata-import-processing",
+                    job_type=event_type,
+                    job_id=event_id,
+                    event_id=event_id,
+                    correlation_id=correlation_id,
+                    attempt=message.metadata.num_delivered,
+                )
                 await message.ack()
             except Exception as error:
                 metadata = message.metadata
@@ -135,9 +161,7 @@ async def _consume(
                         aggregate = {}
                     aggregate_id = aggregate.get("id")
                     with psycopg.connect(GeoHandler.store.dsn) as connection:
-                        connection.execute(
-                            "SET LOCAL myota.geodata_writer = 'row-v1'"
-                        )
+                        connection.execute("SET LOCAL myota.geodata_writer = 'row-v1'")
                         connection.execute(
                             "INSERT INTO dead_letter_event(event_id,event_type,payload,attempts,error) "
                             "VALUES (%s,%s,%s::jsonb,%s,%s) ON CONFLICT DO NOTHING",
@@ -149,10 +173,7 @@ async def _consume(
                                 str(error),
                             ),
                         )
-                        if (
-                            aggregate_id
-                            and aggregate.get("type") == "import_run"
-                        ):
+                        if aggregate_id and aggregate.get("type") == "import_run":
                             connection.execute(
                                 "UPDATE import_run SET status='FAILED', last_error=%s, "
                                 "completed_at=now(), heartbeat_at=NULL, lease_until=NULL "
@@ -161,8 +182,7 @@ async def _consume(
                             )
                         elif (
                             aggregate_id
-                            and aggregate.get("type")
-                            == "import_processing_queue"
+                            and aggregate.get("type") == "import_processing_queue"
                         ):
                             connection.execute(
                                 "UPDATE geodata_import_processing_queue SET status='FAILED', error=%s, "
@@ -170,11 +190,33 @@ async def _consume(
                                 "WHERE id=%s AND status IN ('QUEUED','PROCESSING')",
                                 (str(error), aggregate_id),
                             )
-                    log_event(LOG, logging.ERROR, "job.failed", component="geodata-import-processing", job_type=event_type, job_id=event_id, event_id=event_id, attempt=metadata.num_delivered, error_type=type(error).__name__, outcome="dead_lettered")
+                    log_event(
+                        LOG,
+                        logging.ERROR,
+                        "job.failed",
+                        component="geodata-import-processing",
+                        job_type=event_type,
+                        job_id=event_id,
+                        event_id=event_id,
+                        attempt=metadata.num_delivered,
+                        error_type=type(error).__name__,
+                        outcome="dead_lettered",
+                    )
                     await message.term()
                 else:
                     retry_delay = min(5 * metadata.num_delivered, 60)
-                    log_event(LOG, logging.WARNING, "job.retry", component="geodata-import-processing", job_type=event_type, job_id=event_id, event_id=event_id, attempt=metadata.num_delivered, retry_delay_seconds=retry_delay, error_type=type(error).__name__)
+                    log_event(
+                        LOG,
+                        logging.WARNING,
+                        "job.retry",
+                        component="geodata-import-processing",
+                        job_type=event_type,
+                        job_id=event_id,
+                        event_id=event_id,
+                        attempt=metadata.num_delivered,
+                        retry_delay_seconds=retry_delay,
+                        error_type=type(error).__name__,
+                    )
                     await message.nak(delay=retry_delay)
     await subscription.unsubscribe()
 
@@ -211,9 +253,7 @@ async def run() -> None:
                 GeoHandler._recover_import_run, str(run_id)
             )
             if not processed:
-                raise RuntimeError(
-                    "import lease is active; defer this delivery"
-                )
+                raise RuntimeError("import lease is active; defer this delivery")
 
     async def promote(event: dict[str, Any]) -> None:
         queue_id = event.get("aggregate", {}).get("id") or (
@@ -227,9 +267,7 @@ async def run() -> None:
                 GeoHandler._process_import_queue, str(queue_id)
             )
             if not processed:
-                raise RuntimeError(
-                    "promotion lease is active; defer this delivery"
-                )
+                raise RuntimeError("promotion lease is active; defer this delivery")
 
     async def delete_entity(event: dict[str, Any]) -> None:
         job_id = event.get("aggregate", {}).get("id")
