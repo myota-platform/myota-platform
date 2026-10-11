@@ -23,7 +23,9 @@ class GrafanaGatewayAuthTests(unittest.TestCase):
             "scopes": [],
         }
         with patch("services.dev_server.urllib.request.urlopen") as urlopen:
-            urlopen.return_value.__enter__.return_value.read.return_value = json.dumps(account).encode()
+            urlopen.return_value.__enter__.return_value.read.return_value = (
+                json.dumps(account).encode()
+            )
             status, body, headers = grafana_auth_response("Bearer live-token")
         self.assertEqual(status, 200)
         self.assertEqual(headers["X-MyOTA-Grafana-User"], "myota:account-1")
@@ -31,11 +33,21 @@ class GrafanaGatewayAuthTests(unittest.TestCase):
         self.assertEqual(headers["Cache-Control"], "no-store")
         self.assertEqual(body, b"{}")
 
-    def test_observability_scope_maps_to_viewer_and_retired_scope_is_denied(self):
-        for scopes, expected in ((["observability.view"], (200, "Viewer")), (["operations.read"], (403, None))):
+    def test_observability_scope_maps_to_viewer_and_retired_scope_is_denied(
+        self,
+    ):
+        for scopes, expected in (
+            (["observability.view"], (200, "Viewer")),
+            (["operations.read"], (403, None)),
+        ):
             account = {"id": "account-2", "roles": [], "scopes": scopes}
-            with self.subTest(scopes=scopes), patch("services.dev_server.urllib.request.urlopen") as urlopen:
-                urlopen.return_value.__enter__.return_value.read.return_value = json.dumps(account).encode()
+            with (
+                self.subTest(scopes=scopes),
+                patch("services.dev_server.urllib.request.urlopen") as urlopen,
+            ):
+                urlopen.return_value.__enter__.return_value.read.return_value = json.dumps(
+                    account
+                ).encode()
                 status, _, headers = grafana_auth_response("Bearer live-token")
             self.assertEqual(status, expected[0])
             if expected[1]:

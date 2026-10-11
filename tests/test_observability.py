@@ -267,9 +267,7 @@ class ObservabilityConfigurationTests(unittest.TestCase):
             for panel in dashboard["panels"]
             for target in panel.get("targets", [])
         ]
-        self.assertTrue(
-            any("postgresql_backends" in e for e in expressions)
-        )
+        self.assertTrue(any("postgresql_backends" in e for e in expressions))
         self.assertTrue(
             any("postgresql_connection_max" in e for e in expressions)
         )
@@ -306,10 +304,14 @@ class ObservabilityConfigurationTests(unittest.TestCase):
         self.assertNotIn("myota-operations", chart_deployment)
         self.assertNotIn("operations:8005", collector)
         self.assertTrue(
-            (ROOT / "db/migrations/core/005_retire_jetstream_snapshots.sql").is_file()
+            (
+                ROOT / "db/migrations/core/005_retire_jetstream_snapshots.sql"
+            ).is_file()
         )
         self.assertTrue(
-            (ROOT / "db/migrations/core/006_retire_storage_snapshots.sql").is_file()
+            (
+                ROOT / "db/migrations/core/006_retire_storage_snapshots.sql"
+            ).is_file()
         )
 
 

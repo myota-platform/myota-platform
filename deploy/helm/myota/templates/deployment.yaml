@@ -67,11 +67,6 @@ spec:
               value: "1"
             - name: MYOTA_ENV
               value: {{ $.Values.auth.environment | quote }}
-            {{- range $database, $host := dict "CORE" "myota-core-postgres" "ACTIVITY" "myota-activity-postgres" "GEO" "myota-geo-postgis" }}
-            - name: OPERATIONS_PG_{{ $database }}_HOST
-              value: {{ $host | quote }}
-            {{- end }}
-            {{- end }}
             {{- if eq $name "geodata" }}
             - name: MYOTA_ACTIVITY_URL
               value: {{ $.Values.services.activity.internalUrl | quote }}
