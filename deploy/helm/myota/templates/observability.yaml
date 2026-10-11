@@ -46,6 +46,8 @@ data:
 {{ .Files.Get "observability/grafana/dashboards/myota-geodata-capacity.json" | indent 4 }}
   myota-object-storage.json: |
 {{ .Files.Get "observability/grafana/dashboards/myota-object-storage.json" | indent 4 }}
+  myota-logs-failures.json: |
+{{ .Files.Get "observability/grafana/dashboards/myota-logs-failures.json" | indent 4 }}
   alert-rules.yml: |
 {{ .Files.Get "observability/grafana/provisioning/alerting/alert-rules.yml" | indent 4 }}
   contact-points.yml: |
@@ -352,6 +354,7 @@ spec:
             - {name: config, mountPath: /etc/grafana/dashboards/myota-api-performance.json, subPath: myota-api-performance.json}
             - {name: config, mountPath: /etc/grafana/dashboards/myota-geodata-capacity.json, subPath: myota-geodata-capacity.json}
             - {name: config, mountPath: /etc/grafana/dashboards/myota-object-storage.json, subPath: myota-object-storage.json}
+            - {name: config, mountPath: /etc/grafana/dashboards/myota-logs-failures.json, subPath: myota-logs-failures.json}
             - {name: nats-dashboards, mountPath: /etc/grafana/dashboards-nats}
             - {name: data, mountPath: /var/lib/grafana}
       volumes:
