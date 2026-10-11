@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/myota-platform/myota-contracts/contracts/schemas/events/geodata-entity-metadata-updated-v1.schema.json",
+  "title": "geodata.entity.metadata-updated.v1 envelope v1",
+  "allOf": [
+    {
+      "$ref": "../event-envelope.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventType": {
+          "const": "geodata.entity.metadata-updated.v1"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "entityId": {
+              "type": "string"
+            },
+            "editorId": {
+              "type": "string"
+            },
+            "changes": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "previous": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "value": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "previous",
+                  "value"
+                ],
+                "additionalProperties": false
+              },
+              "minProperties": 1
+            },
+            "note": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "entityId",
+            "editorId",
+            "changes",
+            "note"
+          ],
+          "additionalProperties": true
+        }
+      }
+    }
+  ],
+  "x-payload-evidence": "source-derived-geodata-callsite",
+  "x-data-classification": "geospatial-and-review-metadata"
+}

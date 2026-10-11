@@ -197,6 +197,14 @@
       ],
       "dataClassification": "geospatial-and-review-metadata"
     },
+    "geodata.entity.metadata-updated.v1": {
+      "subject": "myota.events.geodata.entity.metadata-updated.v1",
+      "owner": "geodata-service",
+      "producers": [
+        "geodata"
+      ],
+      "dataClassification": "geospatial-and-review-metadata"
+    },
     "geodata.entity.name-changed.v1": {
       "subject": "myota.events.geodata.entity.name-changed.v1",
       "owner": "geodata-service",

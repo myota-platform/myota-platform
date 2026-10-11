@@ -1507,6 +1507,70 @@
       }
     },
     {
+      "eventType": "geodata.entity.metadata-updated.v1",
+      "owner": "geodata-service",
+      "class": "domain-fact",
+      "subject": "myota.events.geodata.entity.metadata-updated.v1",
+      "schema": "schemas/events/geodata-entity-metadata-updated-v1.schema.json",
+      "consumerGroups": [],
+      "disposition": "no current subscriber; retain as a domain fact without provisioning a no-op durable",
+      "payloadEvidence": "source-derived-geodata-callsite",
+      "producerSources": [
+        "myota-geodata-service/geodata.py"
+      ],
+      "dataClassification": "geospatial-and-review-metadata",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "entityId": {
+            "type": "string"
+          },
+          "editorId": {
+            "type": "string"
+          },
+          "changes": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "previous": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "previous",
+                "value"
+              ],
+              "additionalProperties": false
+            },
+            "minProperties": 1
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "entityId",
+          "editorId",
+          "changes",
+          "note"
+        ],
+        "additionalProperties": true
+      }
+    },
+    {
       "eventType": "geodata.entity.name-changed.v1",
       "owner": "geodata-service",
       "class": "domain-fact",
