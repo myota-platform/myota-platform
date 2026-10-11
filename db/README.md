@@ -12,7 +12,10 @@ persistent StatefulSets or use externally managed database endpoints. Only
 independent for each database target. Cross-service references use opaque IDs
 and events, never foreign keys across databases.
 
-Core `002_operations.sql` mirrors the operations service's `001_operations.sql`.
+Core `002_operations.sql` mirrors the operations service's `001_operations.sql`;
+Core `003_storage_snapshots.sql` mirrors its `002_storage_snapshots.sql`; Core
+`005_retire_jetstream_snapshots.sql` mirrors Operations `003_retire_jetstream_snapshots.sql`
+and drops only the obsolete NATS history table after the verified backup gate.
 Geo `019_maidenhead_locators.sql` is the current migration head. It mirrors
 the geodata service migration and adds automatically calculated Maidenhead
 coverage arrays. All shared geo migrations mirror the geodata service-owned
