@@ -234,13 +234,23 @@ services:
       MYOTA_AUTH_SIGNING_KEY: myota-local-development-signing-key
       OPERATIONS_POLL_SECONDS: "30"
       OPERATIONS_HISTORY_DAYS: "7"
+      OPERATIONS_PG_POLL_SECONDS: "30"
+      OPERATIONS_PG_CORE_HOST: core-db
+      OPERATIONS_PG_ACTIVITY_HOST: activity-db
+      OPERATIONS_PG_GEO_HOST: geo-db
+      MYOTA_PG_CORE_MONITOR_PASSWORD: ${MYOTA_PG_CORE_MONITOR_PASSWORD:-myota-dev-monitor-core}
+      MYOTA_PG_ACTIVITY_MONITOR_PASSWORD: ${MYOTA_PG_ACTIVITY_MONITOR_PASSWORD:-myota-dev-monitor-activity}
+      MYOTA_PG_GEO_MONITOR_PASSWORD: ${MYOTA_PG_GEO_MONITOR_PASSWORD:-myota-dev-monitor-geo}
       MYOTA_IDENTITY_URL: http://identity:8001
       OPERATIONS_STORAGE_HEALTH_URL: http://seaweedfs:8333/status
       OPERATIONS_STORAGE_METRICS_URL: http://seaweedfs:9324/metrics
       MYOTA_OTEL_ENABLED: "1"
       OTEL_SERVICE_NAME: myota-operations
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
-    depends_on: {migrations: {condition: service_completed_successfully}, seaweedfs: {condition: service_healthy}}
+    depends_on:
+      migrations: {condition: service_completed_successfully}
+      seaweedfs: {condition: service_healthy}
+      postgres-monitor-role-init: {condition: service_completed_successfully}
   gateway:
     build: .
     restart: unless-stopped

@@ -31,17 +31,17 @@
       },
       "targets": [
         {
-          "expr": "postgresql_backends{postgresql_database_name=\"myota_core\"}",
+          "expr": "myota_postgresql_connections{database=\"core\"}",
           "legendFormat": "myota_core",
           "refId": "A"
         },
         {
-          "expr": "postgresql_backends{postgresql_database_name=\"myota_activity\"}",
+          "expr": "myota_postgresql_connections{database=\"activity\"}",
           "legendFormat": "myota_activity",
           "refId": "B"
         },
         {
-          "expr": "postgresql_backends{postgresql_database_name=\"myota_geo\"}",
+          "expr": "myota_postgresql_connections{database=\"geo\"}",
           "legendFormat": "myota_geo",
           "refId": "C"
         }
@@ -70,17 +70,17 @@
       },
       "targets": [
         {
-          "expr": "postgresql_db_size{postgresql_database_name=\"myota_core\"}",
+          "expr": "myota_postgresql_database_size_bytes{database=\"core\"}",
           "legendFormat": "myota_core",
           "refId": "A"
         },
         {
-          "expr": "postgresql_db_size{postgresql_database_name=\"myota_activity\"}",
+          "expr": "myota_postgresql_database_size_bytes{database=\"activity\"}",
           "legendFormat": "myota_activity",
           "refId": "B"
         },
         {
-          "expr": "postgresql_db_size{postgresql_database_name=\"myota_geo\"}",
+          "expr": "myota_postgresql_database_size_bytes{database=\"geo\"}",
           "legendFormat": "myota_geo",
           "refId": "C"
         }
@@ -108,17 +108,17 @@
       },
       "targets": [
         {
-          "expr": "rate(postgresql_commits_total{postgresql_database_name=\"myota_core\"}[5m])",
+          "expr": "rate(myota_postgresql_commits_total{database=\"core\"}[5m])",
           "legendFormat": "myota_core",
           "refId": "A"
         },
         {
-          "expr": "rate(postgresql_commits_total{postgresql_database_name=\"myota_activity\"}[5m])",
+          "expr": "rate(myota_postgresql_commits_total{database=\"activity\"}[5m])",
           "legendFormat": "myota_activity",
           "refId": "B"
         },
         {
-          "expr": "rate(postgresql_commits_total{postgresql_database_name=\"myota_geo\"}[5m])",
+          "expr": "rate(myota_postgresql_commits_total{database=\"geo\"}[5m])",
           "legendFormat": "myota_geo",
           "refId": "C"
         }
@@ -146,17 +146,17 @@
       },
       "targets": [
         {
-          "expr": "rate(postgresql_rollbacks_total{postgresql_database_name=\"myota_core\"}[5m])",
+          "expr": "rate(myota_postgresql_rollbacks_total{database=\"core\"}[5m])",
           "legendFormat": "myota_core",
           "refId": "A"
         },
         {
-          "expr": "rate(postgresql_rollbacks_total{postgresql_database_name=\"myota_activity\"}[5m])",
+          "expr": "rate(myota_postgresql_rollbacks_total{database=\"activity\"}[5m])",
           "legendFormat": "myota_activity",
           "refId": "B"
         },
         {
-          "expr": "rate(postgresql_rollbacks_total{postgresql_database_name=\"myota_geo\"}[5m])",
+          "expr": "rate(myota_postgresql_rollbacks_total{database=\"geo\"}[5m])",
           "legendFormat": "myota_geo",
           "refId": "C"
         }
@@ -184,17 +184,17 @@
       },
       "targets": [
         {
-          "expr": "rate(postgresql_deadlocks_total{postgresql_database_name=\"myota_core\"}[5m])",
+          "expr": "rate(myota_postgresql_deadlocks_total{database=\"core\"}[5m])",
           "legendFormat": "myota_core",
           "refId": "A"
         },
         {
-          "expr": "rate(postgresql_deadlocks_total{postgresql_database_name=\"myota_activity\"}[5m])",
+          "expr": "rate(myota_postgresql_deadlocks_total{database=\"activity\"}[5m])",
           "legendFormat": "myota_activity",
           "refId": "B"
         },
         {
-          "expr": "rate(postgresql_deadlocks_total{postgresql_database_name=\"myota_geo\"}[5m])",
+          "expr": "rate(myota_postgresql_deadlocks_total{database=\"geo\"}[5m])",
           "legendFormat": "myota_geo",
           "refId": "C"
         }
@@ -204,7 +204,7 @@
       "id": 6,
       "type": "timeseries",
       "title": "PostGIS query latency p95",
-      "description": "Existing bounded application histogram; query remains a bounded operation label.",
+      "description": "Existing Geodata application histogram, labeled only by its bounded operation name.",
       "gridPos": {
         "h": 8,
         "w": 12,
@@ -228,6 +228,74 @@
           "refId": "A"
         }
       ]
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "PostGIS extension",
+      "description": "Extension presence sampled from pg_extension; version is a bounded label.",
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "text": "Missing"
+                },
+                "1": {
+                  "text": "Available"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "myota_postgis_extension_present{database=\"geo\"}",
+          "legendFormat": "PostGIS {{version}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      }
     }
   ],
   "refresh": "30s",

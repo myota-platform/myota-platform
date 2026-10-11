@@ -78,6 +78,19 @@ spec:
               value: {{ $cfg.pollSeconds | default 30 | quote }}
             - name: OPERATIONS_HISTORY_DAYS
               value: {{ $cfg.historyDays | default 7 | quote }}
+            - name: OPERATIONS_PG_POLL_SECONDS
+              value: "30"
+            {{- range $database, $secret := dict "CORE" "myota-postgres-monitor-core" "ACTIVITY" "myota-postgres-monitor-activity" "GEO" "myota-postgres-monitor-geo" }}
+            - name: MYOTA_PG_{{ $database }}_MONITOR_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secret }}
+                  key: password
+            {{- end }}
+            {{- range $database, $host := dict "CORE" "myota-core-postgres" "ACTIVITY" "myota-activity-postgres" "GEO" "myota-geo-postgis" }}
+            - name: OPERATIONS_PG_{{ $database }}_HOST
+              value: {{ $host | quote }}
+            {{- end }}
             {{- end }}
             {{- if eq $name "geodata" }}
             - name: MYOTA_ACTIVITY_URL
