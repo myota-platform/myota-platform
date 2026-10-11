@@ -77,28 +77,46 @@ def route_template(method: str, path: str) -> str:
     return "/unmatched"
 
 
-def grafana_auth_response(authorization: str) -> tuple[int, bytes, dict[str, str]]:
+def grafana_auth_response(
+    authorization: str,
+) -> tuple[int, bytes, dict[str, str]]:
     """Resolve Grafana identity from live Identity roles; never trust client headers."""
     no_store = {"Cache-Control": "no-store"}
-    if not authorization.startswith("Bearer ") or not authorization[7:].strip():
+    if (
+        not authorization.startswith("Bearer ")
+        or not authorization[7:].strip()
+    ):
         return 401, b'{"error":"authentication_required"}', no_store
     identity_url = os.environ.get("MYOTA_IDENTITY_URL", "http://identity:8001")
-    request = urllib.request.Request(identity_url.rstrip("/") + "/v1/identity/me",
-        headers={"Authorization": authorization})
+    request = urllib.request.Request(
+        identity_url.rstrip("/") + "/v1/identity/me",
+        headers={"Authorization": authorization},
+    )
     try:
         with urllib.request.urlopen(request, timeout=5) as response:
             account = json.loads(response.read())
     except urllib.error.HTTPError as exc:
-        return (401 if exc.code in (400, 401, 403) else 503), b'{"error":"identity_unavailable"}', no_store
+        return (
+            (401 if exc.code in (400, 401, 403) else 503),
+            b'{"error":"identity_unavailable"}',
+            no_store,
+        )
     except (urllib.error.URLError, TimeoutError, ValueError, OSError):
         return 503, b'{"error":"identity_unavailable"}', no_store
     account_id = account.get("id")
     if not isinstance(account_id, str) or not account_id:
         return 401, b'{"error":"authentication_required"}', no_store
-    roles = {role.get("role") if isinstance(role, dict) else role for role in account.get("roles") or []}
+    roles = {
+        role.get("role") if isinstance(role, dict) else role
+        for role in account.get("roles") or []
+    }
     scopes = set(account.get("scopes") or [])
-    global_operator = bool(roles.intersection({"GLOBAL_OPERATOR", "GLOBAL_ADMIN"}))
-    if not global_operator and not scopes.intersection({"*", "observability.view"}):
+    global_operator = bool(
+        roles.intersection({"GLOBAL_OPERATOR", "GLOBAL_ADMIN"})
+    )
+    if not global_operator and not scopes.intersection(
+        {"*", "observability.view"}
+    ):
         return 403, b'{"error":"forbidden"}', no_store
     values = {
         "X-MyOTA-Grafana-User": "myota:" + account_id,
