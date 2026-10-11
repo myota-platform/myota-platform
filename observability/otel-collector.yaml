@@ -20,6 +20,10 @@ receivers:
           scrape_interval: 15s
           static_configs:
             - targets: [seaweedfs:9324]
+        - job_name: loki
+          scrape_interval: 15s
+          static_configs:
+            - targets: [loki:3100]
 processors:
   memory_limiter:
     check_interval: 1s

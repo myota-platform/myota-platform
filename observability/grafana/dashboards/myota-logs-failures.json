@@ -285,6 +285,64 @@
         "sortOrder": "Descending",
         "wrapLogMessage": true
       }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Loki ingestion rate",
+      "description": "Bytes accepted by Loki by OTLP format. Use the 14-day period to project archive growth.",
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 38
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum by (format) (rate(loki_distributor_bytes_received_total[5m]))",
+          "legendFormat": "{{format}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Loki archive bucket size",
+      "description": "Logical bytes in the dedicated SeaweedFS myota-loki bucket.",
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 38
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "myota-prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "SeaweedFS_s3_bucket_size_bytes{bucket=\"myota-loki\"}",
+          "legendFormat": "myota-loki",
+          "refId": "A"
+        }
+      ]
     }
   ],
   "refresh": "30s",
@@ -373,6 +431,6 @@
   "timezone": "browser",
   "title": "MyOTA Logs / Failures",
   "uid": "myota-logs-failures",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }

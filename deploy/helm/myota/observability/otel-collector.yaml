@@ -18,6 +18,10 @@ receivers:
           scrape_interval: 15s
           static_configs:
             - targets: [myota-seaweedfs:{{ .Values.seaweedfs.metricsPort }}]
+        - job_name: loki
+          scrape_interval: 15s
+          static_configs:
+            - targets: [myota-loki:3100]
 processors:
   memory_limiter: {check_interval: 1s, limit_mib: 256, spike_limit_mib: 64}
   transform/drop_db_query_text:
