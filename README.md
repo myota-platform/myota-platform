@@ -30,9 +30,9 @@ NATS migration Phases 0–6 are complete within their recorded evidence
 bounds. Phase 6 converted `MYOTA_EVENTS` to bounded Limits retention with only
 registered fact subjects. Activity and Geodata work remain on separate
 WorkQueue streams. The one-time migration flag is disabled while topology
-drift validation remains enabled. Helm revision 211 is deployed; MyOTA Fleet
+drift validation remains enabled. Helm revision 213 is deployed; MyOTA Fleet
 is Ready=True at Deploy main commit
-`16af2edf6b8e868904f9284e481d971ae7d6d38c`, and all MyOTA Deployments have
+`de01650e19b88bc99a11ede1f25694202c8c8d17`, and all MyOTA Deployments have
 their desired replicas ready. The four legacy Geodata durables were retired
 after Phase 5 checks; its 24-hour observation was explicitly waived and closed
 early, not represented as a full-day observation. Migration 021, owner rows,
