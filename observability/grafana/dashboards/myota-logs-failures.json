@@ -1,0 +1,378 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Log events per minute",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "myota-loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate({service_namespace=\"myota\"} | json | service_name=~\"${service:regex}\" | deployment_environment=~\"${environment:regex}\" | severity=~\"${severity:regex}\" | component=~\"${component:regex}\" | correlation_id=~\"${correlation_id:regex}\"[1m]))",
+          "queryType": "range",
+          "datasource": {
+            "type": "loki",
+            "uid": "myota-loki"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "logs"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Warnings and errors per minute",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "myota-loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (severity) (rate({service_namespace=\"myota\"} | json | severity=~\"WARN|ERROR\" | service_name=~\"${service:regex}\" | deployment_environment=~\"${environment:regex}\" | component=~\"${component:regex}\"[5m]))",
+          "queryType": "range",
+          "datasource": {
+            "type": "loki",
+            "uid": "myota-loki"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "logs"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Errors by service and component",
+      "type": "bargauge",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "myota-loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (service_name, component) (count_over_time({service_namespace=\"myota\"} | json | severity=\"ERROR\" | service_name=~\"${service:regex}\" | deployment_environment=~\"${environment:regex}\" | component=~\"${component:regex}\"[5m]))",
+          "queryType": "range",
+          "datasource": {
+            "type": "loki",
+            "uid": "myota-loki"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true
+      }
+    },
+    {
+      "id": 4,
+      "title": "Recent warnings and failures",
+      "type": "logs",
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 10
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "myota-loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{service_namespace=\"myota\"} | json | service_name=~\"${service:regex}\" | deployment_environment=~\"${environment:regex}\" | severity=~\"${severity:regex}\" | component=~\"${component:regex}\" | correlation_id=~\"${correlation_id:regex}\" | severity=~\"WARN|ERROR\"",
+          "queryType": "range",
+          "datasource": {
+            "type": "loki",
+            "uid": "myota-loki"
+          }
+        }
+      ],
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      }
+    },
+    {
+      "id": 5,
+      "title": "Worker retries and failures",
+      "type": "logs",
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 12,
+        "h": 10
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "myota-loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{service_namespace=\"myota\"} | json | service_name=~\"${service:regex}\" | deployment_environment=~\"${environment:regex}\" | severity=~\"${severity:regex}\" | component=~\"${component:regex}\" | correlation_id=~\"${correlation_id:regex}\" | event=~\"job.retry|job.failed\"",
+          "queryType": "range",
+          "datasource": {
+            "type": "loki",
+            "uid": "myota-loki"
+          }
+        }
+      ],
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      }
+    },
+    {
+      "id": 6,
+      "title": "HTTP 5xx completion events",
+      "type": "logs",
+      "gridPos": {
+        "x": 12,
+        "y": 18,
+        "w": 12,
+        "h": 10
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "myota-loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{service_namespace=\"myota\"} | json | service_name=~\"${service:regex}\" | deployment_environment=~\"${environment:regex}\" | severity=~\"${severity:regex}\" | component=~\"${component:regex}\" | correlation_id=~\"${correlation_id:regex}\" | event=\"http.request.completed\" | severity=\"ERROR\"",
+          "queryType": "range",
+          "datasource": {
+            "type": "loki",
+            "uid": "myota-loki"
+          }
+        }
+      ],
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      }
+    },
+    {
+      "id": 7,
+      "title": "Business workflow by correlation ID",
+      "type": "logs",
+      "gridPos": {
+        "x": 0,
+        "y": 28,
+        "w": 24,
+        "h": 10
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "myota-loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{service_namespace=\"myota\"} | json | correlation_id=~\"${correlation_id:regex}\"",
+          "queryType": "range",
+          "datasource": {
+            "type": "loki",
+            "uid": "myota-loki"
+          }
+        }
+      ],
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      }
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": [
+    "myota",
+    "logs",
+    "observability"
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "environment",
+        "type": "textbox",
+        "label": "Environment regex",
+        "query": ".*",
+        "current": {
+          "selected": true,
+          "text": ".*",
+          "value": ".*"
+        },
+        "hide": 0
+      },
+      {
+        "name": "service",
+        "type": "textbox",
+        "label": "Service regex",
+        "query": ".*",
+        "current": {
+          "selected": true,
+          "text": ".*",
+          "value": ".*"
+        },
+        "hide": 0
+      },
+      {
+        "name": "severity",
+        "type": "textbox",
+        "label": "Severity regex",
+        "query": ".*",
+        "current": {
+          "selected": true,
+          "text": ".*",
+          "value": ".*"
+        },
+        "hide": 0
+      },
+      {
+        "name": "component",
+        "type": "textbox",
+        "label": "Component regex",
+        "query": ".*",
+        "current": {
+          "selected": true,
+          "text": ".*",
+          "value": ".*"
+        },
+        "hide": 0
+      },
+      {
+        "name": "correlation_id",
+        "type": "textbox",
+        "label": "Correlation ID",
+        "query": ".*",
+        "current": {
+          "selected": true,
+          "text": ".*",
+          "value": ".*"
+        },
+        "hide": 0
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "30s",
+      "1m",
+      "5m",
+      "15m"
+    ]
+  },
+  "timezone": "browser",
+  "title": "MyOTA Logs / Failures",
+  "uid": "myota-logs-failures",
+  "version": 1,
+  "weekStart": ""
+}
