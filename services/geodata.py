@@ -4658,6 +4658,7 @@ class GeoHandler(JsonHandler):
             headers["Authorization"] = p["Authorization"]
         if p.get("Idempotency-Key"):
             headers["Idempotency-Key"] = p["Idempotency-Key"]
+        inject_trace_context(headers)
         data = None
         if payload is not None:
             headers["Content-Type"] = "application/json"
