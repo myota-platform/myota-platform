@@ -5,12 +5,16 @@ import sys
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "services"))
 
 from jetstream_topology import desired_topology, topology_from_environment
-from provision_jetstream import consumer_config, validate_consumer
+from provision_jetstream import (
+    consumer_config,
+    migrate_shared_event_stream,
+    validate_consumer,
+)
 
 
 CAPACITY = {
@@ -171,6 +175,40 @@ class JetStreamTopologyTests(unittest.TestCase):
             validate_consumer(
                 SimpleNamespace(config=drifted), desired, consumer.stream
             )
+
+
+class EventStreamMigrationTests(unittest.IsolatedAsyncioTestCase):
+    async def test_migration_is_disabled_without_explicit_gate(self):
+        js = SimpleNamespace(stream_info=AsyncMock())
+        stream = None
+        with patch.dict(os.environ, {}, clear=True):
+            await migrate_shared_event_stream(js, stream, ())
+        js.stream_info.assert_not_awaited()
+
+    async def test_migration_refuses_nonempty_legacy_stream(self):
+        with patch.dict(os.environ, {**CAPACITY, "NATS_EVENTS_RETENTION_MIGRATION": "1", "NATS_TOPOLOGY_SCOPE": "all"}, clear=True):
+            streams, consumers = desired_topology()
+        target = streams[0]
+        js = SimpleNamespace(
+            stream_info=AsyncMock(return_value=SimpleNamespace(
+                config=SimpleNamespace(
+                    subjects=["myota.events.>", "myota.geodata.>"],
+                    retention="interest", storage="file", num_replicas=1,
+                    max_bytes=-1, max_msgs=-1, max_msg_size=-1,
+                    discard="old", max_age=target.max_age_seconds,
+                ),
+                state=SimpleNamespace(messages=1, bytes=100, consumer_count=1),
+            )),
+            update_stream=AsyncMock(),
+        )
+        with patch.dict(os.environ, {
+            **CAPACITY,
+            "NATS_EVENTS_RETENTION_MIGRATION": "1",
+            "NATS_TOPOLOGY_SCOPE": "all",
+        }, clear=True):
+            with self.assertRaisesRegex(RuntimeError, "zero messages"):
+                await migrate_shared_event_stream(js, target, consumers)
+        js.update_stream.assert_not_awaited()
 
 
 if __name__ == "__main__":
