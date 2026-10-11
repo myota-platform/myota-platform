@@ -209,6 +209,45 @@ class IdentityHandler(JsonHandler):
     service = "identity-service"
     store = Store("identity", "CORE_DATABASE_URL")
 
+    @classmethod
+    def metrics_extra(cls) -> dict[str, float]:
+        accounts = list(cls.store.items.values())
+        data = cls.store.data
+        credentials = data.get("credentials", {})
+        roles = data.get("roles", {})
+        security_events = data.get("securityEvents", {})
+        now_value = now()
+        metrics = {
+            f'myota_identity_users{{participation_type="{participation_type}"}}': float(
+                sum(
+                    account.get("participationType") == participation_type
+                    for account in accounts
+                )
+            )
+            for participation_type in ("OPERATOR", "SWL")
+        }
+        metrics.update(
+            {
+                "myota_identity_callsigns": float(
+                    sum(len(account.get("callsigns", [])) for account in accounts)
+                ),
+                "myota_identity_roles": float(
+                    sum(not role.get("validTo") for role in roles.values())
+                ),
+                "myota_identity_security_events": float(len(security_events)),
+                "myota_identity_locked_accounts": float(
+                    sum(
+                        bool(
+                            record.get("lockedUntil")
+                            and record["lockedUntil"] > now_value
+                        )
+                        for record in credentials.values()
+                    )
+                ),
+            }
+        )
+        return metrics
+
     @staticmethod
     def _bucket(name: str) -> dict[str, Any]:
         return IdentityHandler.store.data.setdefault(name, {})
