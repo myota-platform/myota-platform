@@ -216,6 +216,16 @@ spec:
           image: {{ include "myota.imageReference" (dict "repository" .Values.services.activity.imageRepository "tag" (default .Values.image.tag .Values.services.activity.imageTag) "digest" .Values.imageRollout.digests.activity) | quote }}
           command: ["python3", "activity_worker.py"]
           env:
+            - name: MYOTA_ENV
+              value: {{ .Values.auth.environment | quote }}
+            {{- if .Values.observability.enabled }}
+            - name: MYOTA_OTEL_ENABLED
+              value: "1"
+            - name: OTEL_SERVICE_NAME
+              value: myota-activity-worker
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://myota-otel-collector:4317
+            {{- end }}
             - name: ACTIVITY_DATABASE_URL
               valueFrom: {secretKeyRef: {name: {{ .Values.postgres.existingSecret }}, key: activity-database-url}}
             - name: MYOTA_REQUIRE_DURABILITY
@@ -266,6 +276,8 @@ spec:
           ports:
             - {name: metrics, containerPort: 9110}
           env:
+            - name: MYOTA_ENV
+              value: {{ .Values.auth.environment | quote }}
             - name: ACTIVITY_DATABASE_URL
               valueFrom: {secretKeyRef: {name: {{ .Values.postgres.existingSecret }}, key: activity-database-url}}
             - name: MYOTA_REQUIRE_DURABILITY
@@ -326,6 +338,16 @@ spec:
           image: {{ include "myota.imageReference" (dict "repository" .Values.services.geodata.imageRepository "tag" (default .Values.image.tag .Values.services.geodata.imageTag) "digest" .Values.imageRollout.digests.geodata) | quote }}
           command: ["python3", "geodata_import_worker.py"]
           env:
+            - name: MYOTA_ENV
+              value: {{ .Values.auth.environment | quote }}
+            {{- if .Values.observability.enabled }}
+            - name: MYOTA_OTEL_ENABLED
+              value: "1"
+            - name: OTEL_SERVICE_NAME
+              value: myota-geodata-import-processing
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://myota-otel-collector:4317
+            {{- end }}
             - name: MYOTA_ACTIVITY_URL
               value: {{ .Values.services.activity.internalUrl | quote }}
             - name: GEO_DATABASE_URL
@@ -433,6 +455,16 @@ spec:
           image: {{ include "myota.imageReference" (dict "repository" $.Values.image.repository "tag" $.Values.image.tag "digest" $.Values.imageRollout.digests.platform) | quote }}
           command: ["python3", "services/outbox_worker.py"]
           env:
+            - name: MYOTA_ENV
+              value: {{ $.Values.auth.environment | quote }}
+            {{- if $.Values.observability.enabled }}
+            - name: MYOTA_OTEL_ENABLED
+              value: "1"
+            - name: OTEL_SERVICE_NAME
+              value: myota-{{ $worker }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://myota-otel-collector:4317
+            {{- end }}
             - name: OUTBOX_DATABASE_URL
               valueFrom: {secretKeyRef: {name: {{ $.Values.postgres.existingSecret }}, key: {{ $db }}-database-url}}
             - name: MYOTA_REQUIRE_DURABILITY
