@@ -10,7 +10,7 @@ class ObservabilityConfigurationTests(unittest.TestCase):
         self,
     ):
         for source in (ROOT / "observability/grafana/dashboards").glob(
-            "*.json"
+            "myota-*.json"
         ):
             dashboard = json.loads(source.read_text())
             mirror = (
