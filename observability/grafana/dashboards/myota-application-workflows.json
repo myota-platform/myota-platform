@@ -26,6 +26,17 @@
       "tooltip": "JetStream stream and delivery detail",
       "type": "link",
       "url": "/observability/d/fLxkFSIVk"
+    },
+    {
+      "uid": "myota-logs-dashboard-link",
+      "title": "MyOTA Logs / Failures",
+      "type": "link",
+      "icon": "external link",
+      "url": "/d/myota-logs-failures/myota-logs-failures",
+      "targetBlank": false,
+      "keepTime": true,
+      "includeVars": false,
+      "asDropdown": false
     }
   ],
   "panels": [
