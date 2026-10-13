@@ -12,6 +12,13 @@ This repository owns Compose, Fleet/Helm, migration orchestration and
 observability provisioning. Domain implementations remain in their service
 repositories; `services/` contains synchronized integration copies.
 
+CI builds the integration runner image from this repository as
+`ghcr.io/myota-platform/myota-platform-ci`. A successful push to `testing`
+publishes both the mutable `testing` alias and an immutable `testing-<commit-sha>`
+tag. This is a test/bootstrap artifact only; Deploy owns the `myota-service`
+and Gateway images used by Compose and Helm, and this Platform image is not
+referenced by the deployed stack.
+
 The Activity notification consumer uses the registered exact-filter durable
 `activity-notifications-v1`. Helm pre-upgrade provisioning and post-upgrade
 legacy retirement are defined in the notification topology hooks. Its bounded
