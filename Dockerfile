@@ -1,4 +1,6 @@
 FROM python:3.12-slim
+LABEL org.opencontainers.image.source="https://github.com/myota-platform/myota-platform"
+
 WORKDIR /app
 RUN apt-get update \
     && apt-get install --no-install-recommends -y postgresql-client \
