@@ -10,7 +10,7 @@ class ObservabilityConfigurationTests(unittest.TestCase):
         self,
     ):
         for source in (ROOT / "observability/grafana/dashboards").glob(
-            "*.json"
+            "myota-*.json"
         ):
             dashboard = json.loads(source.read_text())
             mirror = (
@@ -24,7 +24,10 @@ class ObservabilityConfigurationTests(unittest.TestCase):
             )
             self.assertEqual(dashboard["refresh"], "30s")
             self.assertEqual(dashboard["timezone"], "utc")
-            self.assertTrue(dashboard["editable"])
+            if source.name == "myota-logs-failures.json":
+                self.assertFalse(dashboard["editable"])
+            else:
+                self.assertTrue(dashboard["editable"])
 
     def test_prometheus_uses_collector_boundary(self):
         config = (ROOT / "observability" / "prometheus.yml").read_text()
@@ -305,16 +308,15 @@ class ObservabilityConfigurationTests(unittest.TestCase):
         self.assertNotIn("myota-operations", chart_values)
         self.assertNotIn("myota-operations", chart_deployment)
         self.assertNotIn("operations:8005", collector)
-        self.assertTrue(
-            (
-                ROOT / "db/migrations/core/005_retire_jetstream_snapshots.sql"
-            ).is_file()
+        core_migrations = ROOT / "db/migrations/core"
+        self.assertEqual(
+            [path.name for path in core_migrations.glob("*.sql")],
+            ["001_core_baseline.sql"],
         )
-        self.assertTrue(
-            (
-                ROOT / "db/migrations/core/006_retire_storage_snapshots.sql"
-            ).is_file()
-        )
+        baseline = (core_migrations / "001_core_baseline.sql").read_text()
+        self.assertNotIn("operations_jetstream_snapshot", baseline)
+        self.assertNotIn("operations_storage_snapshot", baseline)
+        self.assertNotIn("operations_status_sample", baseline)
 
 
 if __name__ == "__main__":

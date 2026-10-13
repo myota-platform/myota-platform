@@ -1,34 +1,30 @@
-# Postgres/PostGIS storage layout
+# Database migrations and ownership
 
-The deployment uses three service-owned database targets:
+The deployment provisions three independent database targets. Identity and
+Programme share 'myota_core'; Activity owns 'myota_activity'; Geodata owns
+'myota_geo' with PostGIS. Cross-service relationships use opaque identifiers
+and events. The migration runner never copies application rows between these
+databases.
 
-- `myota_core` on plain PostgreSQL: identity, programme configuration, permissions, core audit/outbox data, and the operations service's Operations storage-status samples.
-- `myota_activity` on plain PostgreSQL: activations, QSOs, aggregates, awards, activity jobs, and notifications.
-- `myota_geo` on PostgreSQL with PostGIS: geodata entities, geometries, source snapshots, import runs, conflation candidates, review records, and relational entity-to-category assignments.
+The authoritative sources are:
 
-Local development uses three database containers; Helm can deploy three
-persistent StatefulSets or use externally managed database endpoints. Only
-`myota_geo` requires PostGIS. Keep backups, migrations, and capacity planning
-independent for each database target. Cross-service references use opaque IDs
-and events, never foreign keys across databases.
+- Core: 'myota-deploy/db/migrations/core/001_core_baseline.sql'.
+- Activity: 'myota-activity-service/migrations/001_activity_baseline.sql'.
+- Geodata: 'myota-geodata-service/migrations/001_geodata_baseline.sql'.
 
-Core `002_operations.sql` mirrors the operations service's `001_operations.sql`;
-Core `003_storage_snapshots.sql` mirrors its `002_storage_snapshots.sql`; Core
-`005_retire_jetstream_snapshots.sql` mirrors Operations `003_retire_jetstream_snapshots.sql`
-and drops only the obsolete NATS history table after the verified backup gate.
-Geo `019_maidenhead_locators.sql` is the current migration head. It mirrors
-the geodata service migration and adds automatically calculated Maidenhead
-coverage arrays. All shared geo migrations mirror the geodata service-owned
-schema.
+Deploy contains synchronized Activity and Geodata copies; Platform mirrors the
+runner, Compose configuration, and all three SQL files. The migration runner
+checks SHA-256 checksums, applies a fresh baseline transactionally, adopts an
+already-ready schema only after a database-specific sentinel check, and leaves
+the readiness marker false on failure. It fails closed on checksum drift or an
+unready database that already contains application relations. Future migrations
+are numbered and recorded in 'public.myota_schema_migration'; applied baseline
+files are immutable.
 
-The migration runner discovers numbered `NNN_*.sql` files separately in each
-domain directory and applies them in lexical order. Add a new numbered file to
-the owning migration directory and synchronized copies; do not maintain a
-second filename list in the runner.
-Synchronize service-owned migration sources before modifying the runner; see
-the [Phase 1 migration procedure](https://github.com/myota-platform/myota-docs/blob/main/docs/geodata-phase1-relational-authority.md).
+A baseline is schema-only and contains no domain rows. The
+[database baseline inventory and rebuild procedure](https://github.com/myota-platform/myota-docs/blob/main/docs/operations/databases/baseline-migration-inventory.md)
+records captured schema evidence, source ownership, and the data-preserving
+backup/restore gates. Backups and capacity planning remain independent for
+each database target. Only Geodata requires PostGIS. The chart-managed
+StatefulSets are single-replica and are not highly available.
 
-The migration SQL is intentionally compatible with a later move to separate
-PostgreSQL clusters. See the
-[three-database migration ADR](https://github.com/myota-platform/myota-docs/blob/main/docs/adr/0007-three-database-migration.md)
-for ownership and migration details.

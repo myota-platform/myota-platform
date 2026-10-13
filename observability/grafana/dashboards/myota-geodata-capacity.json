@@ -448,5 +448,18 @@
   "timezone": "utc",
   "title": "MyOTA Geodata capacity baseline",
   "uid": "myota-geodata-capacity",
-  "version": 1
+  "version": 1,
+  "links": [
+    {
+      "uid": "myota-logs-dashboard-link",
+      "title": "MyOTA Logs / Failures",
+      "type": "link",
+      "icon": "external link",
+      "url": "/d/myota-logs-failures/myota-logs-failures",
+      "targetBlank": false,
+      "keepTime": true,
+      "includeVars": false,
+      "asDropdown": false
+    }
+  ]
 }

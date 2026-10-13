@@ -8,7 +8,7 @@ services:
     ports: ["5432:5432"]
     volumes:
       - postgis-data:/var/lib/postgresql/data
-      - ./db/migrations/core/001_core.sql:/docker-entrypoint-initdb.d/001_core.sql:ro
+      - ./db/migrations/core/001_core_baseline.sql:/docker-entrypoint-initdb.d/001_core_baseline.sql:ro
   activity-db:
     image: postgres:16-alpine
     environment:
@@ -35,8 +35,6 @@ services:
       CORE_DATABASE: myota_core
       ACTIVITY_DATABASE: myota_activity
       GEO_DATABASE: myota_geo
-      LEGACY_GEO_HOST: core-db
-      LEGACY_GEO_DATABASE: myota_geo
     depends_on:
       core-db: {condition: service_started}
       activity-db: {condition: service_started}
