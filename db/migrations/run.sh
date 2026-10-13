@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Deployment orchestrates three service-owned databases. Helm supplies the
-# same variables from its database secret; these defaults keep local Compose
-# straightforward.
 : "${CORE_HOST:=core-db}"
 : "${ACTIVITY_HOST:=activity-db}"
 : "${GEO_HOST:=geo-db}"
@@ -16,25 +13,9 @@ set -euo pipefail
 : "${ACTIVITY_DATABASE:=myota_activity}"
 : "${GEO_DATABASE:=myota_geo}"
 : "${MYOTA_SCHEMA_REVISION:=0}"
-: "${LEGACY_GEO_HOST:=$CORE_HOST}"
-: "${LEGACY_GEO_PORT:=$CORE_PORT}"
-: "${LEGACY_GEO_DATABASE:=myota_geo}"
-: "${MIGRATION_DATA_COPY_ENABLED:=1}"
 
-# This runner is used from two layouts: directly from the deployment image
-# (/app/db/migrations/run.sh), and from Compose with the script mounted at
-# /migrations/run.sh and the SQL mounted below /migrations/migrations. Resolve
-# the SQL directory from the runner instead of assuming one absolute path.
 RUNNER_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-if [[ -d "$RUNNER_DIR/core" && -d "$RUNNER_DIR/geo" ]]; then
-  MIGRATION_FILES_DIR="$RUNNER_DIR"
-elif [[ -d "$RUNNER_DIR/migrations/core" && -d "$RUNNER_DIR/migrations/geo" ]]; then
-  MIGRATION_FILES_DIR="$RUNNER_DIR/migrations"
-else
-  echo "Migration SQL directory not found beside runner: $RUNNER_DIR" >&2
-  exit 1
-fi
-
+MIGRATION_FILES_DIR="$RUNNER_DIR"
 export PGUSER PGPASSWORD
 
 psql_target() {
@@ -42,14 +23,7 @@ psql_target() {
   shift 3
   PGHOST="$host" PGPORT="$port" PGDATABASE="$database" \
     PGOPTIONS="${PGOPTIONS:-} -c myota.geodata_writer=row-v1" \
-    psql -v ON_ERROR_STOP=1 "$@"
-}
-
-pg_dump_target() {
-  local host="$1" port="$2" database="$3"
-  shift 3
-  PGHOST="$host" PGPORT="$port" PGDATABASE="$database" \
-    pg_dump --no-owner --no-privileges "$@"
+    psql -X -v ON_ERROR_STOP=1 "$@"
 }
 
 wait_for_db() {
@@ -59,11 +33,38 @@ wait_for_db() {
   done
 }
 
+prior_ready() {
+  local host="$1" port="$2" database="$3"
+  psql_target "$host" "$port" "$database" -Atqc \
+    "SELECT ready FROM public.myota_deployment_schema_state WHERE id='deployment'" \
+    2>/dev/null || true
+}
+
+schema_sentinel_exists() {
+  local host="$1" port="$2" database="$3" table="$4"
+  psql_target "$host" "$port" "$database" -Atqc \
+    "SELECT to_regclass('$table') IS NOT NULL" 2>/dev/null || true
+}
+
+unmanaged_relation_count() {
+  local host="$1" port="$2" database="$3"
+  psql_target "$host" "$port" "$database" -Atqc "
+    SELECT count(*)
+      FROM pg_class c
+      JOIN pg_namespace n ON n.oid=c.relnamespace
+      LEFT JOIN pg_depend d
+        ON d.classid='pg_class'::regclass AND d.objid=c.oid AND d.deptype='e'
+     WHERE n.nspname='public'
+       AND c.relkind IN ('r','p','v','m','S','f')
+       AND c.relname NOT IN ('myota_deployment_schema_state','myota_schema_migration')
+       AND d.objid IS NULL"
+}
+
 apply_migrations() {
-  local host="$1" port="$2" database="$3" domain="$4"
-  local migration_file
+  local host="$1" port="$2" database="$3" domain="$4" was_ready="$5" sentinel="$6"
   local migration_directory="$MIGRATION_FILES_DIR/$domain"
   local migration_files=("$migration_directory"/[0-9][0-9][0-9]_*.sql)
+  local migration_file migration_id checksum ledger_exists ledger_row stored_checksum stored_mode relation_count sentinel_found
 
   if [[ ! -f "${migration_files[0]}" ]]; then
     echo "No numbered SQL migrations found in $migration_directory" >&2
@@ -71,16 +72,106 @@ apply_migrations() {
   fi
 
   for migration_file in "${migration_files[@]}"; do
-    psql_target "$host" "$port" "$database" -f "$migration_file"
+    migration_id="$(basename "$migration_file")"
+    checksum="$(sha256sum "$migration_file" | cut -d' ' -f1)"
+    ledger_exists="$(psql_target "$host" "$port" "$database" -Atqc \
+      "SELECT to_regclass('public.myota_schema_migration') IS NOT NULL")"
+
+    if [[ "$ledger_exists" == "t" ]]; then
+      ledger_row="$(psql_target "$host" "$port" "$database" -At -F '|' -c \
+        "SELECT coalesce(checksum,''), application_mode FROM public.myota_schema_migration WHERE migration_id='baseline-v1'")"
+      if [[ -n "$ledger_row" ]]; then
+        stored_checksum="${ledger_row%%|*}"
+        stored_mode="${ledger_row#*|}"
+        if [[ "$stored_mode" != "applied" && "$stored_mode" != "adopted" ]]; then
+          echo "Unknown baseline mode in $database; refusing to start" >&2
+          return 1
+        fi
+        if [[ -n "$stored_checksum" && "$stored_checksum" != "$checksum" ]]; then
+          echo "Baseline checksum mismatch for $database; refusing to change an applied baseline" >&2
+          return 1
+        fi
+        if [[ -z "$stored_checksum" ]]; then
+          sentinel_found="$(schema_sentinel_exists "$host" "$port" "$database" "$sentinel")"
+          if [[ "$sentinel_found" != "t" ]]; then
+            echo "Baseline ledger exists in $database but its expected schema object $sentinel is missing" >&2
+            return 1
+          fi
+          psql_target "$host" "$port" "$database" -c \
+            "UPDATE public.myota_schema_migration SET checksum='$checksum' WHERE migration_id='baseline-v1'"
+        fi
+        echo "Baseline already recorded for $database; skipping"
+        continue
+      fi
+    fi
+
+    if [[ "$migration_id" == *baseline.sql ]]; then
+      if [[ "$was_ready" == "t" ]]; then
+        sentinel_found="$(schema_sentinel_exists "$host" "$port" "$database" "$sentinel")"
+        if [[ "$sentinel_found" != "t" ]]; then
+          echo "Previously-ready $database is missing expected schema object $sentinel" >&2
+          return 1
+        fi
+        psql_target "$host" "$port" "$database" -c "
+          CREATE TABLE IF NOT EXISTS public.myota_schema_migration (
+            migration_id text PRIMARY KEY,
+            checksum text,
+            application_mode text NOT NULL CHECK (application_mode IN ('applied','adopted')),
+            applied_at timestamptz NOT NULL DEFAULT now()
+          );
+          INSERT INTO public.myota_schema_migration (migration_id, checksum, application_mode)
+          VALUES ('baseline-v1', '$checksum', 'adopted')
+          ON CONFLICT (migration_id) DO UPDATE SET checksum=EXCLUDED.checksum;"
+        echo "Adopted verified, previously-ready $database schema"
+      else
+        relation_count="$(unmanaged_relation_count "$host" "$port" "$database")"
+        if [[ "$relation_count" != "0" ]]; then
+          echo "Refusing to apply a fresh baseline to nonempty, unready $database ($relation_count user relations found)" >&2
+          return 1
+        fi
+        psql_target "$host" "$port" "$database" --single-transaction -f "$migration_file"
+        psql_target "$host" "$port" "$database" -c \
+          "UPDATE public.myota_schema_migration SET checksum='$checksum' WHERE migration_id='baseline-v1'"
+        echo "Applied fresh schema baseline to $database"
+      fi
+    else
+      if [[ "$ledger_exists" != "t" ]]; then
+        echo "Migration ledger missing before incremental migration $migration_id" >&2
+        return 1
+      fi
+      stored_checksum="$(psql_target "$host" "$port" "$database" -Atqc \
+        "SELECT coalesce(checksum,'') FROM public.myota_schema_migration WHERE migration_id='$migration_id'")"
+      if [[ -n "$stored_checksum" ]]; then
+        if [[ "$stored_checksum" != "$checksum" ]]; then
+          echo "Migration checksum mismatch for $database/$migration_id" >&2
+          return 1
+        fi
+        continue
+      fi
+      if grep -q 'CONCURRENTLY' "$migration_file"; then
+        psql_target "$host" "$port" "$database" -f "$migration_file"
+      else
+        psql_target "$host" "$port" "$database" --single-transaction -f "$migration_file"
+      fi
+      psql_target "$host" "$port" "$database" -c "
+        INSERT INTO public.myota_schema_migration (migration_id, checksum, application_mode)
+        VALUES ('$migration_id', '$checksum', 'applied')"
+    fi
   done
 }
 
-wait_for_db "$CORE_HOST" "$CORE_PORT" "$CORE_DATABASE"
-wait_for_db "$ACTIVITY_HOST" "$ACTIVITY_PORT" "$ACTIVITY_DATABASE"
-wait_for_db "$GEO_HOST" "$GEO_PORT" "$GEO_DATABASE"
+for target in \
+  "$CORE_HOST $CORE_PORT $CORE_DATABASE" \
+  "$ACTIVITY_HOST $ACTIVITY_PORT $ACTIVITY_DATABASE" \
+  "$GEO_HOST $GEO_PORT $GEO_DATABASE"; do
+  read -r host port database <<< "$target"
+  wait_for_db "$host" "$port" "$database"
+done
 
-# App pods gate their startup on this marker. Clear all markers before running
-# any migration so a failed/partial run cannot expose a mixed schema as ready.
+CORE_WAS_READY="$(prior_ready "$CORE_HOST" "$CORE_PORT" "$CORE_DATABASE")"
+ACTIVITY_WAS_READY="$(prior_ready "$ACTIVITY_HOST" "$ACTIVITY_PORT" "$ACTIVITY_DATABASE")"
+GEO_WAS_READY="$(prior_ready "$GEO_HOST" "$GEO_PORT" "$GEO_DATABASE")"
+
 for target in \
   "$CORE_HOST $CORE_PORT $CORE_DATABASE" \
   "$ACTIVITY_HOST $ACTIVITY_PORT $ACTIVITY_DATABASE" \
@@ -105,87 +196,13 @@ for target in \
         EXECUTE 'GRANT SELECT ON public.myota_deployment_schema_state TO myota_app';
       END IF;
     END
-    \$grant\$;
-  "
+    \$grant\$;"
 done
 
-apply_migrations "$CORE_HOST" "$CORE_PORT" "$CORE_DATABASE" core
-apply_migrations \
-  "$ACTIVITY_HOST" "$ACTIVITY_PORT" "$ACTIVITY_DATABASE" activity
-apply_migrations "$GEO_HOST" "$GEO_PORT" "$GEO_DATABASE" geo
+apply_migrations "$CORE_HOST" "$CORE_PORT" "$CORE_DATABASE" core "$CORE_WAS_READY" public.account
+apply_migrations "$ACTIVITY_HOST" "$ACTIVITY_PORT" "$ACTIVITY_DATABASE" activity "$ACTIVITY_WAS_READY" public.activity_activation
+apply_migrations "$GEO_HOST" "$GEO_PORT" "$GEO_DATABASE" geo "$GEO_WAS_READY" public.geodata_entity
 
-# Preserve local development data during the first split. Activity is copied
-# from the existing core database and geodata from the legacy myota_geo
-# database only when the corresponding target is empty. Re-running the job is
-# safe and does not duplicate rows. The legacy source databases may be removed
-# after an operator verifies all domain and operational table counts.
-if [ "$MIGRATION_DATA_COPY_ENABLED" = "1" ]; then
-  activity_source_tables_exist="$(psql_target "$CORE_HOST" "$CORE_PORT" "$CORE_DATABASE" \
-    -Atqc "SELECT CASE WHEN to_regclass('public.activity_activation') IS NOT NULL AND to_regclass('public.activity_qso') IS NOT NULL THEN 1 ELSE 0 END")"
-  activity_source_has_data=0
-  if [ "$activity_source_tables_exist" = "1" ]; then
-    activity_source_has_data="$(psql_target "$CORE_HOST" "$CORE_PORT" "$CORE_DATABASE" \
-      -Atqc "SELECT CASE WHEN EXISTS (SELECT 1 FROM activity_activation LIMIT 1) OR EXISTS (SELECT 1 FROM activity_qso LIMIT 1) THEN 1 ELSE 0 END")"
-  fi
-  activity_target_has_data="$(psql_target "$ACTIVITY_HOST" "$ACTIVITY_PORT" "$ACTIVITY_DATABASE" \
-    -Atqc "SELECT CASE WHEN EXISTS (SELECT 1 FROM activity_activation LIMIT 1) OR EXISTS (SELECT 1 FROM activity_qso LIMIT 1) THEN 1 ELSE 0 END")"
-  if [ "$activity_source_has_data" = "1" ] && [ "$activity_target_has_data" = "0" ]; then
-    echo "Copying existing activity data from $CORE_DATABASE to $ACTIVITY_DATABASE"
-    pg_dump_target "$CORE_HOST" "$CORE_PORT" "$CORE_DATABASE" \
-      --data-only --schema=public -t 'public.activity_*' \
-      | PGHOST="$ACTIVITY_HOST" PGPORT="$ACTIVITY_PORT" PGDATABASE="$ACTIVITY_DATABASE" psql -v ON_ERROR_STOP=1
-  fi
-
-  legacy_geo_exists="$(psql_target "$LEGACY_GEO_HOST" "$LEGACY_GEO_PORT" "$CORE_DATABASE" \
-    -Atqc "SELECT CASE WHEN EXISTS (SELECT 1 FROM pg_database WHERE datname = '$LEGACY_GEO_DATABASE') THEN 1 ELSE 0 END")"
-  if [ "$legacy_geo_exists" = "1" ]; then
-    # A preserved legacy database may contain a PostGIS extension while the
-    # active core server is intentionally plain PostgreSQL. In that state the
-    # catalog is visible but pg_dump cannot load the extension library. Skip
-    # the recoverable source rather than failing every later migration run.
-    legacy_geo_postgis="$(psql_target "$LEGACY_GEO_HOST" "$LEGACY_GEO_PORT" "$LEGACY_GEO_DATABASE" \
-      -Atqc "SELECT CASE WHEN EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'postgis') THEN 1 ELSE 0 END" 2>/dev/null || true)"
-    if [ "$legacy_geo_postgis" = "1" ]; then
-      geo_source_has_data="$(psql_target "$LEGACY_GEO_HOST" "$LEGACY_GEO_PORT" "$LEGACY_GEO_DATABASE" \
-        -Atqc "SELECT CASE WHEN EXISTS (SELECT 1 FROM geodata_entity LIMIT 1) OR EXISTS (SELECT 1 FROM import_run LIMIT 1) THEN 1 ELSE 0 END")"
-      geo_target_has_data="$(psql_target "$GEO_HOST" "$GEO_PORT" "$GEO_DATABASE" \
-        -Atqc "SELECT CASE WHEN EXISTS (SELECT 1 FROM geodata_entity LIMIT 1) OR EXISTS (SELECT 1 FROM import_run LIMIT 1) THEN 1 ELSE 0 END")"
-      if [ "$geo_source_has_data" = "1" ] && [ "$geo_target_has_data" = "0" ]; then
-        echo "Copying existing geodata from $LEGACY_GEO_DATABASE to $GEO_DATABASE"
-        pg_dump_target "$LEGACY_GEO_HOST" "$LEGACY_GEO_PORT" "$LEGACY_GEO_DATABASE" \
-          --data-only --schema=public \
-          -t public.entity_type \
-          -t public.geodata_entity \
-          -t public.source_reference \
-          -t public.import_run \
-          -t public.entity_review \
-          -t public.conflation_candidate \
-          -t public.source_snapshot_manifest \
-          -t public.source_snapshot_record \
-          -t public.import_schedule \
-          -t public.geodata_entity_attachment \
-          -t public.geodata_edit_staging \
-          -t public.geodata_entity_category \
-          -t public.geodata_import_candidate \
-          -t public.geodata_import_processing_queue \
-          -t public.service_state \
-          -t public.idempotency_record \
-          -t public.outbox_event \
-          -t public.consumer_checkpoint \
-          -t public.consumer_processed_event \
-          -t public.dead_letter_event \
-          | PGHOST="$GEO_HOST" PGPORT="$GEO_PORT" PGDATABASE="$GEO_DATABASE" psql -v ON_ERROR_STOP=1
-      fi
-    else
-      echo "Legacy geodata database is unavailable with PostGIS; skipping its copy"
-    fi
-  else
-    echo "No legacy geodata database found; skipping its already-completed copy"
-  fi
-fi
-
-# Mark every database ready only after all schemas and any one-time data copy
-# have completed successfully. On any earlier error the marker remains false.
 for target in \
   "$CORE_HOST $CORE_PORT $CORE_DATABASE" \
   "$ACTIVITY_HOST $ACTIVITY_PORT $ACTIVITY_DATABASE" \
@@ -194,8 +211,7 @@ for target in \
   psql_target "$host" "$port" "$database" -c "
     UPDATE public.myota_deployment_schema_state
        SET ready = true, updated_at = now()
-     WHERE id = 'deployment' AND release_revision = $MYOTA_SCHEMA_REVISION;
-  "
+     WHERE id = 'deployment' AND release_revision = $MYOTA_SCHEMA_REVISION;"
 done
 
 echo "MyOTA database migrations completed: core=$CORE_DATABASE activity=$ACTIVITY_DATABASE geo=$GEO_DATABASE"

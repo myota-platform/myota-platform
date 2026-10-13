@@ -12,7 +12,7 @@ services:
       # programme data remain available. The old myota_geo database is copied
       # to geo-db by the migration job.
       - postgis-data:/var/lib/postgresql/data
-      - ./db/migrations/core/001_core.sql:/docker-entrypoint-initdb.d/001_core.sql:ro
+      - ./db/migrations/core/001_core_baseline.sql:/docker-entrypoint-initdb.d/001_core_baseline.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U myota -d myota_core"]
       interval: 5s
@@ -56,8 +56,6 @@ services:
       CORE_DATABASE: myota_core
       ACTIVITY_DATABASE: myota_activity
       GEO_DATABASE: myota_geo
-      LEGACY_GEO_HOST: core-db
-      LEGACY_GEO_DATABASE: myota_geo
     volumes:
       - ./db/migrations:/migrations/migrations:ro
       - ./db/bootstrap:/migrations/bootstrap:ro
