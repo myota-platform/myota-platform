@@ -368,6 +368,21 @@ paths:
         '202':
           description: Promotion queue accepted
           content: { application/json: { schema: { $ref: '#/components/schemas/GeoImportProcessingQueue' } } }
+  /v1/geodata/imports/{runId}/processing-queues/{queueId}:
+    get:
+      tags: [Geodata]
+      security: [{ bearerAuth: [] }]
+      summary: Read the outcome of an import promotion queue
+      description: Returns terminal state and per-candidate outcomes for a queue belonging to this import run. Failed candidates may be retried through the process operation after the failed result is observed.
+      parameters:
+        - { in: path, name: runId, required: true, schema: { type: string, format: uuid } }
+        - { in: path, name: queueId, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Current promotion queue state and candidate outcomes
+          content: { application/json: { schema: { $ref: '#/components/schemas/GeoImportProcessingQueue' } } }
+        '403': { description: geodata.import scope required }
+        '404': { description: Queue not found for this import run }
   /v1/geodata/imports/{runId}/processed:
     post:
       tags: [Geodata]
@@ -1774,7 +1789,23 @@ components:
         targetStatus: { type: string, enum: [CANDIDATE, APPROVED] }
         requestedBy: { type: string }
         status: { type: string, enum: [QUEUED, PROCESSING, COMPLETED, FAILED] }
-        result: { type: object, additionalProperties: true }
+        requestedAt: { type: string, format: date-time }
+        startedAt: { type: string, format: date-time, nullable: true }
+        completedAt: { type: string, format: date-time, nullable: true }
+        result:
+          type: object
+          properties:
+            created: { type: array, items: { type: string, format: uuid } }
+            updated: { type: array, items: { type: string, format: uuid } }
+            errors:
+              type: array
+              items:
+                type: object
+                required: [candidateId, message]
+                properties:
+                  candidateId: { type: string, format: uuid }
+                  message: { type: string }
+          additionalProperties: true
         error: { type: string, nullable: true }
     GeoEntity:
       type: object
