@@ -24,7 +24,10 @@ class ObservabilityConfigurationTests(unittest.TestCase):
             )
             self.assertEqual(dashboard["refresh"], "30s")
             self.assertEqual(dashboard["timezone"], "utc")
-            self.assertTrue(dashboard["editable"])
+            if source.name == "myota-logs-failures.json":
+                self.assertFalse(dashboard["editable"])
+            else:
+                self.assertTrue(dashboard["editable"])
 
     def test_prometheus_uses_collector_boundary(self):
         config = (ROOT / "observability" / "prometheus.yml").read_text()
