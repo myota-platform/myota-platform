@@ -2,7 +2,6 @@
 -- PostgreSQL database dump
 --
 
-\restrict daT2wdeTsPaMllNaosRpSZGYaHg1e3Vpyb2ZI5TWok8jnXp4bW4GTeTibYaV0I7
 
 -- Dumped from database version 16.15
 -- Dumped by pg_dump version 16.15
@@ -1043,7 +1042,6 @@ ALTER TABLE ONLY public.security_event
 -- PostgreSQL database dump complete
 --
 
-\unrestrict daT2wdeTsPaMllNaosRpSZGYaHg1e3Vpyb2ZI5TWok8jnXp4bW4GTeTibYaV0I7
 
 
 -- Record that this immutable schema baseline has been installed or adopted.
