@@ -3,14 +3,12 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: myota-activity-notification-provisioner
+  name: myota-activity-notification-provisioner-{{ .Release.Revision }}
   annotations:
-    "helm.sh/hook": pre-upgrade
-    "helm.sh/hook-weight": "5"
-    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
-  backoffLimit: 0
-  activeDeadlineSeconds: 180
+  backoffLimit: 10
+  activeDeadlineSeconds: 1800
+  ttlSecondsAfterFinished: 300
   template:
     metadata:
       labels:
