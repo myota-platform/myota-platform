@@ -310,8 +310,12 @@ class ObservabilityConfigurationTests(unittest.TestCase):
         self.assertNotIn("operations:8005", collector)
         core_migrations = ROOT / "db/migrations/core"
         self.assertEqual(
-            [path.name for path in core_migrations.glob("*.sql")],
-            ["001_core_baseline.sql"],
+            sorted(path.name for path in core_migrations.glob("*.sql")),
+            [
+                "001_core_baseline.sql",
+                "002_identity_auth_support.sql",
+                "003_identity_auth_backfill.sql",
+            ],
         )
         baseline = (core_migrations / "001_core_baseline.sql").read_text()
         self.assertNotIn("operations_jetstream_snapshot", baseline)
