@@ -77,7 +77,7 @@ apply_migrations() {
     ledger_exists="$(psql_target "$host" "$port" "$database" -Atqc \
       "SELECT to_regclass('public.myota_schema_migration') IS NOT NULL")"
 
-    if [[ "$ledger_exists" == "t" ]]; then
+    if [[ "$ledger_exists" == "t" && "$migration_id" == *baseline.sql ]]; then
       ledger_row="$(psql_target "$host" "$port" "$database" -At -F '|' -c \
         "SELECT coalesce(checksum,''), application_mode FROM public.myota_schema_migration WHERE migration_id='baseline-v1'")"
       if [[ -n "$ledger_row" ]]; then
